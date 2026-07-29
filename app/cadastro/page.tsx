@@ -2,6 +2,8 @@
 
 import { useState } from "react";
 import Link from "next/link";
+import { Logo } from "@/components/Logo";
+import { EyeIcon } from "@/components/EyeIcon";
 
 function StepDots({ step }: { step: 1 | 2 }) {
   // aria-label descreve o passo pra leitor de tela, já que a info aqui é 100% visual (bolinhas/cores)
@@ -17,38 +19,6 @@ function StepDots({ step }: { step: 1 | 2 }) {
         }`}
       />
     </div>
-  );
-}
-
-function EyeIcon({ open }: { open: boolean }) {
-  return open ? (
-    <svg
-      width="20"
-      height="20"
-      viewBox="0 0 24 24"
-      fill="none"
-      stroke="currentColor"
-      strokeWidth="2"
-      strokeLinecap="round"
-      strokeLinejoin="round"
-    >
-      <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8Z" />
-      <circle cx="12" cy="12" r="3" />
-    </svg>
-  ) : (
-    <svg
-      width="20"
-      height="20"
-      viewBox="0 0 24 24"
-      fill="none"
-      stroke="currentColor"
-      strokeWidth="2"
-      strokeLinecap="round"
-      strokeLinejoin="round"
-    >
-      <path d="M17.94 17.94A10.94 10.94 0 0 1 12 20c-7 0-11-8-11-8a20.3 20.3 0 0 1 5.06-5.94M9.9 4.24A10.4 10.4 0 0 1 12 4c7 0 11 8 11 8a20.3 20.3 0 0 1-3.22 4.44M14.12 14.12a3 3 0 1 1-4.24-4.24" />
-      <path d="M1 1l22 22" />
-    </svg>
   );
 }
 
@@ -194,9 +164,7 @@ export default function Cadastro() {
             backgroundColor: "#151632",
           }}
         >
-          <span className="font-[family-name:var(--font-display)] text-lg font-extrabold tracking-tight">
-            {"</>"} DevReady
-          </span>
+          <Logo />
 
           <div>
             <h1 className="font-[family-name:var(--font-display)] max-w-[420px] text-3xl md:text-5xl leading-[1.02] font-semibold">
@@ -341,7 +309,7 @@ export default function Cadastro() {
                 <div className="mt-4 flex justify-between text-sm text-[#59567a]">
                   <span>
                     Já tem conta?{" "}
-                    <Link href="/" className="font-extrabold text-[#443388]">
+                    <Link href="/login" className="font-extrabold text-[#443388]">
                       Fazer login
                     </Link>
                   </span>
