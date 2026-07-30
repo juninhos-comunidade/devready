@@ -16,7 +16,10 @@ export function Logo() {
         height={425}
         className="h-8 w-auto"
       />
-      <span className="font-[family-name:var(--font-display)] text-lg font-extrabold tracking-tight">
+      {/* bg-clip-text + text-transparent é o truque de CSS pra "pintar" texto com
+          gradiente: em vez de colorir o texto direto, a gente desenha um fundo
+          gradiente atrás e deixa só as letras visíveis por cima dele */}
+      <span className="bg-gradient-to-r from-[#7755e8] to-[#e8641d] bg-clip-text font-[family-name:var(--font-display)] text-lg font-extrabold tracking-tight text-transparent">
         DevReady
       </span>
     </div>

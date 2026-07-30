@@ -3,7 +3,7 @@
 import { useState } from "react";
 import Link from "next/link";
 import { Logo } from "@/components/Logo";
-import { EyeIcon } from "@/components/EyeIcon";
+import { Eye, EyeOff } from "lucide-react";
 import { RequirementItem } from "@/components/RequirementItem";
 
 export default function RedefinirSenha() {
@@ -89,7 +89,7 @@ export default function RedefinirSenha() {
                     aria-label={showPassword ? "Ocultar senha" : "Mostrar senha"}
                     className="absolute inset-y-0 right-0 flex items-center px-3 text-[#8b8593] hover:text-[#7755e8]"
                   >
-                    <EyeIcon open={showPassword} />
+                    {showPassword ? <EyeOff className="h-5 w-5" /> : <Eye className="h-5 w-5" />}
                   </button>
                 </div>
                 <ul className="mt-0.5 grid gap-1 text-xs font-semibold">
@@ -118,7 +118,7 @@ export default function RedefinirSenha() {
                     aria-label={showConfirm ? "Ocultar senha" : "Mostrar senha"}
                     className="absolute inset-y-0 right-0 flex items-center px-3 text-[#8b8593] hover:text-[#7755e8]"
                   >
-                    <EyeIcon open={showConfirm} />
+                    {showConfirm ? <EyeOff className="h-5 w-5" /> : <Eye className="h-5 w-5" />}
                   </button>
                 </div>
                 {confirmTouched && (

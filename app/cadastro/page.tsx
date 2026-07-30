@@ -2,8 +2,9 @@
 
 import { useState } from "react";
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 import { Logo } from "@/components/Logo";
-import { EyeIcon } from "@/components/EyeIcon";
+import { Eye, EyeOff, ChevronDown } from "lucide-react";
 import { RequirementItem } from "@/components/RequirementItem";
 
 function StepDots({ step }: { step: 1 | 2 }) {
@@ -20,24 +21,6 @@ function StepDots({ step }: { step: 1 | 2 }) {
         }`}
       />
     </div>
-  );
-}
-
-function ChevronIcon() {
-  return (
-    <svg
-      width="18"
-      height="18"
-      viewBox="0 0 24 24"
-      fill="none"
-      stroke="currentColor"
-      strokeWidth="2"
-      strokeLinecap="round"
-      strokeLinejoin="round"
-      className="pointer-events-none absolute right-3.5 top-1/2 -translate-y-1/2 text-[#8b8593]"
-    >
-      <path d="m6 9 6 6 6-6" />
-    </svg>
   );
 }
 
@@ -71,13 +54,14 @@ function FormSelect({
           </option>
         ))}
       </select>
-      <ChevronIcon />
+      <ChevronDown className="pointer-events-none absolute right-3.5 top-1/2 h-[18px] w-[18px] -translate-y-1/2 text-[#8b8593]" />
     </div>
   );
 }
 
 export default function Cadastro() {
   const [step, setStep] = useState<1 | 2>(1);
+  const router = useRouter();
 
   const [fileName, setFileName] = useState(
     "Arraste o PDF ou clique para selecionar"
@@ -128,8 +112,10 @@ export default function Cadastro() {
       setStep(2);
       return;
     }
-    // TODO: envio final do cadastro (nome, e-mail, senha, github, pdf, área, nível)
-    // quando a integração com o Better Auth/Prisma estiver pronta
+    // TODO: por enquanto isso só redireciona direto — quando o Better Auth/Prisma
+    // estiverem plugados aqui, o redirecionamento deve acontecer só DEPOIS que a
+    // conta (nome, e-mail, senha, github, pdf, área, nível) for criada com sucesso
+    router.push("/dashboard");
   }
 
   return (
@@ -227,7 +213,7 @@ export default function Cadastro() {
                         aria-label={showPassword ? "Ocultar senha" : "Mostrar senha"}
                         className="absolute inset-y-0 right-0 flex items-center px-3 text-[#8b8593] hover:text-[#7755e8]"
                       >
-                        <EyeIcon open={showPassword} />
+                        {showPassword ? <EyeOff className="h-5 w-5" /> : <Eye className="h-5 w-5" />}
                       </button>
                     </div>
                     <ul className="mt-0.5 grid gap-1 text-xs font-semibold">
@@ -256,7 +242,7 @@ export default function Cadastro() {
                         aria-label={showConfirm ? "Ocultar senha" : "Mostrar senha"}
                         className="absolute inset-y-0 right-0 flex items-center px-3 text-[#8b8593] hover:text-[#7755e8]"
                       >
-                        <EyeIcon open={showConfirm} />
+                        {showConfirm ? <EyeOff className="h-5 w-5" /> : <Eye className="h-5 w-5" />}
                       </button>
                     </div>
                     {confirmTouched && (

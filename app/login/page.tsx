@@ -2,13 +2,23 @@
 
 import { useState } from "react";
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 import { Logo } from "@/components/Logo";
-import { EyeIcon } from "@/components/EyeIcon";
+import { Eye, EyeOff } from "lucide-react";
 
 export default function Login() {
   // "senha visível ou não" é um estadinho simples: começa escondida (false)
   // e vira true quando a pessoa clica no olhinho, só isso
   const [showPassword, setShowPassword] = useState(false);
+  const router = useRouter();
+
+  function handleSubmit(e: React.SubmitEvent<HTMLFormElement>) {
+    e.preventDefault();
+    // TODO: por enquanto isso só redireciona direto — quando o Better Auth
+    // estiver plugado aqui, o redirecionamento deve acontecer só DEPOIS que
+    // o e-mail/senha forem confirmados como válidos pelo servidor
+    router.push("/dashboard");
+  }
 
   return (
     // Mesma "casca" visual do Cadastro (fundo escuro com gradiente + card
@@ -48,7 +58,7 @@ export default function Login() {
         </aside>
 
         <div className="grid place-items-center p-6 md:p-12">
-          <form className="w-full max-w-[460px]">
+          <form className="w-full max-w-[460px]" onSubmit={handleSubmit}>
             <span className="text-xs font-extrabold tracking-widest text-[#7755e8] uppercase">
               Bem-vindo de volta
             </span>
@@ -94,7 +104,7 @@ export default function Login() {
                     aria-label={showPassword ? "Ocultar senha" : "Mostrar senha"}
                     className="absolute inset-y-0 right-0 flex items-center px-3 text-[#8b8593] hover:text-[#7755e8]"
                   >
-                    <EyeIcon open={showPassword} />
+                    {showPassword ? <EyeOff className="h-5 w-5" /> : <Eye className="h-5 w-5" />}
                   </button>
                 </div>
               </div>
