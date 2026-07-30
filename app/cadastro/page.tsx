@@ -4,6 +4,7 @@ import { useState } from "react";
 import Link from "next/link";
 import { Logo } from "@/components/Logo";
 import { EyeIcon } from "@/components/EyeIcon";
+import { RequirementItem } from "@/components/RequirementItem";
 
 function StepDots({ step }: { step: 1 | 2 }) {
   // aria-label descreve o passo pra leitor de tela, já que a info aqui é 100% visual (bolinhas/cores)
@@ -19,21 +20,6 @@ function StepDots({ step }: { step: 1 | 2 }) {
         }`}
       />
     </div>
-  );
-}
-
-function RequirementItem({ met, label }: { met: boolean; label: string }) {
-  return (
-    <li
-      className={`flex items-center gap-1.5 ${
-        met ? "text-[#1f9d55]" : "text-[#c23b3b]"
-      }`}
-    >
-      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round">
-        {met ? <path d="M20 6 9 17l-5-5" /> : <path d="M18 6 6 18M6 6l12 12" />}
-      </svg>
-      {label}
-    </li>
   );
 }
 
