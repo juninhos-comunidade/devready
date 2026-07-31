@@ -4,8 +4,10 @@ import { useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { Logo } from "@/components/Logo";
-import { Eye, EyeOff, ChevronDown } from "lucide-react";
+import { Eye, EyeOff } from "lucide-react";
 import { RequirementItem } from "@/components/RequirementItem";
+import { FormSelect } from "@/components/FormSelect";
+import { PdfDropzone } from "@/components/PdfDropzone";
 
 function StepDots({ step }: { step: 1 | 2 }) {
   // aria-label descreve o passo pra leitor de tela, já que a info aqui é 100% visual (bolinhas/cores)
@@ -24,49 +26,10 @@ function StepDots({ step }: { step: 1 | 2 }) {
   );
 }
 
-// select nativo (sem lib) estilizado igual aos inputs de texto — `invalid:` pega a opção
-// placeholder (value="") enquanto ela estiver selecionada, simulando um placeholder cinza
-function FormSelect({
-  id,
-  required,
-  placeholder,
-  options,
-}: {
-  id: string;
-  required?: boolean;
-  placeholder: string;
-  options: string[];
-}) {
-  return (
-    <div className="relative">
-      <select
-        id={id}
-        required={required}
-        defaultValue=""
-        className="w-full appearance-none rounded-xl border-[1.5px] border-[#e4dfd3] bg-white px-4 py-3 pr-10 text-[#1d1b33] invalid:text-[#8b8593] focus:border-[#7755e8] focus:outline-none focus:ring-2 focus:ring-[#7755e8]/30"
-      >
-        <option value="" disabled>
-          {placeholder}
-        </option>
-        {options.map((option) => (
-          <option key={option} value={option}>
-            {option}
-          </option>
-        ))}
-      </select>
-      <ChevronDown className="pointer-events-none absolute right-3.5 top-1/2 h-[18px] w-[18px] -translate-y-1/2 text-[#8b8593]" />
-    </div>
-  );
-}
-
 export default function Cadastro() {
   const [step, setStep] = useState<1 | 2>(1);
   const router = useRouter();
 
-  const [fileName, setFileName] = useState(
-    "Arraste o PDF ou clique para selecionar"
-  );
-  const [fileError, setFileError] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
   const [showConfirm, setShowConfirm] = useState(false);
   const [password, setPassword] = useState("");
@@ -86,23 +49,6 @@ export default function Cadastro() {
   // pra não acusar erro num campo que ele ainda nem tocou
   const confirmTouched = confirm.length > 0;
   const passwordsMatch = confirmTouched && confirm === password;
-
-  function handleFile(e: React.ChangeEvent<HTMLInputElement>) {
-    const file = e.target.files?.[0];
-    if (!file) return;
-
-    // accept="application/pdf" só filtra o seletor do SO, não impede o usuário de
-    // escolher "todos os arquivos" e mandar outra coisa — por isso o check aqui também
-    if (file.type !== "application/pdf") {
-      setFileError(true);
-      setFileName("Arraste o PDF ou clique para selecionar");
-      e.target.value = ""; // limpa o input pra permitir reselecionar o mesmo arquivo depois de corrigir
-      return;
-    }
-
-    setFileError(false);
-    setFileName(file.name);
-  }
 
   // form único controla os 2 passos por estado local — evita ter que persistir os
   // dados do passo 1 em algum lugar (localStorage, rota separada) antes de existir backend
@@ -322,33 +268,7 @@ export default function Cadastro() {
                     <label className="text-sm font-extrabold text-[#1d1b33]">
                       Currículo em PDF <span className="text-[#e8641d]">*</span>
                     </label>
-                    <div
-                      className={`relative rounded-xl border-[1.5px] border-dashed p-6 text-center transition ${
-                        fileError
-                          ? "border-[#c23b3b] bg-[#fdf2f2] text-[#c23b3b]"
-                          : "border-[#c8c0b0] bg-[#fbf9f4] text-[#59567a] hover:border-[#7755e8] hover:bg-[#f7f3ff]"
-                      }`}
-                    >
-                      {/* input file nativo fica invisível e por cima de tudo (opacity-0 + inset-0)
-                          pra herdar o clique/drag do card estilizado, já que <input type="file">
-                          não é estilizável diretamente */}
-                      <input
-                        type="file"
-                        accept="application/pdf"
-                        required
-                        onChange={handleFile}
-                        className="absolute inset-0 h-full w-full cursor-pointer opacity-0"
-                      />
-                      <strong className={`block mb-1 ${fileError ? "text-[#c23b3b]" : "text-[#1d1b33]"}`}>
-                        {fileName}
-                      </strong>
-                      <span className="text-sm">Máximo recomendado: 5 MB</span>
-                    </div>
-                    {fileError && (
-                      <ul className="mt-0.5 grid gap-1 text-xs font-semibold">
-                        <RequirementItem met={false} label="Esse arquivo não é um PDF" />
-                      </ul>
-                    )}
+                    <PdfDropzone required />
                   </div>
 
                   <div className="grid gap-1.5">
