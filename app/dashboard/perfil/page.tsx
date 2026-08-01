@@ -28,12 +28,25 @@ export default function Perfil() {
   // controla só se o popup de "tem certeza?" está aberto — o popup em si
   // não sabe nada sobre "conta", ele só avisa quando foi confirmado ou cancelado
   const [confirmingDelete, setConfirmingDelete] = useState(false);
+  // começa true porque a pessoa já chega na tela com um currículo salvo —
+  // só vira false se ela remover o arquivo pelo botão "x" do PdfDropzone
+  const [temCurriculo, setTemCurriculo] = useState(true);
+  const [curriculoErro, setCurriculoErro] = useState(false);
 
   const githubTouched = github.length > 0;
   const isValidGithubUrl = /^https?:\/\/(www\.)?github\.com\/[\w-]+\/?$/i.test(github);
 
   function handleSubmit(e: React.SubmitEvent<HTMLFormElement>) {
     e.preventDefault();
+
+    // currículo pode ser trocado, mas nunca pode ficar vazio — se a pessoa
+    // removeu o arquivo e não colocou outro no lugar, barra o salvamento aqui
+    if (!temCurriculo) {
+      setCurriculoErro(true);
+      return;
+    }
+    setCurriculoErro(false);
+
     // TODO: enviar os campos atualizados pro backend (Prisma/Better Auth) e,
     // se o currículo tiver sido trocado, disparar de novo a análise de perfil
     // (seção 4.2 dos requisitos: refazer a análise quando o PDF ou o GitHub mudam)
@@ -78,10 +91,11 @@ export default function Perfil() {
             <div className="mt-4 grid gap-4 sm:grid-cols-2">
               <div className="grid gap-1.5">
                 <label htmlFor="nome" className="text-sm font-extrabold text-[#1d1b33]">
-                  Nome
+                  Nome <span className="text-[#e8641d]">*</span>
                 </label>
                 <input
                   id="nome"
+                  required
                   defaultValue={perfilMocado.nome}
                   className="w-full rounded-xl border-[1.5px] border-[#e4dfd3] bg-white px-4 py-3 text-[#1d1b33] focus:border-[#7755e8] focus:outline-none focus:ring-2 focus:ring-[#7755e8]/30"
                 />
@@ -89,11 +103,12 @@ export default function Perfil() {
 
               <div className="grid gap-1.5">
                 <label htmlFor="email" className="text-sm font-extrabold text-[#1d1b33]">
-                  E-mail
+                  E-mail <span className="text-[#e8641d]">*</span>
                 </label>
                 <input
                   id="email"
                   type="email"
+                  required
                   defaultValue={perfilMocado.email}
                   className="w-full rounded-xl border-[1.5px] border-[#e4dfd3] bg-white px-4 py-3 text-[#1d1b33] focus:border-[#7755e8] focus:outline-none focus:ring-2 focus:ring-[#7755e8]/30"
                 />
@@ -129,11 +144,23 @@ export default function Perfil() {
 
               <div className="grid gap-1.5">
                 <label className="text-sm font-extrabold text-[#1d1b33]">
-                  Currículo em PDF
+                  Currículo em PDF <span className="text-[#e8641d]">*</span>
                 </label>
-                {/* sem `required` aqui — diferente do Cadastro, trocar o currículo
-                    no Perfil é opcional, a pessoa já tem um enviado */}
-                <PdfDropzone initialFileName={perfilMocado.curriculo} />
+                {/* sem `required` nativo aqui — trocar o currículo é opcional,
+                    mas REMOVER sem colocar outro no lugar não pode ser salvo.
+                    Isso é validado na hora do submit, não pelo navegador */}
+                <PdfDropzone
+                  initialFileName={perfilMocado.curriculo}
+                  onFileChange={(file) => {
+                    setTemCurriculo(file !== null);
+                    if (file !== null) setCurriculoErro(false);
+                  }}
+                />
+                {curriculoErro && (
+                  <ul className="mt-0.5 grid gap-1 text-xs font-semibold">
+                    <RequirementItem met={false} label="Adicione um currículo antes de salvar" />
+                  </ul>
+                )}
               </div>
             </div>
           </div>
@@ -146,10 +173,11 @@ export default function Perfil() {
             <div className="mt-4 grid gap-4">
               <div className="grid gap-1.5">
                 <label htmlFor="interesse" className="text-sm font-extrabold text-[#1d1b33]">
-                  Área de interesse
+                  Área de interesse <span className="text-[#e8641d]">*</span>
                 </label>
                 <FormSelect
                   id="interesse"
+                  required
                   placeholder="Selecione sua área..."
                   options={["Frontend", "Backend", "Mobile", "Dados"]}
                   defaultValue={perfilMocado.areaInteresse}
@@ -158,10 +186,11 @@ export default function Perfil() {
 
               <div className="grid gap-1.5">
                 <label htmlFor="nivel" className="text-sm font-extrabold text-[#1d1b33]">
-                  Nível de experiência
+                  Nível de experiência <span className="text-[#e8641d]">*</span>
                 </label>
                 <FormSelect
                   id="nivel"
+                  required
                   placeholder="Onde você está hoje?"
                   options={["Estudante", "Estagiário", "Júnior", "Pretendendo migrar de carreira"]}
                   defaultValue={perfilMocado.nivelExperiencia}
