@@ -18,8 +18,8 @@ model User {
   emailVerified Boolean   @default(false)
   name          String?
   image         String?
-  skills        String[]
-  curriculum_URL String
+  skills        String[] @default([])
+  curriculum_URL String?
   createdAt     DateTime  @default(now())
   updatedAt     DateTime  @updatedAt
   sessions      Session[]

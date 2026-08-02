@@ -1,0 +1,3 @@
+-- AlterTable
+ALTER TABLE "User" ALTER COLUMN "skills" SET DEFAULT ARRAY[]::TEXT[],
+ALTER COLUMN "curriculum_URL" DROP NOT NULL;
