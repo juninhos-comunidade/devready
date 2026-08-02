@@ -5,19 +5,50 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { Logo } from "@/components/Logo";
 import { Eye, EyeOff } from "lucide-react";
+import { authClient } from "@/lib/auth-client";
+import { demoModeEnabled } from "@/lib/demo-mode";
 
 export default function Login() {
   // "senha visível ou não" é um estadinho simples: começa escondida (false)
   // e vira true quando a pessoa clica no olhinho, só isso
   const [showPassword, setShowPassword] = useState(false);
+  const [errorMessage, setErrorMessage] = useState("");
+  const [isSubmitting, setIsSubmitting] = useState(false);
   const router = useRouter();
 
-  function handleSubmit(e: React.SubmitEvent<HTMLFormElement>) {
+  async function handleSubmit(e: React.SubmitEvent<HTMLFormElement>) {
     e.preventDefault();
-    // TODO: por enquanto isso só redireciona direto — quando o Better Auth
-    // estiver plugado aqui, o redirecionamento deve acontecer só DEPOIS que
-    // o e-mail/senha forem confirmados como válidos pelo servidor
-    router.push("/dashboard");
+    setErrorMessage("");
+    setIsSubmitting(true);
+
+    const formData = new FormData(e.currentTarget);
+    const email = String(formData.get("email") ?? "");
+    const password = String(formData.get("password") ?? "");
+    const rememberMe = formData.get("rememberMe") === "on";
+
+    try {
+      const { error } = await authClient.signIn.email({
+        email,
+        password,
+        rememberMe,
+      });
+
+      if (error) {
+        setErrorMessage(
+          error.status === 403
+            ? "Confirme seu e-mail antes de entrar. Enviamos um novo link de verificação."
+            : "E-mail ou senha inválidos. Confira os dados e tente novamente.",
+        );
+        return;
+      }
+
+      router.replace("/dashboard");
+      router.refresh();
+    } catch {
+      setErrorMessage("Não foi possível conectar ao serviço. Tente novamente.");
+    } finally {
+      setIsSubmitting(false);
+    }
   }
 
   return (
@@ -76,6 +107,7 @@ export default function Login() {
                 </label>
                 <input
                   id="email"
+                  name="email"
                   type="email"
                   required
                   placeholder="ex: maria.silva@email.com"
@@ -93,6 +125,7 @@ export default function Login() {
                 <div className="relative">
                   <input
                     id="password"
+                    name="password"
                     type={showPassword ? "text" : "password"}
                     required
                     placeholder="••••••••"
@@ -110,16 +143,42 @@ export default function Login() {
               </div>
 
               <label className="flex items-center gap-2.5 text-sm text-[#59567a]">
-                <input type="checkbox" className="h-4 w-4" />
+                <input name="rememberMe" type="checkbox" className="h-4 w-4" />
                 Manter conectado neste dispositivo
               </label>
 
+              {errorMessage && (
+                <p role="alert" className="rounded-xl bg-[#fdf2f2] px-4 py-3 text-sm font-bold text-[#a83030]">
+                  {errorMessage}
+                </p>
+              )}
+
               <button
                 type="submit"
-                className="mt-2 flex min-h-[44px] w-full items-center justify-center gap-2 rounded-full bg-[#7755e8] font-extrabold text-white shadow-[0_14px_32px_-16px_rgba(119,85,232,0.75)] transition hover:-translate-y-0.5 hover:bg-[#6647d1]"
+                disabled={isSubmitting}
+                className="mt-2 flex min-h-[44px] w-full items-center justify-center gap-2 rounded-full bg-[#7755e8] font-extrabold text-white shadow-[0_14px_32px_-16px_rgba(119,85,232,0.75)] transition hover:-translate-y-0.5 hover:bg-[#6647d1] disabled:cursor-wait disabled:opacity-60"
               >
-                Entrar
+                {isSubmitting ? "Entrando..." : "Entrar"}
               </button>
+
+              {demoModeEnabled && (
+                <>
+                  <div className="flex items-center gap-3 py-1" aria-hidden="true">
+                    <span className="h-px flex-1 bg-[#e4dfd3]" />
+                    <span className="text-[10px] font-extrabold uppercase tracking-widest text-[#8b8593]">ou</span>
+                    <span className="h-px flex-1 bg-[#e4dfd3]" />
+                  </div>
+                  <Link
+                    href="/dashboard"
+                    className="flex min-h-[44px] w-full items-center justify-center rounded-full border-[1.5px] border-[#7755e8] font-extrabold text-[#5d43c4] transition hover:bg-[#f2eeff]"
+                  >
+                    Explorar demonstração
+                  </Link>
+                  <p className="text-center text-xs leading-relaxed text-[#8b8593]">
+                    A demonstração usa somente informações fictícias.
+                  </p>
+                </>
+              )}
             </div>
 
             <div className="mt-4 flex flex-col gap-2 text-sm text-[#59567a] sm:flex-row sm:justify-between">

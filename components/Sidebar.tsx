@@ -2,55 +2,91 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
+import {
+  BarChart3,
+  CirclePlus,
+  CircleUser,
+  LayoutDashboard,
+} from "lucide-react";
 import { Logo } from "./Logo";
-import { LayoutDashboard, CirclePlus, BarChart3, CircleUser } from "lucide-react";
+import { trainingRoutesEnabled } from "@/lib/demo-mode";
 
-// Cada item do menu guarda seu próprio ícone (componente do lucide-react), não
-// uma string — assim, na hora de desenhar a lista, a gente só troca o nome do
-// componente dentro do <Icon />, sem precisar de um "switch/case" pra escolher
-// o ícone certo
 const navItems = [
-  { href: "/dashboard", label: "Dashboard", icon: LayoutDashboard },
-  { href: "/dashboard/nova-sessao", label: "Nova sessão", icon: CirclePlus },
-  { href: "/dashboard/resultado", label: "Último resultado", icon: BarChart3 },
-  { href: "/dashboard/perfil", label: "Meu perfil", icon: CircleUser },
-];
+  { href: "/dashboard", label: "Dashboard", shortLabel: "Início", icon: LayoutDashboard, training: false },
+  { href: "/dashboard/nova-sessao", label: "Nova sessão", shortLabel: "Treinar", icon: CirclePlus, training: true },
+  { href: "/dashboard/resultado", label: "Último resultado", shortLabel: "Resultado", icon: BarChart3, training: true },
+  { href: "/dashboard/perfil", label: "Meu perfil", shortLabel: "Perfil", icon: CircleUser, training: false },
+].filter((item) => !item.training || trainingRoutesEnabled);
+
+function isCurrentRoute(pathname: string, href: string) {
+  return href === "/dashboard"
+    ? pathname === href
+    : pathname === href || pathname.startsWith(`${href}/`);
+}
 
 export function Sidebar() {
-  // usePathname existe justamente pra isso: saber em qual página a gente está
-  // AGORA, sem precisar que cada página avise manualmente qual item destacar
   const pathname = usePathname();
 
   return (
-    <aside className="flex w-60 shrink-0 flex-col gap-10 bg-[#151632] px-5 py-8">
-      <div className="px-2">
-        <Logo />
-      </div>
+    <>
+      <aside className="sticky top-0 hidden h-screen w-64 shrink-0 flex-col bg-[#151632] px-5 py-8 lg:flex">
+        <div className="px-2">
+          <Logo />
+        </div>
 
-      <nav className="flex flex-col gap-1">
-        {navItems.map(({ href, label, icon: Icon }) => {
-          const active = pathname === href;
+        <p className="mb-3 mt-12 px-3 text-[10px] font-extrabold uppercase tracking-[0.2em] text-[#6f6b99]">
+          Sua jornada
+        </p>
+        <nav className="flex flex-col gap-1.5" aria-label="Navegação principal">
+          {navItems.map(({ href, label, icon: Icon }) => {
+            const active = isCurrentRoute(pathname, href);
+            return (
+              <Link
+                key={href}
+                href={href}
+                aria-current={active ? "page" : undefined}
+                className={`group flex items-center gap-3 rounded-xl px-3 py-3 text-sm font-bold transition focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#aaa6d6] ${
+                  active
+                    ? "bg-[#f7f5f1] text-[#1d1b33]"
+                    : "text-[#aaa6d6] hover:bg-white/[0.06] hover:text-white"
+                }`}
+              >
+                <span className={`h-1.5 w-1.5 shrink-0 rounded-full ${active ? "bg-[#e8641d]" : "bg-[#4a4766] group-hover:bg-[#7755e8]"}`} />
+                <Icon className="h-[18px] w-[18px] shrink-0" />
+                {label}
+              </Link>
+            );
+          })}
+        </nav>
+
+        <div className="mt-auto rounded-2xl border border-white/10 bg-white/[0.05] p-4">
+          <p className="text-xs font-extrabold text-white">Continue evoluindo</p>
+          <p className="mt-1 text-xs leading-relaxed text-[#8f8ab8]">Cada treino deixa sua próxima entrevista mais previsível.</p>
+        </div>
+      </aside>
+
+      <nav
+        className="fixed inset-x-3 bottom-3 z-40 grid rounded-2xl border border-white/10 bg-[#151632]/95 p-1.5 shadow-[0_18px_50px_-20px_rgba(21,22,50,0.9)] backdrop-blur-xl lg:hidden"
+        style={{ gridTemplateColumns: `repeat(${navItems.length}, minmax(0, 1fr))` }}
+        aria-label="Navegação principal"
+      >
+        {navItems.map(({ href, shortLabel, icon: Icon }) => {
+          const active = isCurrentRoute(pathname, href);
           return (
             <Link
               key={href}
               href={href}
-              className={`flex items-center gap-3 rounded-xl px-3 py-2.5 text-sm font-bold transition ${
-                active
-                  ? "bg-[#f7f5f1] text-[#1d1b33]"
-                  : "text-[#aaa6d6] hover:bg-white/5 hover:text-white"
+              aria-current={active ? "page" : undefined}
+              className={`flex min-h-14 flex-col items-center justify-center gap-1 rounded-xl px-1 text-[10px] font-extrabold transition ${
+                active ? "bg-white text-[#1d1b33]" : "text-[#aaa6d6]"
               }`}
             >
-              <span
-                className={`h-1.5 w-1.5 shrink-0 rounded-full ${
-                  active ? "bg-[#e8641d]" : "bg-[#4a4766]"
-                }`}
-              />
-              <Icon className="h-4 w-4 shrink-0" />
-              {label}
+              <Icon className="h-[18px] w-[18px]" />
+              {shortLabel}
             </Link>
           );
         })}
       </nav>
-    </aside>
+    </>
   );
 }
