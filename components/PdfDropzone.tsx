@@ -30,7 +30,7 @@ export function PdfDropzone({
 
     // accept="application/pdf" só filtra o seletor do SO, não impede o usuário de
     // escolher "todos os arquivos" e mandar outra coisa — por isso o check aqui também
-    if (file.type !== "application/pdf") {
+    if (file.type !== "application/pdf" || file.size > 5 * 1024 * 1024) {
       setFileError(true);
       e.target.value = ""; // limpa o input pra permitir reselecionar o mesmo arquivo depois de corrigir
       return; // não mexe no fileName atual — um arquivo inválido não deve apagar o que já estava lá
@@ -66,6 +66,7 @@ export function PdfDropzone({
           ref={inputRef}
           type="file"
           accept="application/pdf"
+          aria-label="Selecionar currículo em PDF"
           required={required && !fileName}
           onChange={handleFile}
           className="absolute inset-0 h-full w-full cursor-pointer opacity-0"
@@ -93,7 +94,7 @@ export function PdfDropzone({
       </div>
       {fileError && (
         <ul className="mt-0.5 grid gap-1 text-xs font-semibold">
-          <RequirementItem met={false} label="Esse arquivo não é um PDF" />
+          <RequirementItem met={false} label="Envie um PDF com no máximo 5 MB" />
         </ul>
       )}
     </div>
