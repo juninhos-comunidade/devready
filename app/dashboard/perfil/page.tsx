@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { Sidebar } from "@/components/Sidebar";
 import { FormSelect } from "@/components/FormSelect";
+import { PdfDropzone } from "@/components/PdfDropzone";
 import { RequirementItem } from "@/components/RequirementItem";
 import { ConfirmDialog } from "@/components/ConfirmDialog";
 import { Check } from "lucide-react";
@@ -65,6 +66,8 @@ function PerfilEditor({
   const [confirmingDelete, setConfirmingDelete] = useState(false);
   const [isDeleting, setIsDeleting] = useState(false);
   const [deleteDemoCompleted, setDeleteDemoCompleted] = useState(false);
+  const [hasCurriculum, setHasCurriculum] = useState(demoMode);
+  const [curriculumError, setCurriculumError] = useState(false);
 
   const githubTouched = github.length > 0;
   const isValidGithubUrl = /^https?:\/\/(www\.)?github\.com\/[\w-]+\/?$/i.test(github);
@@ -73,6 +76,12 @@ function PerfilEditor({
     e.preventDefault();
     setSaved(false);
     setErrorMessage("");
+    if (demoMode && !hasCurriculum) {
+      setCurriculumError(true);
+      return;
+    }
+    setCurriculumError(false);
+
     if (github && !isValidGithubUrl) {
       setErrorMessage("Corrija o link do GitHub ou deixe o campo vazio.");
       return;
@@ -162,7 +171,7 @@ function PerfilEditor({
             <div className="mt-4 grid gap-4 sm:grid-cols-2">
               <div className="grid gap-1.5">
                 <label htmlFor="nome" className="text-sm font-extrabold text-[#1d1b33]">
-                  Nome
+                  Nome <span className="text-[#e8641d]">*</span>
                 </label>
                 <input
                   id="nome"
@@ -175,7 +184,7 @@ function PerfilEditor({
 
               <div className="grid gap-1.5">
                 <label htmlFor="email" className="text-sm font-extrabold text-[#1d1b33]">
-                  E-mail
+                  E-mail <span className="text-[#e8641d]">*</span>
                 </label>
                 <input
                   id="email"
@@ -230,14 +239,34 @@ function PerfilEditor({
 
               <div className="grid gap-1.5">
                 <label className="text-sm font-extrabold text-[#1d1b33]">
-                  Currículo em PDF
+                  Currículo em PDF <span className="text-[#e8641d]">*</span>
                 </label>
-                <div className="rounded-xl border-[1.5px] border-dashed border-[#c8c0b0] bg-[#fbf9f4] p-4">
-                  <p className="font-bold text-[#1d1b33]">{demoMode ? "Currículo demonstrativo" : "Integração do currículo pendente"}</p>
-                  <p className="mt-1 text-xs leading-relaxed text-[#8b8593]">
-                    {demoMode ? "Nenhum arquivo real é exibido ou utilizado neste ambiente." : "O envio será liberado quando o armazenamento privado de PDFs for integrado."}
-                  </p>
-                </div>
+                {demoMode ? (
+                  <>
+                    <PdfDropzone
+                      initialFileName="curriculo-demonstrativo.pdf"
+                      onFileChange={(file) => {
+                        setHasCurriculum(file !== null);
+                        if (file) setCurriculumError(false);
+                      }}
+                    />
+                    <p className="text-xs font-semibold leading-relaxed text-[#8b8593]">
+                      O arquivo é apenas validado no navegador e não é enviado.
+                    </p>
+                    {curriculumError && (
+                      <ul className="mt-0.5 grid gap-1 text-xs font-semibold">
+                        <RequirementItem met={false} label="Adicione um currículo antes de salvar" />
+                      </ul>
+                    )}
+                  </>
+                ) : (
+                  <div className="rounded-xl border-[1.5px] border-dashed border-[#c8c0b0] bg-[#fbf9f4] p-4">
+                    <p className="font-bold text-[#1d1b33]">Integração do currículo pendente</p>
+                    <p className="mt-1 text-xs leading-relaxed text-[#8b8593]">
+                      O envio será liberado quando o armazenamento privado de PDFs for integrado.
+                    </p>
+                  </div>
+                )}
               </div>
             </div>
           </div>
@@ -250,10 +279,11 @@ function PerfilEditor({
             <div className="mt-4 grid gap-4">
               <div className="grid gap-1.5">
                 <label htmlFor="interesse" className="text-sm font-extrabold text-[#1d1b33]">
-                  Área de interesse
+                  Área de interesse <span className="text-[#e8641d]">*</span>
                 </label>
                 <FormSelect
                   id="interesse"
+                  required
                   placeholder="Selecione sua área..."
                   options={["Frontend", "Backend", "Mobile", "Dados"]}
                   value={areaInterest}
@@ -263,10 +293,11 @@ function PerfilEditor({
 
               <div className="grid gap-1.5">
                 <label htmlFor="nivel" className="text-sm font-extrabold text-[#1d1b33]">
-                  Nível de experiência
+                  Nível de experiência <span className="text-[#e8641d]">*</span>
                 </label>
                 <FormSelect
                   id="nivel"
+                  required
                   placeholder="Onde você está hoje?"
                   options={["Estudante", "Estagiário", "Júnior", "Pretendendo migrar de carreira"]}
                   value={experienceLevel}
