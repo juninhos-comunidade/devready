@@ -18,8 +18,12 @@ model User {
   emailVerified Boolean   @default(false)
   name          String?
   image         String?
-  skills        String[] @default([])
+  skills        String[]  @default([])
   curriculum_URL String?
+  githubUrl      String?
+  areaInterest   String?
+  experienceLevel String?
+  privacyConsent Boolean  @default(false)
   createdAt     DateTime  @default(now())
   updatedAt     DateTime  @updatedAt
   sessions      Session[]

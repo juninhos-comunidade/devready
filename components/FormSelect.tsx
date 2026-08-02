@@ -8,19 +8,26 @@ export function FormSelect({
   placeholder,
   options,
   defaultValue = "",
+  value,
+  onChange,
 }: {
   id: string;
   required?: boolean;
   placeholder: string;
   options: string[];
   defaultValue?: string;
+  value?: string;
+  onChange?: (event: React.ChangeEvent<HTMLSelectElement>) => void;
 }) {
   return (
     <div className="relative">
       <select
         id={id}
+        name={id}
         required={required}
-        defaultValue={defaultValue}
+        value={value}
+        defaultValue={value === undefined ? defaultValue : undefined}
+        onChange={onChange}
         className="w-full appearance-none rounded-xl border-[1.5px] border-[#e4dfd3] bg-white px-4 py-3 pr-10 text-[#1d1b33] invalid:text-[#8b8593] focus:border-[#7755e8] focus:outline-none focus:ring-2 focus:ring-[#7755e8]/30"
       >
         <option value="" disabled>

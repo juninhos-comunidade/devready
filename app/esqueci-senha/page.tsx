@@ -3,18 +3,39 @@
 import { useState } from "react";
 import Link from "next/link";
 import { Logo } from "@/components/Logo";
+import { authClient } from "@/lib/auth-client";
 
 export default function EsqueciSenha() {
   // controla se já mostramos a mensagem de "e-mail enviado" no lugar do formulário
   const [sent, setSent] = useState(false);
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [errorMessage, setErrorMessage] = useState("");
 
-  function handleSubmit(e: React.SubmitEvent<HTMLFormElement>) {
+  async function handleSubmit(e: React.SubmitEvent<HTMLFormElement>) {
     e.preventDefault();
-    // TODO: chamar o Better Auth (forgetPassword) quando o backend estiver plugado.
-    // Por segurança, a resposta pro usuário deve ser sempre a mesma mensagem de
-    // "sucesso", exista ou não esse e-mail na base — assim ninguém descobre quais
-    // e-mails estão cadastrados só testando esse formulário
-    setSent(true);
+    setErrorMessage("");
+    setIsSubmitting(true);
+    const formData = new FormData(e.currentTarget);
+    const email = String(formData.get("email") ?? "");
+
+    try {
+      const { error } = await authClient.requestPasswordReset({
+        email,
+        redirectTo: "/redefinir-senha",
+      });
+
+      if (error) {
+        setErrorMessage("Não foi possível processar a solicitação agora. Tente novamente.");
+        return;
+      }
+
+      // A mensagem é sempre igual, exista ou não o e-mail, para evitar enumeração.
+      setSent(true);
+    } catch {
+      setErrorMessage("Não foi possível processar a solicitação agora. Tente novamente.");
+    } finally {
+      setIsSubmitting(false);
+    }
   }
 
   return (
@@ -85,6 +106,7 @@ export default function EsqueciSenha() {
                     </label>
                     <input
                       id="email"
+                      name="email"
                       type="email"
                       required
                       placeholder="ex: maria.silva@email.com"
@@ -92,11 +114,18 @@ export default function EsqueciSenha() {
                     />
                   </div>
 
+                  {errorMessage && (
+                    <p role="alert" className="rounded-xl bg-[#fdf2f2] px-4 py-3 text-sm font-bold text-[#a83030]">
+                      {errorMessage}
+                    </p>
+                  )}
+
                   <button
                     type="submit"
-                    className="mt-2 flex min-h-[44px] w-full items-center justify-center gap-2 rounded-full bg-[#7755e8] font-extrabold text-white shadow-[0_14px_32px_-16px_rgba(119,85,232,0.75)] transition hover:-translate-y-0.5 hover:bg-[#6647d1]"
+                    disabled={isSubmitting}
+                    className="mt-2 flex min-h-[44px] w-full items-center justify-center gap-2 rounded-full bg-[#7755e8] font-extrabold text-white shadow-[0_14px_32px_-16px_rgba(119,85,232,0.75)] transition hover:-translate-y-0.5 hover:bg-[#6647d1] disabled:cursor-wait disabled:opacity-60"
                   >
-                    Enviar link de recuperação
+                    {isSubmitting ? "Enviando..." : "Enviar link de recuperação"}
                   </button>
                 </div>
 
