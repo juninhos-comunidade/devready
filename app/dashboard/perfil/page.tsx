@@ -1,59 +1,143 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
+import Link from "next/link";
 import { Sidebar } from "@/components/Sidebar";
 import { FormSelect } from "@/components/FormSelect";
-import { PdfDropzone } from "@/components/PdfDropzone";
 import { RequirementItem } from "@/components/RequirementItem";
 import { ConfirmDialog } from "@/components/ConfirmDialog";
 import { Check } from "lucide-react";
-
-// Assim como no Dashboard, esses valores são só um exemplo pra gente ver a
-// tela preenchida de verdade — quando o backend existir, isso vem do usuário
-// logado (a mesma pessoa que preencheu o Cadastro), não de uma constante fixa.
-const perfilMocado = {
-  nome: "Isabela Duarte",
-  email: "isabela.duarte@email.com",
-  github: "https://github.com/isabeladuarte",
-  curriculo: "curriculo-isabela-duarte.pdf",
-  areaInteresse: "Frontend",
-  nivelExperiencia: "Júnior",
-};
+import { authClient } from "@/lib/auth-client";
+import { demoModeEnabled, demoProfile } from "@/lib/demo-mode";
 
 export default function Perfil() {
+  if (demoModeEnabled) {
+    return <PerfilEditor user={demoProfile} demoMode />;
+  }
+
+  return <AuthenticatedPerfil />;
+}
+
+function AuthenticatedPerfil() {
   const router = useRouter();
-  const [github, setGithub] = useState(perfilMocado.github);
+  const { data: session, isPending: sessionPending } = authClient.useSession();
+
+  useEffect(() => {
+    if (sessionPending) return;
+    if (!session) {
+      router.replace("/login");
+    }
+  }, [router, session, sessionPending]);
+
+  if (sessionPending || !session) {
+    return <div className="grid min-h-screen place-items-center bg-[#f4f3f8] font-bold text-[#59567a]">Carregando seu perfil...</div>;
+  }
+
+  return <PerfilEditor key={session.user.id} user={session.user} />;
+}
+
+type ProfileUser = {
+  id: string;
+  name: string;
+  email: string;
+  githubUrl?: string | null;
+  areaInterest?: string | null;
+  experienceLevel?: string | null;
+  privacyConsent?: boolean;
+};
+
+function PerfilEditor({
+  user,
+  demoMode = false,
+}: {
+  user: ProfileUser;
+  demoMode?: boolean;
+}) {
+  const router = useRouter();
+  const [name, setName] = useState(user.name ?? "");
+  const [github, setGithub] = useState(user.githubUrl ?? "");
+  const [areaInterest, setAreaInterest] = useState(user.areaInterest ?? "");
+  const [experienceLevel, setExperienceLevel] = useState(user.experienceLevel ?? "");
   const [saved, setSaved] = useState(false);
-  // controla só se o popup de "tem certeza?" está aberto — o popup em si
-  // não sabe nada sobre "conta", ele só avisa quando foi confirmado ou cancelado
+  const [errorMessage, setErrorMessage] = useState("");
+  const [isSaving, setIsSaving] = useState(false);
   const [confirmingDelete, setConfirmingDelete] = useState(false);
+  const [isDeleting, setIsDeleting] = useState(false);
+  const [deleteDemoCompleted, setDeleteDemoCompleted] = useState(false);
 
   const githubTouched = github.length > 0;
   const isValidGithubUrl = /^https?:\/\/(www\.)?github\.com\/[\w-]+\/?$/i.test(github);
 
-  function handleSubmit(e: React.SubmitEvent<HTMLFormElement>) {
+  async function handleSubmit(e: React.SubmitEvent<HTMLFormElement>) {
     e.preventDefault();
-    // TODO: enviar os campos atualizados pro backend (Prisma/Better Auth) e,
-    // se o currículo tiver sido trocado, disparar de novo a análise de perfil
-    // (seção 4.2 dos requisitos: refazer a análise quando o PDF ou o GitHub mudam)
-    setSaved(true);
+    setSaved(false);
+    setErrorMessage("");
+    if (github && !isValidGithubUrl) {
+      setErrorMessage("Corrija o link do GitHub ou deixe o campo vazio.");
+      return;
+    }
+
+    if (demoMode) {
+      setSaved(true);
+      return;
+    }
+
+    setIsSaving(true);
+    try {
+      const { error } = await authClient.updateUser({
+        name,
+        githubUrl: github || null,
+        areaInterest: areaInterest || null,
+        experienceLevel: experienceLevel || null,
+      });
+
+      if (error) {
+        setErrorMessage("Não foi possível salvar o perfil. Tente novamente.");
+        return;
+      }
+
+      setSaved(true);
+    } catch {
+      setErrorMessage("Não foi possível conectar ao serviço. Tente novamente.");
+    } finally {
+      setIsSaving(false);
+    }
   }
 
-  function handleDeleteAccount() {
-    // TODO: chamar o Better Auth/Prisma pra apagar de verdade a conta e os
-    // dados associados (currículo, análises, sessões), como pede a seção 5
-    // (privacidade) dos requisitos. Por enquanto só fecha o popup e manda
-    // a pessoa de volta pro login, simulando a saída da conta excluída
-    setConfirmingDelete(false);
-    router.push("/login");
+  async function handleDeleteAccount() {
+    setErrorMessage("");
+    if (demoMode) {
+      setConfirmingDelete(false);
+      setDeleteDemoCompleted(true);
+      return;
+    }
+
+    setIsDeleting(true);
+    try {
+      const { error } = await authClient.deleteUser();
+      if (error) {
+        setConfirmingDelete(false);
+        setErrorMessage("Por segurança, entre novamente na conta antes de confirmar a exclusão.");
+        return;
+      }
+
+      setConfirmingDelete(false);
+      router.replace("/login");
+      router.refresh();
+    } catch {
+      setConfirmingDelete(false);
+      setErrorMessage("Não foi possível excluir a conta agora. Tente novamente.");
+    } finally {
+      setIsDeleting(false);
+    }
   }
 
   return (
-    <div className="flex min-h-screen bg-[#eef0f3]">
+    <div className="flex min-h-screen bg-[#f4f3f8]">
       <Sidebar />
 
-      <main className="flex-1 p-6 md:p-10">
+      <main className="min-w-0 flex-1 px-4 pb-28 pt-6 sm:px-6 md:p-10">
         <div className="flex flex-wrap items-start justify-between gap-4">
           <div>
             <span className="text-xs font-extrabold tracking-widest text-[#7755e8] uppercase">
@@ -82,7 +166,9 @@ export default function Perfil() {
                 </label>
                 <input
                   id="nome"
-                  defaultValue={perfilMocado.nome}
+                  required
+                  value={name}
+                  onChange={(event) => setName(event.target.value)}
                   className="w-full rounded-xl border-[1.5px] border-[#e4dfd3] bg-white px-4 py-3 text-[#1d1b33] focus:border-[#7755e8] focus:outline-none focus:ring-2 focus:ring-[#7755e8]/30"
                 />
               </div>
@@ -94,10 +180,25 @@ export default function Perfil() {
                 <input
                   id="email"
                   type="email"
-                  defaultValue={perfilMocado.email}
-                  className="w-full rounded-xl border-[1.5px] border-[#e4dfd3] bg-white px-4 py-3 text-[#1d1b33] focus:border-[#7755e8] focus:outline-none focus:ring-2 focus:ring-[#7755e8]/30"
+                  value={user.email}
+                  readOnly
+                  className="w-full cursor-not-allowed rounded-xl border-[1.5px] border-[#e4dfd3] bg-[#f7f6f9] px-4 py-3 text-[#6d698a]"
                 />
               </div>
+            </div>
+
+            <div className="mt-5 flex flex-col gap-2 rounded-xl border border-[#e7e3ee] bg-[#f7f6f9] px-4 py-3 sm:flex-row sm:items-center sm:justify-between">
+              <div>
+                <p className="text-sm font-extrabold text-[#1d1b33]">
+                  {user.privacyConsent === false ? "Consentimento pendente" : "Consentimento de privacidade registrado"}
+                </p>
+                <p className="mt-0.5 text-xs leading-relaxed text-[#6d698a]">
+                  O uso de currículo e GitHub é autorizado explicitamente no cadastro.
+                </p>
+              </div>
+              <Link href="/politica-de-privacidade" className="shrink-0 text-sm font-extrabold text-[#5d43c4] underline underline-offset-4">
+                Consultar política
+              </Link>
             </div>
           </div>
 
@@ -131,9 +232,12 @@ export default function Perfil() {
                 <label className="text-sm font-extrabold text-[#1d1b33]">
                   Currículo em PDF
                 </label>
-                {/* sem `required` aqui — diferente do Cadastro, trocar o currículo
-                    no Perfil é opcional, a pessoa já tem um enviado */}
-                <PdfDropzone initialFileName={perfilMocado.curriculo} />
+                <div className="rounded-xl border-[1.5px] border-dashed border-[#c8c0b0] bg-[#fbf9f4] p-4">
+                  <p className="font-bold text-[#1d1b33]">{demoMode ? "Currículo demonstrativo" : "Integração do currículo pendente"}</p>
+                  <p className="mt-1 text-xs leading-relaxed text-[#8b8593]">
+                    {demoMode ? "Nenhum arquivo real é exibido ou utilizado neste ambiente." : "O envio será liberado quando o armazenamento privado de PDFs for integrado."}
+                  </p>
+                </div>
               </div>
             </div>
           </div>
@@ -152,7 +256,8 @@ export default function Perfil() {
                   id="interesse"
                   placeholder="Selecione sua área..."
                   options={["Frontend", "Backend", "Mobile", "Dados"]}
-                  defaultValue={perfilMocado.areaInteresse}
+                  value={areaInterest}
+                  onChange={(event) => setAreaInterest(event.target.value)}
                 />
               </div>
 
@@ -164,7 +269,8 @@ export default function Perfil() {
                   id="nivel"
                   placeholder="Onde você está hoje?"
                   options={["Estudante", "Estagiário", "Júnior", "Pretendendo migrar de carreira"]}
-                  defaultValue={perfilMocado.nivelExperiencia}
+                  value={experienceLevel}
+                  onChange={(event) => setExperienceLevel(event.target.value)}
                 />
               </div>
             </div>
@@ -173,17 +279,19 @@ export default function Perfil() {
           <div className="flex items-center gap-3 lg:col-span-2">
             <button
               type="submit"
-              className="flex min-h-[44px] items-center justify-center gap-2 rounded-full bg-[#7755e8] px-6 font-extrabold text-white shadow-[0_14px_32px_-16px_rgba(119,85,232,0.75)] transition hover:-translate-y-0.5 hover:bg-[#6647d1]"
+              disabled={isSaving}
+              className="flex min-h-[44px] items-center justify-center gap-2 rounded-full bg-[#7755e8] px-6 font-extrabold text-white shadow-[0_14px_32px_-16px_rgba(119,85,232,0.75)] transition hover:-translate-y-0.5 hover:bg-[#6647d1] disabled:cursor-wait disabled:opacity-60"
             >
-              Salvar alterações
+              {isSaving ? "Salvando..." : "Salvar alterações"}
             </button>
             {saved && (
               <span className="flex items-center gap-1.5 text-sm font-bold text-[#1f9d55]">
                 <Check className="h-4 w-4" strokeWidth={3} />
-                Alterações salvas
+                {demoMode ? "Alterações aplicadas nesta demonstração" : "Alterações salvas"}
               </span>
             )}
           </div>
+          {errorMessage && <p role="alert" className="lg:col-span-2 rounded-xl bg-[#fdf2f2] px-4 py-3 text-sm font-bold text-[#a83030]">{errorMessage}</p>}
         </form>
 
         {/* exclusão de conta é um requisito de privacidade (seção 5), não só um
@@ -196,20 +304,34 @@ export default function Perfil() {
             Excluir sua conta remove permanentemente seu currículo, suas
             análises e todas as suas sessões de treino.
           </p>
+          {demoMode && (
+            <p className="mt-3 text-xs font-semibold leading-relaxed text-[#8b8593]">
+              Na demonstração, o fluxo é simulado e nenhum dado é realmente removido.
+            </p>
+          )}
           <button
             type="button"
-            onClick={() => setConfirmingDelete(true)}
+            onClick={() => {
+              setDeleteDemoCompleted(false);
+              setConfirmingDelete(true);
+            }}
             className="mt-4 rounded-full border-[1.5px] border-[#c23b3b] px-5 py-2.5 text-sm font-extrabold text-[#c23b3b] transition hover:bg-[#fdf2f2]"
           >
-            Excluir minha conta
+            {demoMode ? "Simular exclusão de conta" : "Excluir minha conta"}
           </button>
+          {deleteDemoCompleted && (
+            <p role="status" className="mt-4 rounded-xl bg-[#eef8f1] px-4 py-3 text-sm font-bold text-[#247544]">
+              Simulação concluída: em produção, a conta e os dados relacionados seriam removidos.
+            </p>
+          )}
         </div>
 
         <ConfirmDialog
           open={confirmingDelete}
-          title="Excluir sua conta?"
-          description="Essa ação não pode ser desfeita. Seu currículo, suas análises e todas as suas sessões de treino serão apagados permanentemente."
-          confirmLabel="Sim, excluir conta"
+          title={demoMode ? "Simular exclusão?" : "Excluir sua conta?"}
+          description={demoMode ? "Este é um ambiente demonstrativo. Vamos concluir o fluxo sem remover dados reais." : "Essa ação não pode ser desfeita. Seu currículo, suas análises e todas as suas sessões de treino serão apagados permanentemente."}
+          confirmLabel={demoMode ? "Sim, simular" : "Sim, excluir conta"}
+          pending={isDeleting}
           onConfirm={handleDeleteAccount}
           onCancel={() => setConfirmingDelete(false)}
         />

@@ -3,16 +3,16 @@
 import { useState } from "react";
 import { RequirementItem } from "./RequirementItem";
 
-// Campo de upload de currículo, usado tanto no Cadastro (onde o PDF é
-// obrigatório) quanto no Perfil (onde a pessoa só troca o arquivo se quiser).
-// `initialFileName` é o texto mostrado antes de qualquer arquivo ser escolhido
-// — no Perfil, a gente passa o nome do arquivo que a pessoa já enviou antes.
+// Campo de seleção de currículo. O componente valida o arquivo localmente;
+// o envio depende da futura integração com armazenamento privado.
 export function PdfDropzone({
   required = false,
   initialFileName = "Arraste o PDF ou clique para selecionar",
+  onFileChange,
 }: {
   required?: boolean;
   initialFileName?: string;
+  onFileChange?: (file: File | null) => void;
 }) {
   const [fileName, setFileName] = useState(initialFileName);
   const [fileError, setFileError] = useState(false);
@@ -23,15 +23,17 @@ export function PdfDropzone({
 
     // accept="application/pdf" só filtra o seletor do SO, não impede o usuário de
     // escolher "todos os arquivos" e mandar outra coisa — por isso o check aqui também
-    if (file.type !== "application/pdf") {
+    if (file.type !== "application/pdf" || file.size > 5 * 1024 * 1024) {
       setFileError(true);
       setFileName(initialFileName);
+      onFileChange?.(null);
       e.target.value = ""; // limpa o input pra permitir reselecionar o mesmo arquivo depois de corrigir
       return;
     }
 
     setFileError(false);
     setFileName(file.name);
+    onFileChange?.(file);
   }
 
   return (
@@ -49,6 +51,7 @@ export function PdfDropzone({
         <input
           type="file"
           accept="application/pdf"
+          aria-label="Selecionar currículo em PDF"
           required={required}
           onChange={handleFile}
           className="absolute inset-0 h-full w-full cursor-pointer opacity-0"
@@ -60,7 +63,7 @@ export function PdfDropzone({
       </div>
       {fileError && (
         <ul className="mt-0.5 grid gap-1 text-xs font-semibold">
-          <RequirementItem met={false} label="Esse arquivo não é um PDF" />
+          <RequirementItem met={false} label="Envie um PDF com no máximo 5 MB" />
         </ul>
       )}
     </div>

@@ -5,12 +5,16 @@ import Link from "next/link";
 import { Logo } from "@/components/Logo";
 import { Eye, EyeOff } from "lucide-react";
 import { RequirementItem } from "@/components/RequirementItem";
+import { authClient } from "@/lib/auth-client";
 
 export default function RedefinirSenha() {
   const [showPassword, setShowPassword] = useState(false);
   const [showConfirm, setShowConfirm] = useState(false);
   const [password, setPassword] = useState("");
   const [confirm, setConfirm] = useState("");
+  const [errorMessage, setErrorMessage] = useState("");
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [completed, setCompleted] = useState(false);
 
   // as mesmas regras de senha do Cadastro (8+ caracteres, 2 especiais) —
   // já que é a mesma senha da conta, tem que seguir a mesma exigência
@@ -20,12 +24,38 @@ export default function RedefinirSenha() {
   const confirmTouched = confirm.length > 0;
   const passwordsMatch = confirmTouched && confirm === password;
 
-  function handleSubmit(e: React.SubmitEvent<HTMLFormElement>) {
+  async function handleSubmit(e: React.SubmitEvent<HTMLFormElement>) {
     e.preventDefault();
-    // TODO: quando o backend existir, essa tela recebe um token pela URL
-    // (algo como /redefinir-senha?token=abc123, mandado no link do e-mail).
-    // O Better Auth usa esse token pra confirmar que é a mesma pessoa que
-    // pediu a recuperação, sem precisar pedir a senha antiga
+    setErrorMessage("");
+    if (!hasMinLength || !hasSpecialChars || !passwordsMatch) {
+      setErrorMessage("A nova senha ainda não atende aos requisitos.");
+      return;
+    }
+
+    const token = new URLSearchParams(window.location.search).get("token");
+    if (!token) {
+      setErrorMessage("Este link é inválido ou está incompleto. Solicite uma nova recuperação.");
+      return;
+    }
+
+    setIsSubmitting(true);
+    try {
+      const { error } = await authClient.resetPassword({
+        newPassword: password,
+        token,
+      });
+
+      if (error) {
+        setErrorMessage("O link expirou ou já foi utilizado. Solicite uma nova recuperação.");
+        return;
+      }
+
+      setCompleted(true);
+    } catch {
+      setErrorMessage("Não foi possível conectar ao serviço. Tente novamente.");
+    } finally {
+      setIsSubmitting(false);
+    }
   }
 
   return (
@@ -60,6 +90,13 @@ export default function RedefinirSenha() {
         </aside>
 
         <div className="grid place-items-center p-6 md:p-12">
+          {completed ? (
+            <div className="w-full max-w-[460px]">
+              <h2 className="font-[family-name:var(--font-display)] text-3xl text-[#1d1b33]">Senha atualizada</h2>
+              <p className="mt-3 text-[#59567a]">Sua nova senha já está ativa. Agora você pode entrar novamente.</p>
+              <Link href="/login" className="mt-6 flex min-h-[44px] items-center justify-center rounded-full bg-[#7755e8] font-extrabold text-white">Ir para o login</Link>
+            </div>
+          ) : (
           <form className="w-full max-w-[460px]" onSubmit={handleSubmit}>
             <h2 className="font-[family-name:var(--font-display)] mb-1 text-2xl md:text-4xl text-[#1d1b33]">
               Redefinir senha
@@ -133,11 +170,14 @@ export default function RedefinirSenha() {
 
               <button
                 type="submit"
-                className="mt-2 flex min-h-[44px] w-full items-center justify-center gap-2 rounded-full bg-[#7755e8] font-extrabold text-white shadow-[0_14px_32px_-16px_rgba(119,85,232,0.75)] transition hover:-translate-y-0.5 hover:bg-[#6647d1]"
+                disabled={isSubmitting}
+                className="mt-2 flex min-h-[44px] w-full items-center justify-center gap-2 rounded-full bg-[#7755e8] font-extrabold text-white shadow-[0_14px_32px_-16px_rgba(119,85,232,0.75)] transition hover:-translate-y-0.5 hover:bg-[#6647d1] disabled:cursor-wait disabled:opacity-60"
               >
-                Redefinir senha
+                {isSubmitting ? "Salvando..." : "Redefinir senha"}
               </button>
             </div>
+
+            {errorMessage && <p role="alert" className="mt-4 rounded-xl bg-[#fdf2f2] px-4 py-3 text-sm font-bold text-[#a83030]">{errorMessage}</p>}
 
             <div className="mt-4 text-sm text-[#59567a]">
               Lembrou a senha?{" "}
@@ -146,6 +186,7 @@ export default function RedefinirSenha() {
               </Link>
             </div>
           </form>
+          )}
         </div>
       </section>
     </main>

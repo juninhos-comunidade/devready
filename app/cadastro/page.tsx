@@ -8,6 +8,8 @@ import { Eye, EyeOff } from "lucide-react";
 import { RequirementItem } from "@/components/RequirementItem";
 import { FormSelect } from "@/components/FormSelect";
 import { PdfDropzone } from "@/components/PdfDropzone";
+import { authClient } from "@/lib/auth-client";
+import { demoModeEnabled } from "@/lib/demo-mode";
 
 function StepDots({ step }: { step: 1 | 2 }) {
   // aria-label descreve o passo pra leitor de tela, já que a info aqui é 100% visual (bolinhas/cores)
@@ -32,9 +34,15 @@ export default function Cadastro() {
 
   const [showPassword, setShowPassword] = useState(false);
   const [showConfirm, setShowConfirm] = useState(false);
+  const [name, setName] = useState("");
+  const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [confirm, setConfirm] = useState("");
   const [github, setGithub] = useState("");
+  const [privacyConsent, setPrivacyConsent] = useState(false);
+  const [curriculumFile, setCurriculumFile] = useState<File | null>(null);
+  const [errorMessage, setErrorMessage] = useState("");
+  const [isSubmitting, setIsSubmitting] = useState(false);
 
   // formato bem permissivo: só precisa começar com o domínio do github.com
   const githubTouched = github.length > 0;
@@ -52,16 +60,56 @@ export default function Cadastro() {
 
   // form único controla os 2 passos por estado local — evita ter que persistir os
   // dados do passo 1 em algum lugar (localStorage, rota separada) antes de existir backend
-  function handleSubmit(e: React.SubmitEvent<HTMLFormElement>) {
+  async function handleSubmit(e: React.SubmitEvent<HTMLFormElement>) {
     e.preventDefault();
+    setErrorMessage("");
+
     if (step === 1) {
+      if (!hasMinLength || !hasSpecialChars || !passwordsMatch || !privacyConsent) {
+        setErrorMessage("Revise os campos obrigatórios antes de continuar.");
+        return;
+      }
       setStep(2);
       return;
     }
-    // TODO: por enquanto isso só redireciona direto — quando o Better Auth/Prisma
-    // estiverem plugados aqui, o redirecionamento deve acontecer só DEPOIS que a
-    // conta (nome, e-mail, senha, github, pdf, área, nível) for criada com sucesso
-    router.push("/dashboard");
+
+    if (!curriculumFile) {
+      setErrorMessage("Adicione seu currículo em PDF para concluir o cadastro.");
+      return;
+    }
+    if (github && !isValidGithubUrl) {
+      setErrorMessage("Corrija o link do GitHub ou deixe o campo vazio.");
+      return;
+    }
+
+    const formData = new FormData(e.currentTarget);
+    const areaInterest = String(formData.get("interesse") ?? "");
+    const experienceLevel = String(formData.get("nivel") ?? "");
+    setIsSubmitting(true);
+
+    try {
+      const { error } = await authClient.signUp.email({
+        name,
+        email,
+        password,
+        githubUrl: github || undefined,
+        areaInterest,
+        experienceLevel,
+        privacyConsent,
+        callbackURL: "/dashboard",
+      });
+
+      if (error) {
+        setErrorMessage(error.message || "Não foi possível criar a conta. Tente novamente.");
+        return;
+      }
+
+      router.replace("/verifique-email");
+    } catch {
+      setErrorMessage("Não foi possível conectar ao serviço. Tente novamente.");
+    } finally {
+      setIsSubmitting(false);
+    }
   }
 
   return (
@@ -118,7 +166,10 @@ export default function Cadastro() {
                     </label>
                     <input
                       id="name"
+                      name="name"
                       required
+                      value={name}
+                      onChange={(event) => setName(event.target.value)}
                       placeholder="Como podemos te chamar?"
                       className="w-full rounded-xl border-[1.5px] border-[#e4dfd3] bg-white px-4 py-3 text-[#1d1b33] placeholder:text-[#8b8593] focus:border-[#7755e8] focus:outline-none focus:ring-2 focus:ring-[#7755e8]/30"
                     />
@@ -130,8 +181,11 @@ export default function Cadastro() {
                     </label>
                     <input
                       id="email"
+                      name="email"
                       type="email"
                       required
+                      value={email}
+                      onChange={(event) => setEmail(event.target.value)}
                       placeholder="ex: maria.silva@email.com"
                       className="w-full rounded-xl border-[1.5px] border-[#e4dfd3] bg-white px-4 py-3 text-[#1d1b33] placeholder:text-[#8b8593] focus:border-[#7755e8] focus:outline-none focus:ring-2 focus:ring-[#7755e8]/30"
                     />
@@ -202,7 +256,14 @@ export default function Cadastro() {
                   </div>
 
                   <label className="flex items-start gap-2.5 text-sm text-[#59567a] leading-relaxed">
-                    <input type="checkbox" required className="mt-1" />
+                    <input
+                      name="privacyConsent"
+                      type="checkbox"
+                      required
+                      checked={privacyConsent}
+                      onChange={(event) => setPrivacyConsent(event.target.checked)}
+                      className="mt-1"
+                    />
                     <span>
                       Autorizo o uso do currículo e do GitHub para gerar meu
                       diagnóstico, conforme a{" "}
@@ -215,6 +276,12 @@ export default function Cadastro() {
                       . <span className="text-[#e8641d]">*</span>
                     </span>
                   </label>
+
+                  {errorMessage && (
+                    <p role="alert" className="rounded-xl bg-[#fdf2f2] px-4 py-3 text-sm font-bold text-[#a83030]">
+                      {errorMessage}
+                    </p>
+                  )}
 
                   <button
                     type="submit"
@@ -268,7 +335,12 @@ export default function Cadastro() {
                     <label className="text-sm font-extrabold text-[#1d1b33]">
                       Currículo em PDF <span className="text-[#e8641d]">*</span>
                     </label>
-                    <PdfDropzone required />
+                     <PdfDropzone required onFileChange={setCurriculumFile} />
+                    {demoModeEnabled && (
+                      <p className="text-xs font-semibold leading-relaxed text-[#8b8593]">
+                        Demonstração segura: o PDF é apenas validado no navegador e não é enviado.
+                      </p>
+                    )}
                   </div>
 
                   <div className="grid gap-1.5">
@@ -295,6 +367,12 @@ export default function Cadastro() {
                     />
                   </div>
 
+                  {errorMessage && (
+                    <p role="alert" className="rounded-xl bg-[#fdf2f2] px-4 py-3 text-sm font-bold text-[#a83030]">
+                      {errorMessage}
+                    </p>
+                  )}
+
                   <div className="mt-2 flex flex-col-reverse gap-3 sm:flex-row">
                     <button
                       type="button"
@@ -305,9 +383,10 @@ export default function Cadastro() {
                     </button>
                     <button
                       type="submit"
-                      className="flex min-h-[44px] flex-1 items-center justify-center gap-2 rounded-full bg-[#7755e8] font-extrabold text-white shadow-[0_14px_32px_-16px_rgba(119,85,232,0.75)] transition hover:-translate-y-0.5 hover:bg-[#6647d1]"
+                      disabled={isSubmitting}
+                      className="flex min-h-[44px] flex-1 items-center justify-center gap-2 rounded-full bg-[#7755e8] font-extrabold text-white shadow-[0_14px_32px_-16px_rgba(119,85,232,0.75)] transition hover:-translate-y-0.5 hover:bg-[#6647d1] disabled:cursor-wait disabled:opacity-60"
                     >
-                      Começar →
+                      {isSubmitting ? "Criando conta..." : "Começar →"}
                     </button>
                   </div>
                 </div>
