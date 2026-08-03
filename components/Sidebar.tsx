@@ -1,22 +1,28 @@
 "use client";
 
 import Link from "next/link";
-import { usePathname } from "next/navigation";
+import { usePathname, useRouter } from "next/navigation";
+import { useState } from "react";
 import {
   BarChart3,
+  Bot,
   CirclePlus,
   CircleUser,
   LayoutDashboard,
+  LogOut,
 } from "lucide-react";
 import { Logo } from "./Logo";
-import { trainingRoutesEnabled } from "@/lib/demo-mode";
+import { authClient } from "@/lib/auth-client";
+import { demoModeEnabled } from "@/lib/demo-mode";
+import { MOCK_SESSION_KEY } from "@/lib/mock-session";
 
 const navItems = [
-  { href: "/dashboard", label: "Dashboard", shortLabel: "Início", icon: LayoutDashboard, training: false },
-  { href: "/dashboard/nova-sessao", label: "Nova sessão", shortLabel: "Treinar", icon: CirclePlus, training: true },
-  { href: "/dashboard/resultado", label: "Último resultado", shortLabel: "Resultado", icon: BarChart3, training: true },
-  { href: "/dashboard/perfil", label: "Meu perfil", shortLabel: "Perfil", icon: CircleUser, training: false },
-].filter((item) => !item.training || trainingRoutesEnabled);
+  { href: "/dashboard", label: "Dashboard", shortLabel: "Início", icon: LayoutDashboard },
+  { href: "/dashboard/nova-sessao", label: "Nova sessão", shortLabel: "Treinar", icon: CirclePlus },
+  { href: "/dashboard/resultado", label: "Último resultado", shortLabel: "Resultado", icon: BarChart3 },
+  { href: "/dashboard/agente", label: "Agente de entrevista", shortLabel: "Agente", icon: Bot },
+  { href: "/dashboard/perfil", label: "Meu perfil", shortLabel: "Perfil", icon: CircleUser },
+];
 
 function isCurrentRoute(pathname: string, href: string) {
   return href === "/dashboard"
@@ -26,6 +32,20 @@ function isCurrentRoute(pathname: string, href: string) {
 
 export function Sidebar() {
   const pathname = usePathname();
+  const router = useRouter();
+  const [isSigningOut, setIsSigningOut] = useState(false);
+
+  async function handleSignOut() {
+    setIsSigningOut(true);
+    if (demoModeEnabled) {
+      window.sessionStorage.removeItem(MOCK_SESSION_KEY);
+    } else {
+      await authClient.signOut().catch(() => undefined);
+    }
+    router.replace("/login");
+    router.refresh();
+    setIsSigningOut(false);
+  }
 
   return (
     <>
@@ -62,12 +82,15 @@ export function Sidebar() {
         <div className="mt-auto rounded-2xl border border-white/10 bg-white/[0.05] p-4">
           <p className="text-xs font-extrabold text-white">Continue evoluindo</p>
           <p className="mt-1 text-xs leading-relaxed text-[#8f8ab8]">Cada treino deixa sua próxima entrevista mais previsível.</p>
+          <button type="button" onClick={handleSignOut} disabled={isSigningOut} aria-label="Sair da conta" className="mt-4 flex min-h-10 w-full items-center justify-center gap-2 rounded-xl border border-white/10 text-xs font-extrabold text-[#c7c3e5] transition hover:bg-white/[0.07] hover:text-white disabled:opacity-50">
+            <LogOut className="h-4 w-4" /> {isSigningOut ? "Saindo..." : "Sair"}
+          </button>
         </div>
       </aside>
 
       <nav
         className="fixed inset-x-3 bottom-3 z-40 grid rounded-2xl border border-white/10 bg-[#151632]/95 p-1.5 shadow-[0_18px_50px_-20px_rgba(21,22,50,0.9)] backdrop-blur-xl lg:hidden"
-        style={{ gridTemplateColumns: `repeat(${navItems.length}, minmax(0, 1fr))` }}
+        style={{ gridTemplateColumns: `repeat(${navItems.length + 1}, minmax(0, 1fr))` }}
         aria-label="Navegação principal"
       >
         {navItems.map(({ href, shortLabel, icon: Icon }) => {
@@ -86,6 +109,9 @@ export function Sidebar() {
             </Link>
           );
         })}
+        <button type="button" onClick={handleSignOut} disabled={isSigningOut} className="flex min-h-14 flex-col items-center justify-center gap-1 rounded-xl px-1 text-[10px] font-extrabold text-[#aaa6d6] disabled:opacity-50">
+          <LogOut className="h-[18px] w-[18px]" /> Sair
+        </button>
       </nav>
     </>
   );

@@ -23,8 +23,7 @@ Plataforma de preparação técnica por vaga criada para o Hackathon Comunidade 
    - `DATABASE_URL`: conexão PostgreSQL.
    - `BETTER_AUTH_URL` e `BETTER_AUTH_SECRET`: URL pública e segredo da autenticação.
    - `RESEND_API_KEY` e `EMAIL_FROM`: envio de verificação e recuperação de senha.
-   - `NEXT_PUBLIC_DEMO_MODE=true`: libera a apresentação com perfil, notas, histórico e fluxos 100% fictícios, sem exigir login.
-   - `NEXT_PUBLIC_TRAINING_ROUTES_ENABLED=false`: evita links quebrados enquanto as telas de nova sessão e resultado ainda não estiverem integradas.
+   - `NEXT_PUBLIC_DEMO_MODE=true`: libera a apresentação com perfil, notas, histórico e fluxos 100% fictícios.
 
 3. Valide o schema e gere o Prisma Client:
 
@@ -50,14 +49,19 @@ A aplicação estará disponível em `http://localhost:3000`.
 - `/politica-de-privacidade` — informações de privacidade e LGPD
 - `/dashboard` — prontidão, notas, GitHub e histórico de evolução
 - `/dashboard/perfil` — dados pessoais e perfil técnico
-
-As telas de nova sessão e resultado estão sendo desenvolvidas em branches próprias da equipe e devem ser integradas pelo fluxo oficial de revisão.
+- `/dashboard/nova-sessao` — cria uma análise demonstrativa a partir de texto ou imagem
+- `/dashboard/resultado` — compatibilidade mockada e escolha de modalidade
+- `/dashboard/agente` — agente adaptativo com 35 perguntas por área, descrição de vaga opcional e orientação de estudos
 
 O upload do currículo exige a definição de um armazenamento privado e persistente antes do deploy. Não utilize o sistema de arquivos da Vercel para currículos. Até essa integração, o seletor valida o PDF, mas o arquivo não é enviado ao servidor.
 
 ## Dados de demonstração e privacidade
 
-O deploy do hackathon deve manter `NEXT_PUBLIC_DEMO_MODE=true`. O dashboard, o perfil, as notas, o GitHub e o histórico usam somente dados fictícios definidos em `lib/dashboard-data.ts` e `lib/demo-mode.ts`. A interface identifica esse estado para não confundir a demonstração com dados reais.
+O deploy do hackathon deve manter `NEXT_PUBLIC_DEMO_MODE=true`. O acesso fictício é `demo@devready.app` com a senha `DevReady@2026!`; os campos aparecem preenchidos no login para facilitar o pitch.
+
+O dashboard, o perfil, as notas, o GitHub, as vagas e a entrevista simulada usam somente dados fictícios definidos em `lib/dashboard-data.ts`, `lib/demo-mode.ts`, `lib/mock-session.ts` e `lib/interview-agent.ts`. Novas sessões ficam apenas no `sessionStorage` do navegador. Imagens e currículos são validados localmente, sem upload. O agente usa uma avaliação determinística no navegador nesta demonstração e não envia respostas a serviços externos.
+
+O banco do agente cobre Frontend, Backend, Full Stack, Mobile, Dados e BI, Ciência de Dados e IA, QA, DevOps e Cloud, Segurança e Produto/UX. Os temas foram estruturados a partir de documentação técnica oficial, incluindo [MDN Curriculum](https://developer.mozilla.org/en-US/curriculum/core/), [React](https://react.dev/learn), [Android Developers](https://developer.android.com/topic/architecture), [Apple Developer](https://developer.apple.com/tutorials/app-dev-training), [Playwright](https://playwright.dev/docs/best-practices), [AWS Well-Architected](https://docs.aws.amazon.com/wellarchitected/latest/framework/welcome.html), [OWASP Top 10](https://owasp.org/Top10/) e [W3C WAI](https://www.w3.org/WAI/fundamentals/accessibility-principles/).
 
 O cadastro exige consentimento explícito para uso do currículo e do GitHub, validado também no servidor e persistido no usuário. Em modo autenticado, a exclusão de conta remove o usuário; sessões e contas de autenticação relacionadas usam exclusão em cascata. No modo demonstração, o mesmo fluxo é simulado para não alterar informações.
 
