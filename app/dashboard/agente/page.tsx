@@ -4,21 +4,27 @@ import { useMemo, useState } from "react";
 import Link from "next/link";
 import {
   ArrowRight,
+  BookOpen,
   Bot,
   CheckCircle2,
   Gauge,
+  Info,
   MessageSquareText,
   RotateCcw,
   Send,
   ShieldCheck,
   Sparkles,
+  Target,
+  TrendingUp,
 } from "lucide-react";
 import { Sidebar } from "@/components/Sidebar";
 import {
+  buildInterviewSummary,
   detectInterviewArea,
   evaluateInterviewAnswer,
   getInterviewQuestions,
   getQuestionBankSize,
+  getQuestionReason,
   interviewAreaOptions,
   pickInterviewQuestion,
   type InterviewArea,
@@ -64,6 +70,8 @@ export default function AgenteEntrevista() {
   const [turns, setTurns] = useState<InterviewTurn[]>([]);
   const [currentEvaluation, setCurrentEvaluation] = useState<InterviewEvaluation | null>(null);
   const [replayIds, setReplayIds] = useState<string[] | null>(null);
+  const [focusKeywords, setFocusKeywords] = useState<string[]>([]);
+  const [previousScore, setPreviousScore] = useState<number | null>(null);
   const [configurationError, setConfigurationError] = useState("");
   const effectiveArea = areaChoice === "auto" ? detectInterviewArea(jobDescription) : areaChoice;
   const effectiveAreaLabel = interviewAreaOptions.find(({ value }) => value === effectiveArea)?.label ?? "Frontend";
@@ -73,13 +81,14 @@ export default function AgenteEntrevista() {
     if (replayId) {
       return getInterviewQuestions(track, effectiveArea, jobDescription).find((item) => item.id === replayId) ?? null;
     }
-    return pickInterviewQuestion(track, effectiveArea, difficulty, turns.map((turn) => turn.question.id), jobDescription);
-  }, [difficulty, effectiveArea, jobDescription, replayIds, track, turns]);
+    return pickInterviewQuestion(track, effectiveArea, difficulty, turns.map((turn) => turn.question.id), jobDescription, focusKeywords);
+  }, [difficulty, effectiveArea, focusKeywords, jobDescription, replayIds, track, turns]);
 
   const completed = started && turns.length >= questionLimit;
   const averageScore = turns.length
     ? Math.round(turns.reduce((total, turn) => total + turn.evaluation.score, 0) / turns.length)
     : 0;
+  const summary = useMemo(() => buildInterviewSummary(turns), [turns]);
 
   function submitAnswer(event: React.SubmitEvent<HTMLFormElement>) {
     event.preventDefault();
@@ -94,6 +103,7 @@ export default function AgenteEntrevista() {
       { question, answer: answer.trim(), evaluation: currentEvaluation },
     ]);
     setDifficulty(currentEvaluation.nextDifficulty);
+    setFocusKeywords(currentEvaluation.score < 70 ? question.keywords : []);
     setAnswer("");
     setCurrentEvaluation(null);
   }
@@ -109,11 +119,27 @@ export default function AgenteEntrevista() {
     setAnswer("");
     setCurrentEvaluation(null);
     setReplayIds(null);
+    setFocusKeywords([]);
+    setPreviousScore(null);
   }
 
   function replayInterview() {
+    setPreviousScore(averageScore);
     setReplayIds(turns.map((turn) => turn.question.id));
     setDifficulty(turns[0]?.question.difficulty ?? "iniciante");
+    setTurns([]);
+    setAnswer("");
+    setCurrentEvaluation(null);
+    setFocusKeywords([]);
+  }
+
+  function trainPriorityCompetencies() {
+    const priorityTurn = turns.find((turn) => turn.question.competency === summary.priority.name);
+    setPreviousScore(averageScore);
+    setQuestionLimit(5);
+    setDifficulty("iniciante");
+    setReplayIds(null);
+    setFocusKeywords(priorityTurn?.question.keywords ?? []);
     setTurns([]);
     setAnswer("");
     setCurrentEvaluation(null);
@@ -219,15 +245,32 @@ export default function AgenteEntrevista() {
             <section className="mt-7 rounded-3xl border border-[#e7e3ee] bg-white p-7 text-center shadow-[0_24px_70px_-48px_rgba(29,27,51,0.55)] sm:p-10">
               <span className="mx-auto grid h-16 w-16 place-items-center rounded-2xl bg-[#efeaff] text-[#7755e8]"><MessageSquareText className="h-8 w-8" /></span>
               <p className="mt-5 text-sm font-extrabold uppercase tracking-widest text-[#7755e8]">Simulação concluída</p>
-              <h2 className="mt-2 font-[family-name:var(--font-display)] text-3xl font-bold text-[#1d1b33]">Seu índice de resposta foi {averageScore}/100</h2>
-              <p className="mx-auto mt-3 max-w-xl leading-relaxed text-[#6d698a]">{averageScore >= 75 ? "Você estrutura bem o raciocínio. Agora pratique respostas mais naturais e concisas." : "Você já tem uma base. Use exemplos concretos e feche cada resposta com resultado e aprendizado."}</p>
-              <div className="mx-auto mt-6 grid max-w-2xl gap-3 text-left sm:grid-cols-2">
-                <div className="rounded-2xl bg-[#edf8f1] p-4"><p className="text-xs font-extrabold uppercase tracking-wide text-[#247544]">Ponto forte</p><p className="mt-1 text-sm font-bold text-[#1d1b33]">Disposição para explicar seu processo.</p></div>
-                <div className="rounded-2xl bg-[#fff3eb] p-4"><p className="text-xs font-extrabold uppercase tracking-wide text-[#b94d17]">Próximo estudo</p><p className="mt-1 text-sm font-bold text-[#1d1b33]">Respostas com contexto, ação e impacto.</p></div>
+              <h2 className="mt-2 font-[family-name:var(--font-display)] text-3xl font-bold text-[#1d1b33]">Desempenho geral: {averageScore}/100</h2>
+              <p className="mx-auto mt-3 max-w-xl leading-relaxed text-[#6d698a]">Sua devolutiva conecta as respostas às competências avaliadas e indica onde concentrar a preparação.</p>
+              {previousScore !== null && (
+                <p className={`mx-auto mt-4 inline-flex items-center gap-2 rounded-full px-4 py-2 text-sm font-extrabold ${averageScore >= previousScore ? "bg-[#edf8f1] text-[#247544]" : "bg-[#fff3eb] text-[#b94d17]"}`}>
+                  <TrendingUp className="h-4 w-4" /> {averageScore >= previousScore ? "+" : ""}{averageScore - previousScore} pontos desde a tentativa anterior
+                </p>
+              )}
+              <div className="mx-auto mt-6 grid max-w-3xl gap-3 text-left sm:grid-cols-2">
+                <div className="rounded-2xl bg-[#edf8f1] p-4"><p className="text-xs font-extrabold uppercase tracking-wide text-[#247544]">Competência mais evidente</p><p className="mt-1 text-sm font-bold text-[#1d1b33]">{summary.strongest.name} · {summary.strongest.score}/100</p></div>
+                <div className="rounded-2xl bg-[#fff3eb] p-4"><p className="text-xs font-extrabold uppercase tracking-wide text-[#b94d17]">Prioridade de desenvolvimento</p><p className="mt-1 text-sm font-bold text-[#1d1b33]">{summary.priority.name} · {summary.priority.score}/100</p></div>
+              </div>
+              <div className="mx-auto mt-4 grid max-w-3xl grid-cols-2 gap-3 text-left sm:grid-cols-4">
+                {Object.entries({ Conteúdo: summary.criteria.content, Clareza: summary.criteria.clarity, Evidências: summary.criteria.evidence, Estrutura: summary.criteria.structure }).map(([label, score]) => (
+                  <div key={label} className="rounded-2xl border border-[#e7e3ee] p-4"><p className="text-xs font-bold text-[#8b8593]">{label}</p><p className="mt-1 text-xl font-extrabold text-[#1d1b33]">{score}</p></div>
+                ))}
+              </div>
+              <div className="mx-auto mt-6 max-w-3xl rounded-2xl border border-[#e7e3ee] p-5 text-left">
+                <p className="flex items-center gap-2 font-extrabold text-[#1d1b33]"><BookOpen className="h-4 w-4 text-[#7755e8]" /> Plano de preparação · 7 dias</p>
+                <div className="mt-4 grid gap-3 sm:grid-cols-2">
+                  {summary.plan.map((item) => <div key={item.period} className="rounded-xl bg-[#f7f5fa] p-3"><p className="text-xs font-extrabold text-[#7755e8]">{item.period}</p><p className="mt-1 text-sm leading-relaxed text-[#514c6a]">{item.action}</p></div>)}
+                </div>
               </div>
               <div className="mt-7 flex flex-col justify-center gap-3 sm:flex-row">
+                <button type="button" onClick={trainPriorityCompetencies} className="inline-flex min-h-11 items-center justify-center gap-2 rounded-full bg-gradient-to-r from-[#7755e8] to-[#e8641d] px-6 font-extrabold text-white"><Target className="h-4 w-4" /> Treinar pontos prioritários</button>
                 <button type="button" onClick={replayInterview} className="inline-flex min-h-11 items-center justify-center gap-2 rounded-full border border-[#dcd7e6] px-5 font-extrabold text-[#1d1b33]"><RotateCcw className="h-4 w-4" /> Refazer mesmas perguntas</button>
-                <button type="button" onClick={() => setStarted(false)} className="inline-flex min-h-11 items-center justify-center rounded-full bg-[#7755e8] px-6 font-extrabold text-white">Nova configuração</button>
+                <button type="button" onClick={() => setStarted(false)} className="inline-flex min-h-11 items-center justify-center rounded-full px-5 font-extrabold text-[#5d43c4]">Nova configuração</button>
                 <Link href="/dashboard" className="inline-flex min-h-11 items-center justify-center rounded-full px-5 font-extrabold text-[#5d43c4]">Voltar ao dashboard</Link>
               </div>
             </section>
@@ -243,6 +286,7 @@ export default function AgenteEntrevista() {
                   <div className="max-w-3xl rounded-2xl rounded-tl-sm bg-[#f3f0f8] p-4">
                     <p className="text-lg font-extrabold leading-relaxed text-[#1d1b33]">{question.prompt}</p>
                     <p className="mt-2 text-xs leading-relaxed text-[#777286]"><strong>Dica:</strong> {question.hint}</p>
+                    <p className="mt-3 flex items-start gap-2 border-t border-[#ded8e8] pt-3 text-xs leading-relaxed text-[#625c7c]"><Info className="mt-0.5 h-3.5 w-3.5 shrink-0 text-[#7755e8]" /><span><strong>Por que esta pergunta:</strong> {getQuestionReason(question, jobDescription)}</span></p>
                   </div>
                 </div>
 
@@ -257,7 +301,17 @@ export default function AgenteEntrevista() {
                   <div role="status" className="mt-5 rounded-2xl border border-[#ded8ed] bg-[#f7f4fc] p-5">
                     <div className="flex flex-wrap items-center justify-between gap-3"><p className="flex items-center gap-2 font-extrabold text-[#1d1b33]"><Sparkles className="h-4 w-4 text-[#7755e8]" /> Feedback do agente</p><span className="rounded-full bg-white px-3 py-1 text-xs font-extrabold text-[#5d43c4]">{currentEvaluation.score}/100</span></div>
                     <p className="mt-3 text-sm leading-relaxed text-[#514c6a]">{currentEvaluation.feedback}</p>
+                    <div className="mt-4 grid grid-cols-2 gap-2 sm:grid-cols-4">
+                      {Object.entries({ Conteúdo: currentEvaluation.criteria.content, Clareza: currentEvaluation.criteria.clarity, Evidências: currentEvaluation.criteria.evidence, Estrutura: currentEvaluation.criteria.structure }).map(([label, score]) => (
+                        <div key={label} className="rounded-xl bg-white p-3"><p className="text-[10px] font-extrabold uppercase tracking-wide text-[#8b8593]">{label}</p><p className="mt-1 text-lg font-extrabold text-[#1d1b33]">{score}</p></div>
+                      ))}
+                    </div>
+                    <div className="mt-4 grid gap-3 sm:grid-cols-2">
+                      <div className="rounded-xl bg-[#edf8f1] p-3"><p className="text-xs font-extrabold text-[#247544]">Evidências identificadas</p><p className="mt-1 text-xs leading-relaxed text-[#3d654d]">{currentEvaluation.evidenceFound.length ? currentEvaluation.evidenceFound.join(" · ") : "Nenhuma evidência específica identificada."}</p></div>
+                      <div className="rounded-xl bg-[#fff3eb] p-3"><p className="text-xs font-extrabold text-[#b94d17]">Ainda não demonstrado</p><p className="mt-1 text-xs leading-relaxed text-[#7a4d35]">{currentEvaluation.missingEvidence.slice(0, 3).join(" · ") || "Competência demonstrada com boa cobertura."}</p></div>
+                    </div>
                     <p className="mt-2 text-sm leading-relaxed text-[#514c6a]"><strong>Para melhorar:</strong> {currentEvaluation.nextStep}</p>
+                    {currentEvaluation.score < 70 && <p className="mt-2 text-xs font-bold text-[#7755e8]">A próxima pergunta priorizará esta lacuna.</p>}
                     <button type="button" onClick={nextQuestion} className="mt-5 ml-auto flex min-h-11 items-center gap-2 rounded-full bg-[#1d1b33] px-6 font-extrabold text-white">{turns.length + 1 === questionLimit ? "Ver devolutiva" : "Próxima pergunta"} <ArrowRight className="h-4 w-4" /></button>
                   </div>
                 )}
