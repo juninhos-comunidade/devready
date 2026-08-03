@@ -16,6 +16,7 @@ export type InterviewQuestion = {
   id: string;
   track: Exclude<InterviewTrack, "mista">;
   area: InterviewArea | "geral";
+  competency: string;
   difficulty: InterviewDifficulty;
   prompt: string;
   hint: string;
@@ -24,6 +25,14 @@ export type InterviewQuestion = {
 
 export type InterviewEvaluation = {
   score: number;
+  criteria: {
+    content: number;
+    clarity: number;
+    evidence: number;
+    structure: number;
+  };
+  evidenceFound: string[];
+  missingEvidence: string[];
   feedback: string;
   nextStep: string;
   nextDifficulty: InterviewDifficulty;
@@ -169,6 +178,7 @@ function buildQuestionBank(topics: Topic[], area: InterviewArea | "geral", track
       id: `${area}-${track}-${topicIndex + 1}-${patternIndex + 1}`,
       area,
       track,
+      competency: topic.name,
       difficulty: pattern.difficulty,
       prompt: pattern.build(topic),
       hint: pattern.hint,
@@ -230,18 +240,36 @@ export function pickInterviewQuestion(
   difficulty: InterviewDifficulty,
   usedIds: string[],
   jobDescription = "",
+  focusKeywords: string[] = [],
 ) {
   const available = getInterviewQuestions(track, area, jobDescription)
     .filter((question) => !usedIds.includes(question.id));
-  return available.find((question) => question.difficulty === difficulty) ?? available[0] ?? null;
+  const ranked = focusKeywords.length
+    ? [...available].sort((a, b) => {
+        const scoreA = a.keywords.filter((keyword) => focusKeywords.includes(keyword)).length;
+        const scoreB = b.keywords.filter((keyword) => focusKeywords.includes(keyword)).length;
+        return scoreB - scoreA;
+      })
+    : available;
+  return ranked.find((question) => question.difficulty === difficulty) ?? ranked[0] ?? null;
 }
 
 export function evaluateInterviewAnswer(answer: string, question: InterviewQuestion): InterviewEvaluation {
   const normalized = answer.toLocaleLowerCase("pt-BR");
-  const keywordHits = question.keywords.filter((keyword) => normalized.includes(keyword)).length;
-  const keywordRatio = keywordHits / question.keywords.length;
-  const structurePoints = answer.trim().length >= 220 ? 25 : answer.trim().length >= 110 ? 16 : 7;
-  const score = Math.min(100, Math.round(28 + keywordRatio * 50 + structurePoints));
+  const evidenceFound = question.keywords.filter((keyword) => normalized.includes(keyword));
+  const missingEvidence = question.keywords.filter((keyword) => !normalized.includes(keyword));
+  const keywordRatio = evidenceFound.length / question.keywords.length;
+  const sentences = answer.split(/[.!?]+/).filter((sentence) => sentence.trim().length > 0);
+  const hasExample = /por exemplo|em um projeto|em uma situação|quando eu|implementei|desenvolvi/.test(normalized);
+  const hasOutcome = /resultado|impacto|melhorou|reduziu|aumentou|aprendi|valid/.test(normalized);
+  const hasSequence = /primeiro|depois|em seguida|por fim|situação|tarefa|ação/.test(normalized);
+  const hasMeasurement = /\d+%?|métrica|medir|indicador|critério/.test(normalized);
+
+  const content = Math.min(100, Math.round(35 + keywordRatio * 65));
+  const clarity = Math.min(100, 35 + (answer.length >= 100 ? 25 : 10) + (sentences.length >= 2 ? 20 : 5) + (answer.length <= 900 ? 20 : 5));
+  const evidence = Math.min(100, 30 + (hasExample ? 30 : 5) + (hasOutcome ? 25 : 5) + (hasMeasurement ? 15 : 0));
+  const structure = Math.min(100, 35 + (hasSequence ? 35 : 10) + (hasOutcome ? 20 : 5) + (answer.length >= 140 ? 10 : 0));
+  const score = Math.round(content * 0.4 + clarity * 0.2 + evidence * 0.2 + structure * 0.2);
   const currentIndex = difficultyOrder.indexOf(question.difficulty);
   const nextIndex = score >= 75
     ? Math.min(currentIndex + 1, difficultyOrder.length - 1)
@@ -251,15 +279,76 @@ export function evaluateInterviewAnswer(answer: string, question: InterviewQuest
 
   return {
     score,
+    criteria: { content, clarity, evidence, structure },
+    evidenceFound,
+    missingEvidence,
     feedback: score >= 75
       ? "Resposta consistente: você trouxe contexto e sinais claros do seu raciocínio."
       : score >= 50
         ? "Boa direção. Sua resposta fica mais convincente com um exemplo concreto e um resultado verificável."
         : "A ideia inicial apareceu, mas faltou explicar suas ações e o impacto. Tente responder em etapas.",
-    nextStep: keywordHits === 0
+    nextStep: evidenceFound.length === 0
       ? `Conecte sua resposta a conceitos como ${question.keywords.slice(0, 3).join(", ")} sem apenas listá-los.`
-      : "Feche dizendo como validaria o resultado e o que faria diferente numa próxima vez.",
+      : !hasExample
+        ? "Inclua um exemplo concreto que demonstre como você aplicaria esse conhecimento."
+        : !hasOutcome
+          ? "Feche a resposta com o resultado, a validação ou o aprendizado obtido."
+          : "Torne a resposta mais concisa, mantendo contexto, decisão e impacto.",
     nextDifficulty: difficultyOrder[nextIndex],
+  };
+}
+
+export function getQuestionReason(question: InterviewQuestion, jobDescription: string) {
+  const normalizedDescription = jobDescription.toLocaleLowerCase("pt-BR");
+  const matchedRequirement = question.keywords.find((keyword) => normalizedDescription.includes(keyword));
+  if (matchedRequirement) {
+    return `A vaga menciona ${matchedRequirement}; esta pergunta verifica como você aplica essa competência.`;
+  }
+  if (question.track === "comportamental") {
+    return `Esta pergunta avalia ${question.competency}, uma competência recorrente em processos seletivos.`;
+  }
+  return `${question.competency} faz parte das competências essenciais da área selecionada.`;
+}
+
+export function buildInterviewSummary(
+  turns: Array<{ question: InterviewQuestion; evaluation: InterviewEvaluation }>,
+) {
+  const competencyScores = new Map<string, number[]>();
+  turns.forEach(({ question, evaluation }) => {
+    const scores = competencyScores.get(question.competency) ?? [];
+    scores.push(evaluation.score);
+    competencyScores.set(question.competency, scores);
+  });
+
+  const competencies = [...competencyScores.entries()]
+    .map(([name, scores]) => ({
+      name,
+      score: Math.round(scores.reduce((total, score) => total + score, 0) / scores.length),
+    }))
+    .sort((a, b) => b.score - a.score);
+  const strongest = competencies[0] ?? { name: "Comunicação", score: 0 };
+  const priority = competencies.at(-1) ?? strongest;
+  const averageCriterion = (key: keyof InterviewEvaluation["criteria"]) =>
+    turns.length
+      ? Math.round(turns.reduce((total, turn) => total + turn.evaluation.criteria[key], 0) / turns.length)
+      : 0;
+
+  return {
+    strongest,
+    priority,
+    competencies,
+    criteria: {
+      content: averageCriterion("content"),
+      clarity: averageCriterion("clarity"),
+      evidence: averageCriterion("evidence"),
+      structure: averageCriterion("structure"),
+    },
+    plan: [
+      { period: "Dias 1–2", action: `Revisar ${priority.name} e registrar três conceitos essenciais.` },
+      { period: "Dias 3–4", action: `Responder três perguntas de ${priority.name} usando exemplos concretos.` },
+      { period: "Dias 5–6", action: "Praticar respostas em voz alta com contexto, decisão e impacto." },
+      { period: "Dia 7", action: "Refazer a entrevista focando as competências prioritárias." },
+    ],
   };
 }
 
