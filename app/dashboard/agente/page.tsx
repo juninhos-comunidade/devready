@@ -1,11 +1,12 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import Link from "next/link";
 import {
   ArrowRight,
   BookOpen,
   Bot,
+  CalendarDays,
   CheckCircle2,
   Gauge,
   Info,
@@ -40,6 +41,102 @@ type InterviewTurn = {
   evaluation: InterviewEvaluation;
 };
 
+type PreparationTask = {
+  id: string;
+  period: string;
+  action: string;
+  completed: boolean;
+};
+
+type SavedPreparationPlan = {
+  id: string;
+  priority: string;
+  sourceScore: number;
+  createdAt: string;
+  tasks: PreparationTask[];
+};
+
+const preparationPlanStorageKey = "devready.interview-preparation-plan.v1";
+
+function isSavedPreparationPlan(value: unknown): value is SavedPreparationPlan {
+  if (!value || typeof value !== "object") return false;
+  const plan = value as Partial<SavedPreparationPlan>;
+  return typeof plan.id === "string"
+    && typeof plan.priority === "string"
+    && typeof plan.sourceScore === "number"
+    && typeof plan.createdAt === "string"
+    && Array.isArray(plan.tasks)
+    && plan.tasks.length > 0
+    && plan.tasks.every((task) => (
+      task
+      && typeof task.id === "string"
+      && typeof task.period === "string"
+      && typeof task.action === "string"
+      && typeof task.completed === "boolean"
+    ));
+}
+
+function PreparationCycle({
+  plan,
+  onToggleTask,
+}: {
+  plan: SavedPreparationPlan;
+  onToggleTask: (taskId: string) => void;
+}) {
+  const completedTasks = plan.tasks.filter((task) => task.completed).length;
+  const progress = Math.round((completedTasks / plan.tasks.length) * 100);
+  const createdDate = new Intl.DateTimeFormat("pt-BR", { day: "2-digit", month: "short" }).format(new Date(plan.createdAt));
+
+  return (
+    <section aria-labelledby="preparation-plan-title" className="rounded-2xl border border-[#e7e3ee] bg-white p-5 text-left">
+      <div className="flex flex-wrap items-start justify-between gap-4">
+        <div>
+          <p className="flex items-center gap-2 font-extrabold text-[#1d1b33]">
+            <CalendarDays className="h-4 w-4 text-[#7755e8]" />
+            <span id="preparation-plan-title">Ciclo de preparação · 7 dias</span>
+          </p>
+          <p className="mt-1 text-xs leading-relaxed text-[#6d698a]">
+            Foco em {plan.priority} · iniciado em {createdDate}
+          </p>
+        </div>
+        <span className="rounded-full bg-[#f0ecff] px-3 py-1 text-xs font-extrabold text-[#654bc9]">
+          {completedTasks} de {plan.tasks.length} etapas
+        </span>
+      </div>
+
+      <div className="mt-4" aria-label={`${progress}% do plano concluído`}>
+        <div className="h-2 overflow-hidden rounded-full bg-[#ece9f1]">
+          <div className="h-full rounded-full bg-gradient-to-r from-[#7755e8] to-[#e8641d] transition-all" style={{ width: `${progress}%` }} />
+        </div>
+        <p className="mt-2 text-right text-xs font-bold text-[#6d698a]">{progress}% concluído</p>
+      </div>
+
+      <div className="mt-4 grid gap-3 sm:grid-cols-2">
+        {plan.tasks.map((task) => (
+          <label key={task.id} className={`flex cursor-pointer gap-3 rounded-xl border p-4 transition ${task.completed ? "border-[#bfe5cf] bg-[#edf8f1]" : "border-[#e7e3ee] bg-[#f7f5fa] hover:border-[#c8bdeb]"}`}>
+            <input
+              type="checkbox"
+              checked={task.completed}
+              onChange={() => onToggleTask(task.id)}
+              className="mt-0.5 h-5 w-5 shrink-0 accent-[#7755e8]"
+            />
+            <span>
+              <span className={`block text-xs font-extrabold ${task.completed ? "text-[#247544]" : "text-[#7755e8]"}`}>{task.period}</span>
+              <span className={`mt-1 block text-sm leading-relaxed ${task.completed ? "text-[#52705e] line-through" : "text-[#514c6a]"}`}>{task.action}</span>
+            </span>
+          </label>
+        ))}
+      </div>
+
+      {progress === 100 && (
+        <p role="status" className="mt-4 flex items-center gap-2 rounded-xl bg-[#edf8f1] px-4 py-3 text-sm font-extrabold text-[#247544]">
+          <CheckCircle2 className="h-4 w-4" /> Ciclo concluído. Você já pode refazer a entrevista e comparar sua evolução.
+        </p>
+      )}
+    </section>
+  );
+}
+
 const difficultyLabels: Record<InterviewDifficulty, string> = {
   iniciante: "Iniciante",
   intermediaria: "Intermediária",
@@ -72,6 +169,7 @@ export default function AgenteEntrevista() {
   const [replayIds, setReplayIds] = useState<string[] | null>(null);
   const [focusKeywords, setFocusKeywords] = useState<string[]>([]);
   const [previousScore, setPreviousScore] = useState<number | null>(null);
+  const [savedPlan, setSavedPlan] = useState<SavedPreparationPlan | null>(null);
   const [configurationError, setConfigurationError] = useState("");
   const effectiveArea = areaChoice === "auto" ? detectInterviewArea(jobDescription) : areaChoice;
   const effectiveAreaLabel = interviewAreaOptions.find(({ value }) => value === effectiveArea)?.label ?? "Frontend";
@@ -90,6 +188,37 @@ export default function AgenteEntrevista() {
     : 0;
   const summary = useMemo(() => buildInterviewSummary(turns), [turns]);
 
+  useEffect(() => {
+    const loadSavedPlan = window.setTimeout(() => {
+      try {
+        const storedPlan = window.localStorage.getItem(preparationPlanStorageKey);
+        if (storedPlan) {
+          const parsedPlan: unknown = JSON.parse(storedPlan);
+          if (isSavedPreparationPlan(parsedPlan)) setSavedPlan(parsedPlan);
+        }
+      } catch {
+        window.localStorage.removeItem(preparationPlanStorageKey);
+      }
+    }, 0);
+    return () => window.clearTimeout(loadSavedPlan);
+  }, []);
+
+  useEffect(() => {
+    if (!savedPlan) return;
+    try {
+      window.localStorage.setItem(preparationPlanStorageKey, JSON.stringify(savedPlan));
+    } catch {
+      // O progresso permanece disponível na sessão mesmo se o navegador bloquear o armazenamento local.
+    }
+  }, [savedPlan]);
+
+  function togglePreparationTask(taskId: string) {
+    setSavedPlan((current) => current ? {
+      ...current,
+      tasks: current.tasks.map((task) => task.id === taskId ? { ...task, completed: !task.completed } : task),
+    } : current);
+  }
+
   function submitAnswer(event: React.SubmitEvent<HTMLFormElement>) {
     event.preventDefault();
     if (!question || answer.trim().length < 30 || currentEvaluation) return;
@@ -98,10 +227,28 @@ export default function AgenteEntrevista() {
 
   function nextQuestion() {
     if (!question || !currentEvaluation) return;
-    setTurns((current) => [
-      ...current,
+    const nextTurns = [
+      ...turns,
       { question, answer: answer.trim(), evaluation: currentEvaluation },
-    ]);
+    ];
+    setTurns(nextTurns);
+    if (nextTurns.length >= questionLimit) {
+      const finalSummary = buildInterviewSummary(nextTurns);
+      const finalScore = Math.round(nextTurns.reduce((total, turn) => total + turn.evaluation.score, 0) / nextTurns.length);
+      const planId = nextTurns.map((turn) => `${turn.question.id}:${turn.evaluation.score}`).join("|");
+      setSavedPlan({
+        id: planId,
+        priority: finalSummary.priority.name,
+        sourceScore: finalScore,
+        createdAt: new Date().toISOString(),
+        tasks: finalSummary.plan.map((item, index) => ({
+          id: `${planId}:${index}`,
+          period: item.period,
+          action: item.action,
+          completed: false,
+        })),
+      });
+    }
     setDifficulty(currentEvaluation.nextDifficulty);
     setFocusKeywords(currentEvaluation.score < 70 ? question.keywords : []);
     setAnswer("");
@@ -166,6 +313,12 @@ export default function AgenteEntrevista() {
               <ShieldCheck className="h-4 w-4" /> Processamento local
             </span>
           </header>
+
+          {!started && savedPlan && (
+            <div className="mt-7">
+              <PreparationCycle plan={savedPlan} onToggleTask={togglePreparationTask} />
+            </div>
+          )}
 
           {!started ? (
             <section className="mt-7 grid overflow-hidden rounded-3xl border border-[#e7e3ee] bg-white shadow-[0_24px_70px_-48px_rgba(29,27,51,0.55)] lg:grid-cols-[1fr_320px]">
@@ -261,11 +414,14 @@ export default function AgenteEntrevista() {
                   <div key={label} className="rounded-2xl border border-[#e7e3ee] p-4"><p className="text-xs font-bold text-[#8b8593]">{label}</p><p className="mt-1 text-xl font-extrabold text-[#1d1b33]">{score}</p></div>
                 ))}
               </div>
-              <div className="mx-auto mt-6 max-w-3xl rounded-2xl border border-[#e7e3ee] p-5 text-left">
-                <p className="flex items-center gap-2 font-extrabold text-[#1d1b33]"><BookOpen className="h-4 w-4 text-[#7755e8]" /> Plano de preparação · 7 dias</p>
-                <div className="mt-4 grid gap-3 sm:grid-cols-2">
-                  {summary.plan.map((item) => <div key={item.period} className="rounded-xl bg-[#f7f5fa] p-3"><p className="text-xs font-extrabold text-[#7755e8]">{item.period}</p><p className="mt-1 text-sm leading-relaxed text-[#514c6a]">{item.action}</p></div>)}
-                </div>
+              <div className="mx-auto mt-6 max-w-3xl">
+                {savedPlan ? (
+                  <PreparationCycle plan={savedPlan} onToggleTask={togglePreparationTask} />
+                ) : (
+                  <div className="rounded-2xl border border-[#e7e3ee] p-5 text-left">
+                    <p className="flex items-center gap-2 font-extrabold text-[#1d1b33]"><BookOpen className="h-4 w-4 text-[#7755e8]" /> Preparando seu ciclo de 7 dias...</p>
+                  </div>
+                )}
               </div>
               <div className="mt-7 flex flex-col justify-center gap-3 sm:flex-row">
                 <button type="button" onClick={trainPriorityCompetencies} className="inline-flex min-h-11 items-center justify-center gap-2 rounded-full bg-gradient-to-r from-[#7755e8] to-[#e8641d] px-6 font-extrabold text-white"><Target className="h-4 w-4" /> Treinar pontos prioritários</button>
