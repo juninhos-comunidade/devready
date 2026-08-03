@@ -1,7 +1,5 @@
 import { ChevronDown } from "lucide-react";
 
-// select nativo (sem lib) estilizado igual aos inputs de texto — `invalid:` pega a opção
-// placeholder (value="") enquanto ela estiver selecionada, simulando um placeholder cinza
 export function FormSelect({
   id,
   required,

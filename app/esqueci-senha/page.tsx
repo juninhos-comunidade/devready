@@ -6,7 +6,6 @@ import { Logo } from "@/components/Logo";
 import { authClient } from "@/lib/auth-client";
 
 export default function EsqueciSenha() {
-  // controla se já mostramos a mensagem de "e-mail enviado" no lugar do formulário
   const [sent, setSent] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [errorMessage, setErrorMessage] = useState("");
@@ -60,11 +59,10 @@ export default function EsqueciSenha() {
 
           <div className="mt-12 md:mt-20">
             <h1 className="font-[family-name:var(--font-display)] max-w-[420px] text-3xl md:text-5xl leading-[1.02] font-semibold">
-              Sem problemas, vamos recuperar seu acesso.
+              Recupere o acesso à sua conta.
             </h1>
             <p className="mt-4 max-w-[380px] text-[#aaa6d6] leading-relaxed">
-              Informe o e-mail da sua conta e mandamos um link pra você criar
-              uma senha nova.
+              Informe o e-mail da conta para receber o link de redefinição.
             </p>
           </div>
         </aside>
@@ -72,16 +70,12 @@ export default function EsqueciSenha() {
         <div className="grid place-items-center p-6 md:p-12">
           <div className="w-full max-w-[460px]">
             {sent ? (
-              // depois do envio, a gente troca o formulário por essa mensagem —
-              // não faz sentido deixar a pessoa clicar em "enviar" várias vezes
               <div key="sent">
                 <h2 className="font-[family-name:var(--font-display)] mb-1 text-2xl md:text-4xl text-[#1d1b33]">
                   Verifique seu e-mail
                 </h2>
                 <p className="text-[#59567a] leading-relaxed">
-                  Se esse e-mail existir na nossa base, você vai receber um
-                  link de recuperação em instantes. Não esqueça de olhar a
-                  caixa de spam.
+                  Se o e-mail estiver cadastrado, enviaremos um link de recuperação. Verifique também a pasta de spam.
                 </p>
                 <Link
                   href="/login"

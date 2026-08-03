@@ -1,8 +1,10 @@
 export const demoModeEnabled =
   process.env.NEXT_PUBLIC_DEMO_MODE === "true";
 
-export const trainingRoutesEnabled =
-  process.env.NEXT_PUBLIC_TRAINING_ROUTES_ENABLED === "true";
+export const demoCredentials = {
+  email: "demo@devready.app",
+  password: "DevReady@2026!",
+} as const;
 
 export const demoProfile = {
   id: "demo-user",
@@ -10,6 +12,6 @@ export const demoProfile = {
   email: "marina.costa@exemplo.dev",
   githubUrl: "https://github.com/octocat",
   areaInterest: "Frontend",
-  experienceLevel: "Júnior",
+  experienceLevel: "Júnior (até 2 anos)",
   privacyConsent: true,
 } as const;

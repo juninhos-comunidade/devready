@@ -4,13 +4,6 @@ import { useRef, useState } from "react";
 import { X } from "lucide-react";
 import { RequirementItem } from "./RequirementItem";
 
-// Campo de upload de currículo, usado tanto no Cadastro (onde o PDF é
-// obrigatório) quanto no Perfil (onde já existe um currículo enviado antes).
-// `initialFileName` é o nome do arquivo que a pessoa já tinha — no Perfil, ela
-// pode REMOVER esse arquivo (botão "x"), mas não pode salvar sem colocar um
-// novo no lugar: por isso `onFileChange` avisa o componente pai sempre que o
-// estado "tem arquivo ou não" muda, pra quem usa esse componente decidir se
-// bloqueia o envio.
 export function PdfDropzone({
   required = false,
   initialFileName,
@@ -28,12 +21,11 @@ export function PdfDropzone({
     const file = e.target.files?.[0];
     if (!file) return;
 
-    // accept="application/pdf" só filtra o seletor do SO, não impede o usuário de
-    // escolher "todos os arquivos" e mandar outra coisa — por isso o check aqui também
+    // The MIME check remains necessary because the operating-system filter can be bypassed.
     if (file.type !== "application/pdf" || file.size > 5 * 1024 * 1024) {
       setFileError(true);
-      e.target.value = ""; // limpa o input pra permitir reselecionar o mesmo arquivo depois de corrigir
-      return; // não mexe no fileName atual — um arquivo inválido não deve apagar o que já estava lá
+      e.target.value = "";
+      return;
     }
 
     setFileError(false);
@@ -41,8 +33,6 @@ export function PdfDropzone({
     onFileChange?.(file);
   }
 
-  // remover não é a mesma coisa que "escolher e cancelar" — é uma ação explícita
-  // da pessoa dizendo "não quero mais esse arquivo", então avisamos pra fora com `null`
   function handleRemove() {
     setFileName(null);
     setFileError(false);
@@ -59,9 +49,6 @@ export function PdfDropzone({
             : "border-[#c8c0b0] bg-[#fbf9f4] text-[#59567a] hover:border-[#7755e8] hover:bg-[#f7f3ff]"
         }`}
       >
-        {/* input file nativo fica invisível e por cima de tudo (opacity-0 + inset-0)
-            pra herdar o clique/drag do card estilizado, já que <input type="file">
-            não é estilizável diretamente */}
         <input
           ref={inputRef}
           type="file"
@@ -71,9 +58,6 @@ export function PdfDropzone({
           onChange={handleFile}
           className="absolute inset-0 h-full w-full cursor-pointer opacity-0"
         />
-        {/* o botão de remover é desenhado DEPOIS do input no código — por isso ele
-            fica "por cima" e recebe o clique sozinho, sem abrir o seletor de arquivo
-            que está por baixo dele */}
         {fileName && (
           <button
             type="button"
