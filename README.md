@@ -54,16 +54,6 @@ O progresso do ciclo permanece disponível após a atualização da página. Com
 - Segurança da Informação
 - Produto e UX/UI
 
-## Demonstração
-
-Com `NEXT_PUBLIC_DEMO_MODE=true`, todos os fluxos utilizam informações fictícias e podem ser apresentados sem conexão com dados pessoais.
-
-```text
-E-mail: demo@devready.app
-Senha: DevReady@2026!
-```
-
-Essas credenciais pertencem exclusivamente ao modo demonstrativo e não concedem acesso a informações reais.
 
 ## Tecnologias
 
