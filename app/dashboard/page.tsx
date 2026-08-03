@@ -203,7 +203,13 @@ export default function Dashboard() {
               <p className="text-sm font-semibold text-[#6d698a]">Tecnologias testadas</p>
             </article>
 
-            <article className="rounded-2xl border border-[#e7e3ee] bg-white p-5">
+            {/* único card dessa fileira que vira link — é o gancho pra Trilha de
+                Estudo (seção 4.5): "próximo foco sugerido" já é, na prática,
+                um convite pra abrir a trilha, só faltava ele levar a algum lugar */}
+            <Link
+              href="/dashboard/trilha"
+              className="group rounded-2xl border border-[#e7e3ee] bg-white p-5 transition hover:border-[#d7d0e8] hover:shadow-[0_14px_35px_-30px_rgba(29,27,51,0.55)]"
+            >
               <div className="flex items-center justify-between">
                 <span className="grid h-9 w-9 place-items-center rounded-xl bg-[#eeeef4] text-[#1d1b33]">
                   <BookOpen className="h-4.5 w-4.5" />
@@ -211,8 +217,11 @@ export default function Dashboard() {
                 <span className="text-xs font-bold text-[#8b8593]">prioridade alta</span>
               </div>
               <p className="mt-4 truncate text-xl font-extrabold text-[#1d1b33]">Testes</p>
-              <p className="text-sm font-semibold text-[#6d698a]">Próximo foco sugerido</p>
-            </article>
+              <p className="flex items-center gap-1 text-sm font-semibold text-[#6d698a]">
+                Próximo foco sugerido
+                <ArrowRight className="h-3.5 w-3.5 transition group-hover:translate-x-0.5" />
+              </p>
+            </Link>
           </div>
 
           <div className="mt-6 grid gap-6 xl:grid-cols-[1.25fr_0.75fr]">

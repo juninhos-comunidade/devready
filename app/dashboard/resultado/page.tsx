@@ -171,14 +171,18 @@ export default function Resultado() {
               Próxima ação
             </span>
 
+            {/* cada lacuna leva pra Trilha de Estudo (seção 4.5), que consolida
+                todas as lacunas dessa sessão numa trilha só */}
             <ul className="mt-4 grid divide-y divide-[#eef0f3]">
               {proximaAcao.map(({ badge, titulo, descricao }) => (
                 <li key={titulo} className="py-3 first:pt-0 last:pb-0">
-                  <span className="inline-block rounded-full bg-[#eef0f3] px-2.5 py-0.5 text-[11px] font-extrabold uppercase tracking-wide text-[#8b8593]">
-                    {badge}
-                  </span>
-                  <p className="mt-1.5 font-bold text-[#1d1b33]">{titulo}</p>
-                  <p className="text-sm text-[#8b8593]">{descricao}</p>
+                  <Link href="/dashboard/trilha" className="block">
+                    <span className="inline-block rounded-full bg-[#eef0f3] px-2.5 py-0.5 text-[11px] font-extrabold uppercase tracking-wide text-[#8b8593]">
+                      {badge}
+                    </span>
+                    <p className="mt-1.5 font-bold text-[#1d1b33] hover:text-[#5d43c4]">{titulo}</p>
+                    <p className="text-sm text-[#8b8593]">{descricao}</p>
+                  </Link>
                 </li>
               ))}
             </ul>
