@@ -11,6 +11,7 @@ import { ConfirmDialog } from "@/components/ConfirmDialog";
 import { Check } from "lucide-react";
 import { authClient } from "@/lib/auth-client";
 import { demoModeEnabled, demoProfile } from "@/lib/demo-mode";
+import { areaInterestOptions, experienceLevelOptions } from "@/lib/profile-options";
 
 export default function Perfil() {
   if (demoModeEnabled) {
@@ -244,14 +245,14 @@ function PerfilEditor({
                 {demoMode ? (
                   <>
                     <PdfDropzone
-                      initialFileName="curriculo-demonstrativo.pdf"
+                      initialFileName="curriculo-exemplo.pdf"
                       onFileChange={(file) => {
                         setHasCurriculum(file !== null);
                         if (file) setCurriculumError(false);
                       }}
                     />
                     <p className="text-xs font-semibold leading-relaxed text-[#8b8593]">
-                      O arquivo é apenas validado no navegador e não é enviado.
+                      Processamento local: nenhum arquivo é enviado.
                     </p>
                     {curriculumError && (
                       <ul className="mt-0.5 grid gap-1 text-xs font-semibold">
@@ -285,7 +286,7 @@ function PerfilEditor({
                   id="interesse"
                   required
                   placeholder="Selecione sua área..."
-                  options={["Frontend", "Backend", "Mobile", "Dados"]}
+                  options={[...areaInterestOptions]}
                   value={areaInterest}
                   onChange={(event) => setAreaInterest(event.target.value)}
                 />
@@ -299,7 +300,7 @@ function PerfilEditor({
                   id="nivel"
                   required
                   placeholder="Onde você está hoje?"
-                  options={["Estudante", "Estagiário", "Júnior", "Pretendendo migrar de carreira"]}
+                  options={[...experienceLevelOptions]}
                   value={experienceLevel}
                   onChange={(event) => setExperienceLevel(event.target.value)}
                 />
@@ -318,15 +319,13 @@ function PerfilEditor({
             {saved && (
               <span className="flex items-center gap-1.5 text-sm font-bold text-[#1f9d55]">
                 <Check className="h-4 w-4" strokeWidth={3} />
-                {demoMode ? "Alterações aplicadas nesta demonstração" : "Alterações salvas"}
+                {demoMode ? "Alterações salvas nesta sessão" : "Alterações salvas"}
               </span>
             )}
           </div>
           {errorMessage && <p role="alert" className="lg:col-span-2 rounded-xl bg-[#fdf2f2] px-4 py-3 text-sm font-bold text-[#a83030]">{errorMessage}</p>}
         </form>
 
-        {/* exclusão de conta é um requisito de privacidade (seção 5), não só um
-            botão a mais — por isso fica separada visualmente do resto do form */}
         <div className="mt-5 rounded-2xl border-[1.5px] border-[#f3d9d9] bg-white p-6">
           <span className="text-xs font-extrabold uppercase tracking-widest text-[#c23b3b]">
             Zona de risco
@@ -337,7 +336,7 @@ function PerfilEditor({
           </p>
           {demoMode && (
             <p className="mt-3 text-xs font-semibold leading-relaxed text-[#8b8593]">
-              Na demonstração, o fluxo é simulado e nenhum dado é realmente removido.
+              Neste ambiente, a exclusão não altera dados reais.
             </p>
           )}
           <button
@@ -360,7 +359,7 @@ function PerfilEditor({
         <ConfirmDialog
           open={confirmingDelete}
           title={demoMode ? "Simular exclusão?" : "Excluir sua conta?"}
-          description={demoMode ? "Este é um ambiente demonstrativo. Vamos concluir o fluxo sem remover dados reais." : "Essa ação não pode ser desfeita. Seu currículo, suas análises e todas as suas sessões de treino serão apagados permanentemente."}
+          description={demoMode ? "Este ambiente conclui o fluxo sem remover dados reais." : "Essa ação não pode ser desfeita. Seu currículo, suas análises e todas as suas sessões de treino serão apagados permanentemente."}
           confirmLabel={demoMode ? "Sim, simular" : "Sim, excluir conta"}
           pending={isDeleting}
           onConfirm={handleDeleteAccount}

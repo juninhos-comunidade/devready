@@ -6,14 +6,14 @@ import { useRouter } from "next/navigation";
 import { Logo } from "@/components/Logo";
 import { Eye, EyeOff } from "lucide-react";
 import { authClient } from "@/lib/auth-client";
-import { demoModeEnabled } from "@/lib/demo-mode";
+import { demoCredentials, demoModeEnabled } from "@/lib/demo-mode";
 
 export default function Login() {
-  // "senha visível ou não" é um estadinho simples: começa escondida (false)
-  // e vira true quando a pessoa clica no olhinho, só isso
   const [showPassword, setShowPassword] = useState(false);
   const [errorMessage, setErrorMessage] = useState("");
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [email, setEmail] = useState(demoModeEnabled ? demoCredentials.email : "");
+  const [password, setPassword] = useState(demoModeEnabled ? demoCredentials.password : "");
   const router = useRouter();
 
   async function handleSubmit(e: React.SubmitEvent<HTMLFormElement>) {
@@ -22,9 +22,19 @@ export default function Login() {
     setIsSubmitting(true);
 
     const formData = new FormData(e.currentTarget);
-    const email = String(formData.get("email") ?? "");
-    const password = String(formData.get("password") ?? "");
     const rememberMe = formData.get("rememberMe") === "on";
+
+    if (demoModeEnabled) {
+      await new Promise((resolve) => window.setTimeout(resolve, 450));
+      if (email !== demoCredentials.email || password !== demoCredentials.password) {
+        setErrorMessage("Use as credenciais de acesso fornecidas.");
+        setIsSubmitting(false);
+        return;
+      }
+      router.replace("/dashboard");
+      setIsSubmitting(false);
+      return;
+    }
 
     try {
       const { error } = await authClient.signIn.email({
@@ -52,9 +62,6 @@ export default function Login() {
   }
 
   return (
-    // Mesma "casca" visual do Cadastro (fundo escuro com gradiente + card
-    // claro flutuando no meio) — repetir esse layout em toda tela de
-    // autenticação é o que dá a sensação de "é o mesmo site" pra quem navega
     <main
       className="min-h-screen grid place-items-center p-4 md:p-8"
       style={{
@@ -74,9 +81,6 @@ export default function Login() {
         >
           <Logo />
 
-          {/* sem a citação lá embaixo, essa div não precisa mais do justify-between
-              pra se espalhar pelo aside inteiro — um mt fixo já cria o respiro
-              entre o logo e o título, igual ao print que você mandou */}
           <div className="mt-12 md:mt-20">
             <h1 className="font-[family-name:var(--font-display)] max-w-[420px] text-3xl md:text-5xl leading-[1.02] font-semibold">
               Descubra exatamente o que falta para a sua próxima vaga.
@@ -96,9 +100,9 @@ export default function Login() {
             <h2 className="font-[family-name:var(--font-display)] mt-1 mb-1 text-2xl md:text-4xl text-[#1d1b33]">
               Entrar na sua conta
             </h2>
-            <p className="mb-7 text-[#59567a] leading-relaxed">
-              Continue de onde parou nas suas sessões de treino.
-            </p>
+              <p className="mb-7 text-[#59567a] leading-relaxed">
+                Continue de onde parou nas suas sessões de treino.
+              </p>
 
             <div className="grid gap-5 sm:gap-4">
               <div className="grid gap-1.5">
@@ -110,6 +114,8 @@ export default function Login() {
                   name="email"
                   type="email"
                   required
+                  value={email}
+                  onChange={(event) => setEmail(event.target.value)}
                   placeholder="ex: maria.silva@email.com"
                   className="w-full rounded-xl border-[1.5px] border-[#e4dfd3] bg-white px-4 py-3 text-[#1d1b33] placeholder:text-[#8b8593] focus:border-[#7755e8] focus:outline-none focus:ring-2 focus:ring-[#7755e8]/30"
                 />
@@ -119,15 +125,14 @@ export default function Login() {
                 <label htmlFor="password" className="text-sm font-extrabold text-[#1d1b33]">
                   Senha
                 </label>
-                {/* o campo de senha do login não precisa do checklist de regras
-                    (mínimo de caracteres etc.) que colocamos no Cadastro — aqui
-                    a senha já existe, só estamos conferindo, não criando */}
                 <div className="relative">
                   <input
                     id="password"
                     name="password"
                     type={showPassword ? "text" : "password"}
                     required
+                    value={password}
+                    onChange={(event) => setPassword(event.target.value)}
                     placeholder="••••••••"
                     className="w-full rounded-xl border-[1.5px] border-[#e4dfd3] bg-white px-4 py-3 pr-11 text-[#1d1b33] placeholder:text-[#8b8593] focus:border-[#7755e8] focus:outline-none focus:ring-2 focus:ring-[#7755e8]/30"
                   />
@@ -162,22 +167,7 @@ export default function Login() {
               </button>
 
               {demoModeEnabled && (
-                <>
-                  <div className="flex items-center gap-3 py-1" aria-hidden="true">
-                    <span className="h-px flex-1 bg-[#e4dfd3]" />
-                    <span className="text-[10px] font-extrabold uppercase tracking-widest text-[#8b8593]">ou</span>
-                    <span className="h-px flex-1 bg-[#e4dfd3]" />
-                  </div>
-                  <Link
-                    href="/dashboard"
-                    className="flex min-h-[44px] w-full items-center justify-center rounded-full border-[1.5px] border-[#7755e8] font-extrabold text-[#5d43c4] transition hover:bg-[#f2eeff]"
-                  >
-                    Explorar demonstração
-                  </Link>
-                  <p className="text-center text-xs leading-relaxed text-[#8b8593]">
-                    A demonstração usa somente informações fictícias.
-                  </p>
-                </>
+                <p className="text-center text-xs leading-relaxed text-[#8b8593]">Nenhuma informação real é usada ou armazenada.</p>
               )}
             </div>
 

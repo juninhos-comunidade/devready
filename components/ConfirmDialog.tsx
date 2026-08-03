@@ -2,10 +2,6 @@
 
 import { useEffect, useRef } from "react";
 
-// Popup genérico de "tem certeza?" — recebe o texto e as ações de fora,
-// então dá pra reaproveitar em qualquer lugar do site que precise confirmar
-// uma ação que não dá pra desfazer (excluir conta, excluir sessão, etc.),
-// sem copiar e colar esse código toda vez.
 export function ConfirmDialog({
   open,
   title,
@@ -50,21 +46,19 @@ export function ConfirmDialog({
     };
   }, [open, pending]);
 
-  // se não estiver aberto, o componente não desenha nada na tela —
-  // é assim que a gente "esconde" o popup sem precisar de CSS de display:none
   if (!open) return null;
 
   return (
     <div
       className="fixed inset-0 z-50 grid place-items-center bg-[#0d0e24]/60 p-4"
-      onClick={pending ? undefined : onCancel} // clicar no fundo escuro (fora do card) também cancela
+      onClick={pending ? undefined : onCancel}
     >
       <div
         role="dialog"
         aria-modal="true"
         aria-labelledby="confirm-dialog-title"
         aria-describedby="confirm-dialog-description"
-        onClick={(e) => e.stopPropagation()} // impede que o clique DENTRO do card feche o popup
+        onClick={(e) => e.stopPropagation()}
         className="w-full max-w-sm rounded-2xl bg-white p-6 shadow-2xl"
       >
         <h2
