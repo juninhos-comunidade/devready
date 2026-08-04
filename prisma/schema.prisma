@@ -18,9 +18,6 @@ model User {
   emailVerified Boolean   @default(false)
   name          String?
   image         String?
-  skills        String[]  @default([])
-  curriculum_URL String?
-  githubUrl      String?
   areaInterest   String?
   experienceLevel String?
   privacyConsent Boolean  @default(false)
@@ -28,8 +25,33 @@ model User {
   updatedAt     DateTime  @updatedAt
   sessions      Session[]
   accounts      Account[]
+  curriculum Curriculum?
 }
 
+enum CurriculumStatus {
+  PENDING
+  PROCESSING
+  COMPLETED
+  FAILED
+}
+
+model Curriculum {
+  id Int @id @default(autoincrement())
+  userId String @unique
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+  bruteData String?
+  extractedData Json?
+  status CurriculumStatus @default(PENDING)
+  githubUrl      String?
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+/*
+model GithubProfile {
+  id Int @id @default(autoincrement())
+
+}
+*/
 model Session {
   id        String   @id @default(uuid())
   userId    String
