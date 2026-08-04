@@ -4,6 +4,8 @@ import { useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { Logo } from "@/components/Logo";
+import { BrandLoading } from "@/components/BrandLoading";
+import { Mascot } from "@/components/Mascot";
 import { Eye, EyeOff } from "lucide-react";
 import { authClient } from "@/lib/auth-client";
 import { demoCredentials, demoModeEnabled } from "@/lib/demo-mode";
@@ -70,6 +72,7 @@ export default function Login() {
         backgroundColor: "#0d0e24",
       }}
     >
+      {isSubmitting && <BrandLoading overlay label="Abrindo seu painel..." />}
       <section className="w-full max-w-[1080px] grid grid-cols-1 overflow-hidden rounded-2xl border border-[#a7a2d9]/20 bg-[#f7f5f1] shadow-2xl sm:rounded-3xl md:min-h-[650px] md:grid-cols-[0.82fr_1.18fr]">
         <aside
           className="relative flex flex-col p-8 md:p-11 text-[#f7f5f1] overflow-hidden"
@@ -90,10 +93,12 @@ export default function Login() {
               transforme insegurança em um plano de treino claro.
             </p>
           </div>
+          <Mascot pose="wave" motion="arrive" priority className="pointer-events-none absolute -bottom-12 right-0 hidden h-52 w-52 md:block" />
         </aside>
 
         <div className="grid place-items-center p-6 md:p-12">
           <form className="w-full max-w-[460px]" onSubmit={handleSubmit}>
+            <Mascot pose="wave" motion="arrive" priority className="mx-auto mb-2 h-28 w-28 md:hidden" />
             <span className="text-xs font-extrabold tracking-widest text-[#7755e8] uppercase">
               Bem-vindo de volta
             </span>

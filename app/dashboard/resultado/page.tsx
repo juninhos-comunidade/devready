@@ -4,6 +4,7 @@ import { useMemo, useState, useSyncExternalStore } from "react";
 import Link from "next/link";
 import { ArrowRight, BriefcaseBusiness, CheckCircle2, Pencil, Sparkles, Target } from "lucide-react";
 import { Sidebar } from "@/components/Sidebar";
+import { Mascot } from "@/components/Mascot";
 import {
   analyzeMockJob,
   defaultMockSession,
@@ -104,9 +105,14 @@ export default function Resultado() {
               </section>
 
               <section className="rounded-3xl border border-[#e7e3ee] bg-white p-5 sm:p-6">
-                <p className="text-[11px] font-extrabold uppercase tracking-[0.18em] text-[#8b8593]">Próximo passo</p>
-                <h2 className="mt-1 text-xl font-extrabold text-[#1d1b33]">Pratique para a entrevista</h2>
-                <p className="mt-2 text-sm leading-relaxed text-[#6d698a]">Converse com um agente adaptativo, organize seu raciocínio e receba orientações para estudar.</p>
+                <div className="flex items-start justify-between gap-4">
+                  <div>
+                    <p className="text-[11px] font-extrabold uppercase tracking-[0.18em] text-[#8b8593]">Próximo passo</p>
+                    <h2 className="mt-1 text-xl font-extrabold text-[#1d1b33]">Pratique para a entrevista</h2>
+                    <p className="mt-2 text-sm leading-relaxed text-[#6d698a]">Converse com um agente adaptativo, organize seu raciocínio e receba orientações para estudar.</p>
+                  </div>
+                  <Mascot pose="coach" className="hidden h-28 w-28 shrink-0 sm:block" />
+                </div>
                 <Link href="/dashboard/agente" className="group mt-5 flex items-center justify-between gap-4 rounded-2xl border border-[#d9d0f2] bg-[#faf8ff] p-4 text-left transition hover:border-[#7755e8]">
                   <div><p className="font-extrabold text-[#1d1b33]">Simular entrevista</p><p className="mt-1 text-xs leading-relaxed text-[#6d698a]">Perguntas técnicas ou comportamentais com dificuldade adaptativa.</p></div><ArrowRight className="h-4 w-4 shrink-0 text-[#7755e8] transition group-hover:translate-x-1" />
                 </Link>

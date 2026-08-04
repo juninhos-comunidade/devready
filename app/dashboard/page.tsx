@@ -12,6 +12,7 @@ import {
   TrendingUp,
 } from "lucide-react";
 import { Sidebar } from "@/components/Sidebar";
+import { Mascot } from "@/components/Mascot";
 import { EvolutionChart } from "@/components/dashboard/EvolutionChart";
 import { dashboardData, type TechnologyScore } from "@/lib/dashboard-data";
 
@@ -132,7 +133,8 @@ export default function Dashboard() {
                 </Link>
               </div>
 
-              <div className="flex items-center gap-4 rounded-2xl border border-white/10 bg-white/[0.07] p-5 backdrop-blur-sm sm:min-w-64">
+              <div className="relative flex items-center gap-4 rounded-2xl border border-white/10 bg-white/[0.07] p-5 pr-24 backdrop-blur-sm sm:min-w-64">
+                <Mascot pose="launch" className="pointer-events-none absolute -right-4 -top-14 h-32 w-32" />
                 <div className="grid h-24 w-24 shrink-0 place-items-center rounded-full bg-[conic-gradient(#e8641d_0_76%,rgba(255,255,255,0.12)_76%_100%)] p-2">
                   <div className="grid h-full w-full place-items-center rounded-full bg-[#1b1b38]">
                     <span className="font-[family-name:var(--font-display)] text-3xl font-extrabold">

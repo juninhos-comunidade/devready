@@ -12,6 +12,7 @@ import {
   LogOut,
 } from "lucide-react";
 import { Logo } from "./Logo";
+import { Mascot } from "./Mascot";
 import { authClient } from "@/lib/auth-client";
 import { demoModeEnabled } from "@/lib/demo-mode";
 import { MOCK_SESSION_KEY } from "@/lib/mock-session";
@@ -79,7 +80,8 @@ export function Sidebar() {
           })}
         </nav>
 
-        <div className="mt-auto rounded-2xl border border-white/10 bg-white/[0.05] p-4">
+        <div className="relative mt-auto rounded-2xl border border-white/10 bg-white/[0.05] p-4 pt-14">
+          <Mascot pose="wave" className="pointer-events-none absolute -right-1 -top-16 h-28 w-28" />
           <p className="text-xs font-extrabold text-white">Continue evoluindo</p>
           <p className="mt-1 text-xs leading-relaxed text-[#8f8ab8]">Cada treino deixa sua próxima entrevista mais previsível.</p>
           <button type="button" onClick={handleSignOut} disabled={isSigningOut} aria-label="Sair da conta" className="mt-4 flex min-h-10 w-full items-center justify-center gap-2 rounded-xl border border-white/10 text-xs font-extrabold text-[#c7c3e5] transition hover:bg-white/[0.07] hover:text-white disabled:opacity-50">

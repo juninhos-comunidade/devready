@@ -4,6 +4,8 @@ import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { ArrowRight, Sparkles } from "lucide-react";
 import { Sidebar } from "@/components/Sidebar";
+import { BrandLoading } from "@/components/BrandLoading";
+import { Mascot } from "@/components/Mascot";
 import { ImageDropzone } from "@/components/ImageDropzone";
 import { FormSelect } from "@/components/FormSelect";
 import { MOCK_SESSION_KEY, type MockSession } from "@/lib/mock-session";
@@ -51,6 +53,7 @@ export default function NovaSessao() {
 
   return (
     <div className="flex min-h-screen bg-[#f4f3f8]">
+      {isAnalyzing && <BrandLoading overlay label="Lendo os requisitos da vaga..." />}
       <Sidebar />
       <main className="min-w-0 flex-1 px-4 pb-28 pt-6 sm:px-6 lg:px-10 lg:py-8">
         <div className="mx-auto max-w-5xl">
@@ -96,7 +99,7 @@ export default function NovaSessao() {
 
             <aside className="space-y-4">
               <div className="rounded-2xl bg-[#17172f] p-5 text-white">
-                <Sparkles className="h-5 w-5 text-[#d1c8ff]" />
+                <Mascot pose="coach" className="mx-auto h-32 w-32" />
                 <h2 className="mt-3 font-extrabold">Análise da sessão</h2>
                 <ol className="mt-3 space-y-3 text-sm leading-relaxed text-[#c2bfd7]">
                   <li className="flex gap-2"><span className="font-extrabold text-[#e8641d]">1.</span> Identificamos as tecnologias da vaga.</li>
