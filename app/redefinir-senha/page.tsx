@@ -16,8 +16,6 @@ export default function RedefinirSenha() {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [completed, setCompleted] = useState(false);
 
-  // as mesmas regras de senha do Cadastro (8+ caracteres, 2 especiais) —
-  // já que é a mesma senha da conta, tem que seguir a mesma exigência
   const hasMinLength = password.length >= 8;
   const specialCharCount = (password.match(/[^A-Za-z0-9]/g) ?? []).length;
   const hasSpecialChars = specialCharCount >= 2;
@@ -80,11 +78,10 @@ export default function RedefinirSenha() {
 
           <div className="mt-12 md:mt-20">
             <h1 className="font-[family-name:var(--font-display)] max-w-[420px] text-3xl md:text-5xl leading-[1.02] font-semibold">
-              Quase lá — só falta a nova senha.
+              Defina sua nova senha.
             </h1>
             <p className="mt-4 max-w-[380px] text-[#aaa6d6] leading-relaxed">
-              Escolha uma senha nova pra continuar de onde parou nas suas
-              sessões de treino.
+              Após a alteração, você poderá acessar novamente suas sessões.
             </p>
           </div>
         </aside>

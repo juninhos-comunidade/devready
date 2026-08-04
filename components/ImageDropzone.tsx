@@ -1,61 +1,74 @@
 "use client";
 
-import { useState } from "react";
-import { RequirementItem } from "./RequirementItem";
+import { useRef, useState } from "react";
+import { ImagePlus, X } from "lucide-react";
 
-// Irmão do PdfDropzone, só que pra imagem (PNG/JPG) em vez de PDF — a vaga
-// pode ser colada como texto OU enviada como print, então esse campo é
-// sempre opcional (diferente do currículo, que é obrigatório no Cadastro).
+const MAX_IMAGE_SIZE = 5 * 1024 * 1024;
+
 export function ImageDropzone({
   onFileChange,
 }: {
   onFileChange?: (file: File | null) => void;
 }) {
+  const inputRef = useRef<HTMLInputElement>(null);
   const [fileName, setFileName] = useState<string | null>(null);
-  const [fileError, setFileError] = useState(false);
+  const [errorMessage, setErrorMessage] = useState("");
 
-  function handleFile(e: React.ChangeEvent<HTMLInputElement>) {
-    const file = e.target.files?.[0];
+  function handleFile(event: React.ChangeEvent<HTMLInputElement>) {
+    const file = event.target.files?.[0];
     if (!file) return;
 
-    if (!file.type.startsWith("image/")) {
-      setFileError(true);
-      setFileName(null);
-      e.target.value = "";
-      onFileChange?.(null);
+    if (!["image/png", "image/jpeg"].includes(file.type) || file.size > MAX_IMAGE_SIZE) {
+      setErrorMessage("Envie uma imagem PNG ou JPG com no máximo 5 MB.");
+      event.target.value = "";
       return;
     }
 
-    setFileError(false);
+    setErrorMessage("");
     setFileName(file.name);
     onFileChange?.(file);
   }
 
+  function removeFile() {
+    setFileName(null);
+    setErrorMessage("");
+    if (inputRef.current) inputRef.current.value = "";
+    onFileChange?.(null);
+  }
+
   return (
-    <div className="grid gap-1.5">
-      <div
-        className={`relative rounded-xl border-[1.5px] border-dashed p-6 text-center transition ${
-          fileError
-            ? "border-[#c23b3b] bg-[#fdf2f2] text-[#c23b3b]"
-            : "border-[#c8c0b0] bg-[#fbf9f4] text-[#59567a] hover:border-[#7755e8] hover:bg-[#f7f3ff]"
-        }`}
-      >
+    <div className="grid gap-2">
+      <div className={`relative grid min-h-32 place-items-center rounded-2xl border-[1.5px] border-dashed p-5 text-center transition ${errorMessage ? "border-[#c23b3b] bg-[#fdf2f2]" : "border-[#c8c0b0] bg-[#fbf9f4] hover:border-[#7755e8] hover:bg-[#f7f3ff]"}`}>
         <input
+          ref={inputRef}
           type="file"
           accept="image/png,image/jpeg"
+          aria-label="Selecionar imagem da vaga"
           onChange={handleFile}
           className="absolute inset-0 h-full w-full cursor-pointer opacity-0"
         />
-        <strong className={`block mb-1 ${fileError ? "text-[#c23b3b]" : "text-[#1d1b33]"}`}>
-          {fileName ?? "Arraste PNG/JPG ou clique para selecionar"}
-        </strong>
-        <span className="text-sm">A imagem será usada para extrair o texto da vaga.</span>
+        {fileName && (
+          <button
+            type="button"
+            onClick={(event) => {
+              event.stopPropagation();
+              removeFile();
+            }}
+            aria-label="Remover imagem da vaga"
+            className="absolute right-3 top-3 z-10 rounded-full bg-white p-2 text-[#8b8593] shadow-sm transition hover:text-[#c23b3b]"
+          >
+            <X className="h-4 w-4" />
+          </button>
+        )}
+        <div className="pointer-events-none">
+          <ImagePlus className="mx-auto h-6 w-6 text-[#7755e8]" />
+          <p className="mt-2 text-sm font-extrabold text-[#1d1b33]">
+            {fileName ?? "Arraste um print ou clique para selecionar"}
+          </p>
+          <p className="mt-1 text-xs text-[#8b8593]">PNG ou JPG · até 5 MB</p>
+        </div>
       </div>
-      {fileError && (
-        <ul className="mt-0.5 grid gap-1 text-xs font-semibold">
-          <RequirementItem met={false} label="Esse arquivo precisa ser PNG ou JPG" />
-        </ul>
-      )}
+      {errorMessage && <p role="alert" className="text-xs font-bold text-[#c23b3b]">{errorMessage}</p>}
     </div>
   );
 }

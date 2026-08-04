@@ -1,67 +1,134 @@
 # DevReady
 
-Plataforma de preparação técnica por vaga criada para o Hackathon Comunidade Juninhos & Nortjobs. O DevReady compara o perfil do candidato com requisitos reais, organiza treinos direcionados e transforma resultados em um plano claro de evolução.
+Plataforma de preparação para processos seletivos de tecnologia, desenvolvida para o **Hackathon Comunidade Juninhos & Nortjobs**.
 
-## Stack
+O DevReady ajuda pessoas em início de carreira a entender o que uma vaga exige, identificar competências que precisam de reforço e praticar entrevistas com feedback objetivo. Nesta versão de demonstração, todos os dados são fictícios e o processamento do agente acontece localmente no navegador.
 
-- Next.js 16 com App Router e TypeScript
-- React 19 e Tailwind CSS 4
-- PostgreSQL com Prisma ORM 7
+## O problema
+
+Profissionais juniores costumam encontrar descrições de vaga extensas, requisitos pouco claros e dificuldade para transformar um resultado de avaliação em um próximo passo prático. O DevReady organiza essa jornada em três etapas:
+
+1. interpretar os requisitos da vaga;
+2. praticar competências técnicas e comportamentais;
+3. transformar o desempenho em um plano de evolução.
+
+## Principais funcionalidades
+
+- autenticação, cadastro, verificação de e-mail e recuperação de senha;
+- dashboard com prontidão geral, evolução e notas por tecnologia;
+- perfil técnico com área de interesse e nível de experiência;
+- criação de sessão a partir de uma descrição de vaga ou imagem;
+- resultado demonstrativo com compatibilidade e modalidades de treino;
+- agente de entrevista técnica, comportamental ou mista;
+- banco com **35 perguntas por área técnica**;
+- seleção manual da área ou detecção pela descrição da vaga;
+- perguntas adaptadas às lacunas encontradas nas respostas;
+- feedback explicável por conteúdo, clareza, evidências e estrutura;
+- identificação das competências mais fortes e prioritárias;
+- ciclo de preparação de 7 dias com progresso salvo no dispositivo.
+
+## Diferencial: preparação que continua após a entrevista
+
+O agente não encerra a experiência exibindo apenas uma nota. Depois da última resposta, ele apresenta:
+
+- competência mais evidente;
+- prioridade de desenvolvimento;
+- justificativa de cada pergunta;
+- evidências encontradas e pontos ainda não demonstrados;
+- plano de preparação dividido em quatro etapas ao longo de 7 dias;
+- acompanhamento de progresso de 0% a 100%;
+- nova sessão focada na competência com menor desempenho.
+
+O progresso do ciclo permanece disponível após a atualização da página. Como esta é uma demonstração, ele fica armazenado somente no navegador e pode ser removido ao limpar os dados do site.
+
+## Áreas disponíveis no agente
+
+- Frontend
+- Backend
+- Full Stack
+- Mobile
+- Dados e BI
+- Ciência de Dados e IA
+- QA e Testes
+- DevOps e Cloud
+- Segurança da Informação
+- Produto e UX/UI
+
+
+## Tecnologias
+
+- Next.js 16 com App Router
+- React 19
+- TypeScript
+- Tailwind CSS 4
+- PostgreSQL
+- Prisma ORM 7
 - Better Auth
 - Lucide React
 
-## Executar localmente
+## Como executar localmente
 
-1. Instale as dependências:
+### Pré-requisitos
+
+- Node.js 20 ou superior
+- npm
+- PostgreSQL, caso o modo autenticado seja utilizado
+
+### Instalação
+
+1. Clone o repositório:
+
+   ```bash
+   git clone https://github.com/juninhos-comunidade/devready.git
+   cd devready
+   ```
+
+2. Instale as dependências:
 
    ```bash
    npm install
    ```
 
-2. Copie `.env.example` para `.env` e preencha as variáveis.
-
-   - `DATABASE_URL`: conexão PostgreSQL.
-   - `BETTER_AUTH_URL` e `BETTER_AUTH_SECRET`: URL pública e segredo da autenticação.
-   - `RESEND_API_KEY` e `EMAIL_FROM`: envio de verificação e recuperação de senha.
-   - `NEXT_PUBLIC_DEMO_MODE=true`: libera a apresentação com perfil, notas, histórico e fluxos 100% fictícios, sem exigir login.
-   - `NEXT_PUBLIC_TRAINING_ROUTES_ENABLED=false`: evita links quebrados enquanto as telas de nova sessão e resultado ainda não estiverem integradas.
-
-3. Valide o schema e gere o Prisma Client:
+3. Copie o arquivo de exemplo das variáveis de ambiente:
 
    ```bash
-   npx prisma validate
+   cp .env.example .env
+   ```
+
+   No Windows PowerShell:
+
+   ```powershell
+   Copy-Item .env.example .env
+   ```
+
+4. Gere o Prisma Client:
+
+   ```bash
    npx prisma generate
    ```
 
-4. Inicie o projeto:
+5. Inicie o ambiente de desenvolvimento:
 
    ```bash
    npm run dev
    ```
 
-A aplicação estará disponível em `http://localhost:3000`.
+6. Acesse [http://localhost:3000](http://localhost:3000).
 
-## Rotas atuais
+## Variáveis de ambiente
 
-- `/login` — acesso à conta
-- `/cadastro` — cadastro em duas etapas
-- `/esqueci-senha` e `/redefinir-senha` — recuperação de acesso
-- `/verifique-email` — orientação após o cadastro
-- `/politica-de-privacidade` — informações de privacidade e LGPD
-- `/dashboard` — prontidão, notas, GitHub e histórico de evolução
-- `/dashboard/perfil` — dados pessoais e perfil técnico
+| Variável | Finalidade |
+| --- | --- |
+| `NEXT_PUBLIC_DEMO_MODE` | Ativa os fluxos fictícios usados na apresentação |
+| `DATABASE_URL` | Conexão PostgreSQL utilizada pelo Prisma |
+| `BETTER_AUTH_URL` | URL pública da aplicação |
+| `BETTER_AUTH_SECRET` | Segredo da autenticação; deve ser longo e privado |
+| `RESEND_API_KEY` | Chave do serviço de envio de e-mails |
+| `EMAIL_FROM` | Remetente das mensagens de autenticação |
 
-As telas de nova sessão e resultado estão sendo desenvolvidas em branches próprias da equipe e devem ser integradas pelo fluxo oficial de revisão.
+Nunca publique o arquivo `.env` nem utilize os valores ilustrativos de `.env.example` em produção.
 
-O upload do currículo exige a definição de um armazenamento privado e persistente antes do deploy. Não utilize o sistema de arquivos da Vercel para currículos. Até essa integração, o seletor valida o PDF, mas o arquivo não é enviado ao servidor.
-
-## Dados de demonstração e privacidade
-
-O deploy do hackathon deve manter `NEXT_PUBLIC_DEMO_MODE=true`. O dashboard, o perfil, as notas, o GitHub e o histórico usam somente dados fictícios definidos em `lib/dashboard-data.ts` e `lib/demo-mode.ts`. A interface identifica esse estado para não confundir a demonstração com dados reais.
-
-O cadastro exige consentimento explícito para uso do currículo e do GitHub, validado também no servidor e persistido no usuário. Em modo autenticado, a exclusão de conta remove o usuário; sessões e contas de autenticação relacionadas usam exclusão em cascata. No modo demonstração, o mesmo fluxo é simulado para não alterar informações.
-
-## Validação
+## Comandos de qualidade
 
 ```bash
 npm run lint
@@ -69,6 +136,66 @@ npx tsc --noEmit
 npm run build
 ```
 
-## Entrega do hackathon
+## Rotas principais
 
-Antes da entrega final, o README deve incluir os nomes e as responsabilidades de cada integrante, o link do deploy, o link público do pitch e as ferramentas de IA utilizadas pela equipe com a descrição das etapas em que auxiliaram.
+| Rota | Função |
+| --- | --- |
+| `/login` | Acesso à plataforma |
+| `/cadastro` | Criação de conta |
+| `/esqueci-senha` | Recuperação de acesso |
+| `/politica-de-privacidade` | Informações de privacidade e LGPD |
+| `/dashboard` | Visão geral de prontidão e evolução |
+| `/dashboard/perfil` | Dados pessoais e perfil técnico |
+| `/dashboard/nova-sessao` | Configuração de uma análise por vaga |
+| `/dashboard/resultado` | Resultado e modalidades de treino |
+| `/dashboard/agente` | Entrevista adaptativa e ciclo de 7 dias |
+
+## Dados fictícios, privacidade e limitações
+
+- dashboard, perfil, notas, GitHub, vagas e resultados utilizam dados fictícios no modo demo;
+- novas sessões ficam no `sessionStorage` do navegador;
+- respostas e progresso do agente ficam no armazenamento local do navegador;
+- imagens e currículos são validados localmente e não são enviados nesta demonstração;
+- o agente usa avaliação determinística e não envia respostas para uma IA externa;
+- o consentimento para currículo e GitHub é solicitado explicitamente no cadastro;
+- a exclusão de conta é simulada no modo demo e utiliza exclusão em cascata no modo autenticado.
+
+Antes de aceitar currículos reais em produção, o projeto precisa utilizar armazenamento privado e persistente. O sistema de arquivos temporário de plataformas serverless não deve ser usado para documentos pessoais.
+
+## Equipe e responsabilidades
+
+| Integrante | Responsabilidades principais |
+| --- | --- |
+| Isabela Duarte | Dashboard, perfil, privacidade e LGPD, auditoria de experiência, agente de entrevista e ciclo de 7 dias |
+| João Pedro Panza Mainieri | Autenticação, cadastro e análise de perfil |
+| Eduarda (Duda) | Design, Figma, onboarding e trilha de estudo |
+| Geovanna | Sessões de treino por vaga e modalidades de treino |
+
+## Uso de inteligência artificial no desenvolvimento
+
+O **OpenAI Codex** apoiou a equipe na revisão de código, identificação de inconsistências, refinamento de experiência, implementação assistida, validação de fluxos e organização da documentação. Todas as alterações foram revisadas e testadas antes de serem incorporadas ao projeto.
+
+O agente apresentado pelo DevReady nesta versão não consome um modelo externo: as perguntas, adaptações e avaliações são processadas localmente para garantir uma demonstração reproduzível e sem envio de dados pessoais.
+
+## Referências técnicas
+
+Os temas do banco de entrevistas foram estruturados com apoio de documentação pública e oficial:
+
+- [MDN Curriculum](https://developer.mozilla.org/en-US/curriculum/core/)
+- [React](https://react.dev/learn)
+- [Android Developers](https://developer.android.com/topic/architecture)
+- [Apple Developer](https://developer.apple.com/tutorials/app-dev-training)
+- [Playwright](https://playwright.dev/docs/best-practices)
+- [AWS Well-Architected](https://docs.aws.amazon.com/wellarchitected/latest/framework/welcome.html)
+- [OWASP Top 10](https://owasp.org/Top10/)
+- [W3C Web Accessibility Initiative](https://www.w3.org/WAI/fundamentals/accessibility-principles/)
+
+## Links da entrega
+
+- Repositório: [github.com/juninhos-comunidade/devready](https://github.com/juninhos-comunidade/devready)
+- Aplicação publicada: em publicação
+- Vídeo de apresentação: em produção
+
+---
+
+**DevReady — preparação orientada por evidências para a próxima oportunidade.**

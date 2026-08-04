@@ -10,9 +10,9 @@ import { FormSelect } from "@/components/FormSelect";
 import { PdfDropzone } from "@/components/PdfDropzone";
 import { authClient } from "@/lib/auth-client";
 import { demoModeEnabled } from "@/lib/demo-mode";
+import { areaInterestOptions, experienceLevelOptions } from "@/lib/profile-options";
 
 function StepDots({ step }: { step: 1 | 2 }) {
-  // aria-label descreve o passo pra leitor de tela, já que a info aqui é 100% visual (bolinhas/cores)
   return (
     <div className="flex items-center gap-2" aria-label={`Passo ${step} de 2`}>
       <span className="h-2.5 w-2.5 rounded-full bg-[#7755e8]" />
@@ -44,22 +44,15 @@ export default function Cadastro() {
   const [errorMessage, setErrorMessage] = useState("");
   const [isSubmitting, setIsSubmitting] = useState(false);
 
-  // formato bem permissivo: só precisa começar com o domínio do github.com
   const githubTouched = github.length > 0;
   const isValidGithubUrl = /^https?:\/\/(www\.)?github\.com\/[\w-]+\/?$/i.test(github);
 
   const hasMinLength = password.length >= 8;
-  // regex conta qualquer char fora de A-Z/a-z/0-9 como "especial" — cobre a regra
-  // de senha do documento de requisitos (8+ caracteres, 2 especiais) sem whitelist manual
   const specialCharCount = (password.match(/[^A-Za-z0-9]/g) ?? []).length;
   const hasSpecialChars = specialCharCount >= 2;
-  // só mostra "senhas não coincidem" depois que o usuário começa a digitar no campo,
-  // pra não acusar erro num campo que ele ainda nem tocou
   const confirmTouched = confirm.length > 0;
   const passwordsMatch = confirmTouched && confirm === password;
 
-  // form único controla os 2 passos por estado local — evita ter que persistir os
-  // dados do passo 1 em algum lugar (localStorage, rota separada) antes de existir backend
   async function handleSubmit(e: React.SubmitEvent<HTMLFormElement>) {
     e.preventDefault();
     setErrorMessage("");
@@ -137,8 +130,7 @@ export default function Cadastro() {
               Seu diagnóstico começa com um perfil único.
             </h1>
             <p className="mt-4 max-w-[380px] text-[#aaa6d6] leading-relaxed">
-              Seu perfil evolui com você. A gente te ajuda a traçar o melhor
-              caminho para a sua vaga.
+              Um único perfil orienta análises, entrevistas e planos de desenvolvimento para cada vaga.
             </p>
           </div>
 
@@ -148,9 +140,6 @@ export default function Cadastro() {
         <div className="grid place-items-center p-6 md:p-12">
           <form className="w-full max-w-[460px]" onSubmit={handleSubmit}>
             {step === 1 ? (
-              // key força o React a desmontar/remontar ao trocar de passo — sem isso, os
-              // inputs (mesma posição na árvore, mesmo tipo) eram reaproveitados entre os
-              // passos e o valor digitado em "Nome" vazava pro campo de GitHub do passo 2
               <div key="step-1">
                 <h2 className="font-[family-name:var(--font-display)] mt-3 mb-1 text-2xl md:text-4xl text-[#1d1b33]">
                   Crie sua conta
@@ -170,7 +159,7 @@ export default function Cadastro() {
                       required
                       value={name}
                       onChange={(event) => setName(event.target.value)}
-                      placeholder="Como podemos te chamar?"
+                      placeholder="Nome completo"
                       className="w-full rounded-xl border-[1.5px] border-[#e4dfd3] bg-white px-4 py-3 text-[#1d1b33] placeholder:text-[#8b8593] focus:border-[#7755e8] focus:outline-none focus:ring-2 focus:ring-[#7755e8]/30"
                     />
                   </div>
@@ -196,8 +185,6 @@ export default function Cadastro() {
                       Senha <span className="text-[#e8641d]">*</span>
                     </label>
                     <div className="relative">
-                      {/* controlado (value + onChange) pra alimentar o checklist de requisitos
-                          em tempo real logo abaixo, os outros campos do form são uncontrolled */}
                       <input
                         id="password"
                         type={showPassword ? "text" : "password"}
@@ -306,7 +293,7 @@ export default function Cadastro() {
                   Configure seu perfil
                 </h2>
                 <p className="mb-7 text-[#59567a] leading-relaxed">
-                  Quanto mais contexto você der, mais precisa a análise fica.
+                  Complete os dados que orientarão suas análises e entrevistas.
                 </p>
 
                 <div className="grid gap-5 sm:gap-4">
@@ -323,7 +310,6 @@ export default function Cadastro() {
                       placeholder="https://github.com/seu-usuario"
                       className="w-full rounded-xl border-[1.5px] border-[#e4dfd3] bg-white px-4 py-3 text-[#1d1b33] placeholder:text-[#8b8593] focus:border-[#7755e8] focus:outline-none focus:ring-2 focus:ring-[#7755e8]/30"
                     />
-                    {/* aviso só visual — GitHub continua opcional, então isso nunca bloqueia o cadastro */}
                     {githubTouched && !isValidGithubUrl && (
                       <ul className="mt-0.5 grid gap-1 text-xs font-semibold">
                         <RequirementItem met={false} label="Isso não parece um link válido do GitHub" />
@@ -338,7 +324,7 @@ export default function Cadastro() {
                      <PdfDropzone required onFileChange={setCurriculumFile} />
                     {demoModeEnabled && (
                       <p className="text-xs font-semibold leading-relaxed text-[#8b8593]">
-                        Demonstração segura: o PDF é apenas validado no navegador e não é enviado.
+                        Processamento local: nenhum arquivo é enviado.
                       </p>
                     )}
                   </div>
@@ -351,7 +337,7 @@ export default function Cadastro() {
                       id="interesse"
                       required
                       placeholder="Selecione sua área..."
-                      options={["Frontend", "Backend", "Mobile", "Dados"]}
+                      options={[...areaInterestOptions]}
                     />
                   </div>
 
@@ -363,7 +349,7 @@ export default function Cadastro() {
                       id="nivel"
                       required
                       placeholder="Onde você está hoje?"
-                      options={["Estudante", "Estagiário", "Júnior", "Pretendendo migrar de carreira"]}
+                      options={[...experienceLevelOptions]}
                     />
                   </div>
 

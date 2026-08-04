@@ -2,6 +2,7 @@ import Link from "next/link";
 import {
   ArrowRight,
   BookOpen,
+  Bot,
   CalendarDays,
   CheckCircle2,
   CircleDotDashed,
@@ -13,7 +14,6 @@ import {
 import { Sidebar } from "@/components/Sidebar";
 import { EvolutionChart } from "@/components/dashboard/EvolutionChart";
 import { dashboardData, type TechnologyScore } from "@/lib/dashboard-data";
-import { trainingRoutesEnabled } from "@/lib/demo-mode";
 
 function TechnologyRow({ technology }: { technology: TechnologyScore }) {
   const tested = technology.score !== null;
@@ -90,31 +90,24 @@ export default function Dashboard() {
                 Visão geral
               </p>
               <h1 className="mt-1 font-[family-name:var(--font-display)] text-3xl font-bold text-[#1d1b33] sm:text-4xl">
-                Seu próximo passo está claro.
+                Visão de prontidão
               </h1>
               <p className="mt-2 max-w-2xl text-sm leading-relaxed text-[#6d698a] sm:text-base">
-                Acompanhe sua evolução, identifique lacunas e escolha o treino
-                com maior impacto para a próxima vaga.
+                Acompanhe sua evolução e priorize as competências com maior impacto para a próxima vaga.
               </p>
               <span className="mt-3 inline-flex rounded-full bg-[#ece8f8] px-3 py-1 text-[10px] font-extrabold uppercase tracking-wide text-[#654bc9]">
-                Prévia com dados demonstrativos
+                Dados de exemplo
               </span>
             </div>
 
-            {trainingRoutesEnabled ? (
-              <Link
-                href="/dashboard/nova-sessao"
-                className="inline-flex min-h-11 items-center gap-2 rounded-full bg-gradient-to-r from-[#7755e8] to-[#e8641d] px-5 py-3 text-sm font-extrabold text-white shadow-[0_16px_34px_-18px_rgba(119,85,232,0.85)] transition hover:-translate-y-0.5 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#7755e8]"
-              >
-                <Plus className="h-4 w-4" />
-                Nova sessão
+            <div className="flex flex-wrap gap-3">
+              <Link href="/dashboard/agente" className="inline-flex min-h-11 items-center gap-2 rounded-full border border-[#d9d0f2] bg-white px-5 py-3 text-sm font-extrabold text-[#5d43c4] transition hover:border-[#7755e8] hover:bg-[#faf8ff]">
+                <Bot className="h-4 w-4" /> Treinar entrevista
               </Link>
-            ) : (
-              <span className="inline-flex min-h-11 cursor-not-allowed items-center gap-2 rounded-full bg-[#dedbe5] px-5 py-3 text-sm font-extrabold text-[#777286]" title="Disponível após a integração da branch de sessões">
-                <Plus className="h-4 w-4" />
-                Nova sessão em breve
-              </span>
-            )}
+              <Link href="/dashboard/nova-sessao" className="inline-flex min-h-11 items-center gap-2 rounded-full bg-gradient-to-r from-[#7755e8] to-[#e8641d] px-5 py-3 text-sm font-extrabold text-white shadow-[0_16px_34px_-18px_rgba(119,85,232,0.85)] transition hover:-translate-y-0.5 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#7755e8]">
+                <Plus className="h-4 w-4" /> Nova sessão
+              </Link>
+            </div>
           </header>
 
           <section className="relative mt-7 overflow-hidden rounded-[28px] bg-[#17172f] px-6 py-7 text-white shadow-[0_28px_80px_-45px_rgba(21,22,50,0.9)] sm:px-8 sm:py-8">
@@ -128,24 +121,15 @@ export default function Dashboard() {
                   Diagnóstico mais recente
                 </span>
                 <h2 className="mt-4 font-[family-name:var(--font-display)] text-2xl font-bold sm:text-3xl">
-                  Você evoluiu, mas testes ainda são seu maior ganho possível.
+                  Testes automatizados são sua principal prioridade.
                 </h2>
                 <p className="mt-2 max-w-xl text-sm leading-relaxed text-[#c2bfd7] sm:text-base">
                   React e TypeScript já sustentam uma boa base. Priorize testes
                   automatizados e valide SQL antes da próxima entrevista.
                 </p>
-                {trainingRoutesEnabled ? (
-                  <Link
-                    href="/dashboard/nova-sessao"
-                    className="mt-5 inline-flex items-center gap-2 text-sm font-extrabold text-white underline decoration-[#e8641d] decoration-2 underline-offset-4"
-                  >
-                    Criar treino direcionado <ArrowRight className="h-4 w-4" />
-                  </Link>
-                ) : (
-                  <p className="mt-5 inline-flex items-center gap-2 text-sm font-bold text-[#c2bfd7]">
-                    Treino direcionado disponível após a integração <ArrowRight className="h-4 w-4" />
-                  </p>
-                )}
+                <Link href="/dashboard/nova-sessao" className="mt-5 inline-flex items-center gap-2 text-sm font-extrabold text-white underline decoration-[#e8641d] decoration-2 underline-offset-4">
+                  Criar treino direcionado <ArrowRight className="h-4 w-4" />
+                </Link>
               </div>
 
               <div className="flex items-center gap-4 rounded-2xl border border-white/10 bg-white/[0.07] p-5 backdrop-blur-sm sm:min-w-64">
@@ -296,18 +280,12 @@ export default function Dashboard() {
                 <p className="text-[11px] font-extrabold uppercase tracking-[0.18em] text-[#8b8593]">Atividade recente</p>
                 <h2 className="mt-1 font-[family-name:var(--font-display)] text-2xl font-bold text-[#1d1b33]">Últimas sessões</h2>
               </div>
-              {trainingRoutesEnabled ? (
-                <Link href="/dashboard/nova-sessao" className="text-sm font-extrabold text-[#5d43c4] hover:underline">
-                  Criar nova sessão
-                </Link>
-              ) : (
-                <span className="text-xs font-bold text-[#8b8593]">Sessões em integração</span>
-              )}
+              <Link href="/dashboard/nova-sessao" className="text-sm font-extrabold text-[#5d43c4] hover:underline">Criar nova sessão</Link>
             </div>
 
             <div className="mt-5 grid gap-3 lg:grid-cols-3">
               {dashboardData.recentSessions.map((session) => (
-                <article key={session.id} className="rounded-2xl border border-[#ece9f1] p-4">
+                <Link href="/dashboard/resultado" key={session.id} className="rounded-2xl border border-[#ece9f1] p-4 transition hover:border-[#7755e8] hover:bg-[#faf8ff]">
                   <div className="flex items-start justify-between gap-3">
                     <div>
                       <p className="font-extrabold text-[#1d1b33]">{session.title}</p>
@@ -318,7 +296,7 @@ export default function Dashboard() {
                       {session.delta !== null && <p className="text-[10px] font-extrabold text-[#1f9d73]">+{session.delta} pts</p>}
                     </div>
                   </div>
-                </article>
+                </Link>
               ))}
             </div>
           </section>
