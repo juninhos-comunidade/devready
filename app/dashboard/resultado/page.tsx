@@ -110,6 +110,11 @@ export default function Resultado() {
                 <Link href="/dashboard/agente" className="group mt-5 flex items-center justify-between gap-4 rounded-2xl border border-[#d9d0f2] bg-[#faf8ff] p-4 text-left transition hover:border-[#7755e8]">
                   <div><p className="font-extrabold text-[#1d1b33]">Simular entrevista</p><p className="mt-1 text-xs leading-relaxed text-[#6d698a]">Perguntas técnicas ou comportamentais com dificuldade adaptativa.</p></div><ArrowRight className="h-4 w-4 shrink-0 text-[#7755e8] transition group-hover:translate-x-1" />
                 </Link>
+                {/* gancho pra Trilha de Estudo (seção 4.5) — consolida as lacunas
+                    dessa sessão numa trilha só, com materiais recomendados */}
+                <Link href="/dashboard/trilha" className="group mt-3 flex items-center justify-between gap-4 rounded-2xl border border-[#e7e3ee] bg-white p-4 text-left transition hover:border-[#7755e8]">
+                  <div><p className="font-extrabold text-[#1d1b33]">Ver trilha de estudo</p><p className="mt-1 text-xs leading-relaxed text-[#6d698a]">Materiais recomendados pra fechar as lacunas dessa vaga.</p></div><ArrowRight className="h-4 w-4 shrink-0 text-[#7755e8] transition group-hover:translate-x-1" />
+                </Link>
                 <div className="mt-5 flex items-start gap-2 rounded-xl bg-[#f4f1fb] p-4 text-xs leading-relaxed text-[#5b5674]"><CheckCircle2 className="mt-0.5 h-4 w-4 shrink-0 text-[#7755e8]" /> Diagnóstico orientativo para preparação; não representa uma avaliação de recrutamento.</div>
               </section>
             </div>
