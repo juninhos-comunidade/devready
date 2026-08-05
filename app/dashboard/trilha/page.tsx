@@ -9,10 +9,10 @@ import {
 } from "lucide-react";
 import { Sidebar } from "@/components/Sidebar";
 
-// A base de materiais (título, link, tipo, nível) ainda não existe de
-// verdade — os requisitos (seção 4.5) dizem que ela vem de uma tabela
-// curada pela própria equipe, não gerada por IA. Essa é justamente a parte
-// que falta construir por fora do código: aqui só simulamos o formato final.
+// A curadoria de verdade (seção 4.5) ainda vai virar uma tabela própria da
+// equipe (provavelmente vinda de um banco de dados), mas os links abaixo já
+// são reais — documentação oficial e freeCodeCamp — pra quem testar a tela
+// conseguir clicar e estudar de verdade, não só ver um botão sem função.
 const trilha = [
   {
     tecnologia: "Testes automatizados",
@@ -21,21 +21,45 @@ const trilha = [
     status: "ausente" as const,
     mensagem: "Você ainda não tem base aqui — é o seu maior ganho possível antes da próxima entrevista.",
     materiais: [
-      { titulo: "Testes unitários com Jest", tipo: "Artigo", duracao: "12 min" },
-      { titulo: "Fundamentos de testes automatizados", tipo: "Curso", duracao: "1h30" },
+      {
+        titulo: "Testes unitários com Jest",
+        tipo: "Artigo",
+        duracao: "12 min",
+        link: "https://jestjs.io/pt-BR/docs/getting-started",
+      },
+      {
+        titulo: "Fundamentos de testes automatizados",
+        tipo: "Curso",
+        duracao: "1h30",
+        link: "https://testing-library.com/docs/",
+      },
     ],
   },
   {
     tecnologia: "SQL",
     status: "ausente" as const,
     mensagem: "Nenhum teste feito ainda nessa tecnologia — comece pelo básico.",
-    materiais: [{ titulo: "Introdução a SQL para devs", tipo: "Curso", duracao: "2h" }],
+    materiais: [
+      {
+        titulo: "Introdução a SQL para devs",
+        tipo: "Curso",
+        duracao: "2h",
+        link: "https://www.freecodecamp.org/learn/relational-database/",
+      },
+    ],
   },
   {
     tecnologia: "React",
     status: "parcial" as const,
     mensagem: "Você já tem uma boa base — hora de aprofundar em pontos específicos.",
-    materiais: [{ titulo: "Desafio de hooks em React", tipo: "Exercício", duracao: "25 min" }],
+    materiais: [
+      {
+        titulo: "Desafio de hooks em React",
+        tipo: "Exercício",
+        duracao: "25 min",
+        link: "https://pt-br.react.dev/reference/react/hooks",
+      },
+    ],
   },
 ];
 
@@ -116,11 +140,17 @@ export default function TrilhaDeEstudo() {
                               </p>
                             </div>
                           </div>
-                          {/* TODO: sem link real ainda — a base de conteúdo curada pela
-                              equipe (seção 4.5) vai fornecer a URL de cada material */}
-                          <span className="flex shrink-0 items-center gap-1.5 text-sm font-extrabold text-[#5d43c4]">
+                          {/* target=_blank leva pra fora do site (documentação, curso, etc.) —
+                              rel="noopener noreferrer" evita que a página aberta consiga
+                              manipular a aba do DevReady que ficou pra trás */}
+                          <a
+                            href={material.link}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="flex shrink-0 items-center gap-1.5 text-sm font-extrabold text-[#5d43c4] hover:underline"
+                          >
                             Abrir material <ExternalLink className="h-3.5 w-3.5" />
-                          </span>
+                          </a>
                         </li>
                       );
                     })}
