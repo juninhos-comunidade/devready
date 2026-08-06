@@ -8,7 +8,6 @@ import { Eye, EyeOff } from "lucide-react";
 import { RequirementItem } from "@/components/RequirementItem";
 import { FormSelect } from "@/components/FormSelect";
 import { PdfDropzone } from "@/components/PdfDropzone";
-import { authClient } from "@/lib/auth-client";
 import { demoModeEnabled } from "@/lib/demo-mode";
 import { areaInterestOptions, experienceLevelOptions } from "@/lib/profile-options";
 
@@ -53,6 +52,15 @@ export default function Cadastro() {
   const confirmTouched = confirm.length > 0;
   const passwordsMatch = confirmTouched && confirm === password;
 
+  const toBase64 = (file: File): Promise<string> => {
+    return new Promise((resolve, reject) => {
+      const reader = new FileReader();
+      reader.readAsDataURL(file);
+      reader.onload = () => resolve((reader.result as string).split(",")[1]);
+      reader.onerror = (error) => reject(error);
+    })
+  }
+
   async function handleSubmit(e: React.SubmitEvent<HTMLFormElement>) {
     e.preventDefault();
     setErrorMessage("");
@@ -81,19 +89,28 @@ export default function Cadastro() {
     setIsSubmitting(true);
 
     try {
-      const { error } = await authClient.signUp.email({
+      const pdfBase64 = await toBase64(curriculumFile);
+
+      const payload = {
         name,
         email,
         password,
-        githubUrl: github || undefined,
+        github: github || undefined,
         areaInterest,
         experienceLevel,
         privacyConsent,
-        callbackURL: "/dashboard",
-      });
+        pdfBase64,
+      };
 
-      if (error) {
-        setErrorMessage(error.message || "Não foi possível criar a conta. Tente novamente.");
+      const response = await fetch("/api/auth/signup-completo", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(payload),
+      });
+      const data = await response.json().catch(() => null);
+
+      if (!response.ok) {
+        setErrorMessage(data?.error || "Não foi possível criar a conta. Tente novamente.");
         return;
       }
 
