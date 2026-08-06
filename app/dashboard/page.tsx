@@ -14,6 +14,10 @@ import {
 import { Sidebar } from "@/components/Sidebar";
 import { EvolutionChart } from "@/components/dashboard/EvolutionChart";
 import { dashboardData, type TechnologyScore } from "@/lib/dashboard-data";
+import { headers } from "next/headers";
+import { auth } from "@/lib/auth";
+import { redirect } from "next/navigation";
+import { prisma } from "@/lib/prisma";
 
 function TechnologyRow({ technology }: { technology: TechnologyScore }) {
   const tested = technology.score !== null;
@@ -71,7 +75,20 @@ function TechnologyRow({ technology }: { technology: TechnologyScore }) {
   );
 }
 
-export default function Dashboard() {
+export default async function Dashboard() {
+  const session = await auth.api.getSession({headers: await headers()})
+  if (!session) {
+    redirect("/login");
+  }
+  const curriculum = await prisma.curriculum.findUnique({
+  where: { userId: session.user.id },
+});
+  if (!curriculum) {
+    console.log("Nenhum curriculo encontrado");
+    return;
+  }
+
+
   const readinessDelta =
     dashboardData.readiness - dashboardData.previousReadiness;
   const testedTechnologies = dashboardData.technologies.filter(
@@ -293,6 +310,10 @@ export default function Dashboard() {
           </section>
         </div>
       </main>
+      {curriculum.status == "PENDING" ? <CurriculumProcessingTrigger
+  curriculumId={curriculum.id}
+  initialStatus={curriculum.status}
+/> : null}
     </div>
   );
 }
