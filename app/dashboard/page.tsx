@@ -18,6 +18,7 @@ import { headers } from "next/headers";
 import { auth } from "@/lib/auth";
 import { redirect } from "next/navigation";
 import { prisma } from "@/lib/prisma";
+import { CurriculumProcessingTrigger } from "@/components/dashboard/CurriculumProcessingTrigger";
 
 function TechnologyRow({ technology }: { technology: TechnologyScore }) {
   const tested = technology.score !== null;
@@ -83,11 +84,6 @@ export default async function Dashboard() {
   const curriculum = await prisma.curriculum.findUnique({
   where: { userId: session.user.id },
 });
-  if (!curriculum) {
-    console.log("Nenhum curriculo encontrado");
-    return;
-  }
-
 
   const readinessDelta =
     dashboardData.readiness - dashboardData.previousReadiness;
@@ -310,7 +306,7 @@ export default async function Dashboard() {
           </section>
         </div>
       </main>
-      {curriculum.status == "PENDING" ? <CurriculumProcessingTrigger
+      {!curriculum ? <p>Curriculo vazio</p> : curriculum.status == "PENDING" ? <CurriculumProcessingTrigger
   curriculumId={curriculum.id}
   initialStatus={curriculum.status}
 /> : null}
