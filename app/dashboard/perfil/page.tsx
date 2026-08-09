@@ -8,6 +8,7 @@ import { FormSelect } from "@/components/FormSelect";
 import { PdfDropzone } from "@/components/PdfDropzone";
 import { RequirementItem } from "@/components/RequirementItem";
 import { ConfirmDialog } from "@/components/ConfirmDialog";
+import { BrandLoading } from "@/components/BrandLoading";
 import { Check } from "lucide-react";
 import { authClient } from "@/lib/auth-client";
 import { demoModeEnabled, demoProfile } from "@/lib/demo-mode";
@@ -33,7 +34,7 @@ function AuthenticatedPerfil() {
   }, [router, session, sessionPending]);
 
   if (sessionPending || !session) {
-    return <div className="grid min-h-screen place-items-center bg-[#f4f3f8] font-bold text-[#59567a]">Carregando seu perfil...</div>;
+    return <BrandLoading label="Carregando seu perfil..." />;
   }
 
   return <PerfilEditor key={session.user.id} user={session.user} />;

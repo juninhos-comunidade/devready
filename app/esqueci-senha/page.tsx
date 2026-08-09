@@ -3,6 +3,8 @@
 import { useState } from "react";
 import Link from "next/link";
 import { Logo } from "@/components/Logo";
+import { BrandLoading } from "@/components/BrandLoading";
+import { Mascot } from "@/components/Mascot";
 import { authClient } from "@/lib/auth-client";
 
 export default function EsqueciSenha() {
@@ -46,6 +48,7 @@ export default function EsqueciSenha() {
         backgroundColor: "#0d0e24",
       }}
     >
+      {isSubmitting && <BrandLoading overlay label="Preparando a recuperação..." />}
       <section className="w-full max-w-[1080px] grid grid-cols-1 overflow-hidden rounded-2xl border border-[#a7a2d9]/20 bg-[#f7f5f1] shadow-2xl sm:rounded-3xl md:min-h-[650px] md:grid-cols-[0.82fr_1.18fr]">
         <aside
           className="relative flex flex-col p-8 md:p-11 text-[#f7f5f1] overflow-hidden"
@@ -65,12 +68,14 @@ export default function EsqueciSenha() {
               Informe o e-mail da conta para receber o link de redefinição.
             </p>
           </div>
+          <Mascot pose="wave" className="pointer-events-none absolute -bottom-10 right-0 hidden h-60 w-60 md:block" />
         </aside>
 
         <div className="grid place-items-center p-6 md:p-12">
           <div className="w-full max-w-[460px]">
             {sent ? (
               <div key="sent">
+                <Mascot pose="wave" motion="arrive" className="mx-auto mb-2 h-32 w-32" />
                 <h2 className="font-[family-name:var(--font-display)] mb-1 text-2xl md:text-4xl text-[#1d1b33]">
                   Verifique seu e-mail
                 </h2>

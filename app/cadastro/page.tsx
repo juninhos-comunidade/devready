@@ -4,6 +4,8 @@ import { useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { Logo } from "@/components/Logo";
+import { BrandLoading } from "@/components/BrandLoading";
+import { Mascot } from "@/components/Mascot";
 import { Eye, EyeOff } from "lucide-react";
 import { RequirementItem } from "@/components/RequirementItem";
 import { FormSelect } from "@/components/FormSelect";
@@ -114,6 +116,7 @@ export default function Cadastro() {
         backgroundColor: "#0d0e24",
       }}
     >
+      {isSubmitting && <BrandLoading overlay label="Criando seu espaço de evolução..." />}
       <section className="w-full max-w-[1080px] grid grid-cols-1 overflow-hidden rounded-2xl border border-[#a7a2d9]/20 bg-[#f7f5f1] shadow-2xl sm:rounded-3xl md:min-h-[650px] md:grid-cols-[0.82fr_1.18fr]">
         <aside
           className="relative flex flex-col justify-between p-8 md:p-11 text-[#f7f5f1] overflow-hidden"
@@ -134,11 +137,13 @@ export default function Cadastro() {
             </p>
           </div>
 
-          <StepDots step={step} />
+          <div className="relative z-10"><StepDots step={step} /></div>
+          <Mascot pose={step === 1 ? "wave" : "coach"} motion="arrive" priority className="pointer-events-none absolute -bottom-9 -right-5 hidden h-56 w-56 md:block" />
         </aside>
 
         <div className="grid place-items-center p-6 md:p-12">
           <form className="w-full max-w-[460px]" onSubmit={handleSubmit}>
+            <Mascot pose={step === 1 ? "wave" : "coach"} motion="arrive" priority className="mx-auto h-24 w-24 md:hidden" />
             {step === 1 ? (
               <div key="step-1">
                 <h2 className="font-[family-name:var(--font-display)] mt-3 mb-1 text-2xl md:text-4xl text-[#1d1b33]">

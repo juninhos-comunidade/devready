@@ -20,6 +20,8 @@ Profissionais juniores costumam encontrar descrições de vaga extensas, requisi
 - criação de sessão a partir de uma descrição de vaga ou imagem;
 - resultado demonstrativo com compatibilidade e modalidades de treino;
 - agente de entrevista técnica, comportamental ou mista;
+- identidade visual com mascote contextual em carregamentos, orientação e estados de sucesso;
+- trilha de estudo com materiais reais recomendados para cada lacuna;
 - banco com **35 perguntas por área técnica**;
 - seleção manual da área ou detecção pela descrição da vaga;
 - perguntas adaptadas às lacunas encontradas nas respostas;
@@ -54,6 +56,16 @@ O progresso do ciclo permanece disponível após a atualização da página. Com
 - Segurança da Informação
 - Produto e UX/UI
 
+## Demonstração
+
+Com `NEXT_PUBLIC_DEMO_MODE=true`, todos os fluxos utilizam informações fictícias e podem ser apresentados sem conexão com dados pessoais.
+
+```text
+E-mail: demo@devready.app
+Senha: DevReady@2026!
+```
+
+Essas credenciais pertencem exclusivamente ao modo demonstrativo e não concedem acesso a informações reais.
 
 ## Tecnologias
 
@@ -149,6 +161,7 @@ npm run build
 | `/dashboard/nova-sessao` | Configuração de uma análise por vaga |
 | `/dashboard/resultado` | Resultado e modalidades de treino |
 | `/dashboard/agente` | Entrevista adaptativa e ciclo de 7 dias |
+| `/dashboard/trilha` | Trilha de estudo com materiais recomendados |
 
 ## Dados fictícios, privacidade e limitações
 

@@ -3,6 +3,8 @@
 import { useState } from "react";
 import Link from "next/link";
 import { Logo } from "@/components/Logo";
+import { BrandLoading } from "@/components/BrandLoading";
+import { Mascot } from "@/components/Mascot";
 import { Eye, EyeOff } from "lucide-react";
 import { RequirementItem } from "@/components/RequirementItem";
 import { authClient } from "@/lib/auth-client";
@@ -65,6 +67,7 @@ export default function RedefinirSenha() {
         backgroundColor: "#0d0e24",
       }}
     >
+      {isSubmitting && <BrandLoading overlay label="Atualizando sua senha..." />}
       <section className="w-full max-w-[1080px] grid grid-cols-1 overflow-hidden rounded-2xl border border-[#a7a2d9]/20 bg-[#f7f5f1] shadow-2xl sm:rounded-3xl md:min-h-[650px] md:grid-cols-[0.82fr_1.18fr]">
         <aside
           className="relative flex flex-col p-8 md:p-11 text-[#f7f5f1] overflow-hidden"
@@ -84,11 +87,13 @@ export default function RedefinirSenha() {
               Após a alteração, você poderá acessar novamente suas sessões.
             </p>
           </div>
+          <Mascot pose="wave" className="pointer-events-none absolute -bottom-10 right-0 hidden h-60 w-60 md:block" />
         </aside>
 
         <div className="grid place-items-center p-6 md:p-12">
           {completed ? (
             <div className="w-full max-w-[460px]">
+              <Mascot pose="wave" motion="arrive" className="mx-auto mb-2 h-36 w-36" />
               <h2 className="font-[family-name:var(--font-display)] text-3xl text-[#1d1b33]">Senha atualizada</h2>
               <p className="mt-3 text-[#59567a]">Sua nova senha já está ativa. Agora você pode entrar novamente.</p>
               <Link href="/login" className="mt-6 flex min-h-[44px] items-center justify-center rounded-full bg-[#7755e8] font-extrabold text-white">Ir para o login</Link>

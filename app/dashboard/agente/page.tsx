@@ -10,7 +10,6 @@ import {
   CheckCircle2,
   Gauge,
   Info,
-  MessageSquareText,
   RotateCcw,
   Send,
   ShieldCheck,
@@ -19,6 +18,7 @@ import {
   TrendingUp,
 } from "lucide-react";
 import { Sidebar } from "@/components/Sidebar";
+import { Mascot } from "@/components/Mascot";
 import {
   buildInterviewSummary,
   detectInterviewArea,
@@ -384,8 +384,8 @@ export default function AgenteEntrevista() {
               </div>
 
               <aside className="bg-[#17172f] p-6 text-white sm:p-8">
-                <Bot className="h-8 w-8 text-[#d1c8ff]" />
-                <h2 className="mt-5 text-xl font-extrabold">Entrevista personalizada</h2>
+                <Mascot pose="coach" motion="float" priority className="mx-auto h-40 w-40" />
+                <h2 className="mt-3 text-xl font-extrabold">Entrevista personalizada</h2>
                 <ul className="mt-5 space-y-4 text-sm leading-relaxed text-[#c2bfd7]">
                   <li className="flex gap-3"><CheckCircle2 className="mt-0.5 h-4 w-4 shrink-0 text-[#78ddb0]" /> {areaChoice === "auto" && jobDescription.trim().length < 30 ? "35 perguntas técnicas na área detectada pela vaga." : `${getQuestionBankSize(effectiveArea)} perguntas técnicas em ${effectiveAreaLabel}.`}</li>
                   <li className="flex gap-3"><CheckCircle2 className="mt-0.5 h-4 w-4 shrink-0 text-[#78ddb0]" /> Feedback sobre conteúdo, clareza e estrutura.</li>
@@ -396,7 +396,7 @@ export default function AgenteEntrevista() {
             </section>
           ) : completed ? (
             <section className="mt-7 rounded-3xl border border-[#e7e3ee] bg-white p-7 text-center shadow-[0_24px_70px_-48px_rgba(29,27,51,0.55)] sm:p-10">
-              <span className="mx-auto grid h-16 w-16 place-items-center rounded-2xl bg-[#efeaff] text-[#7755e8]"><MessageSquareText className="h-8 w-8" /></span>
+              <Mascot pose="wave" motion="arrive" priority className="mx-auto h-40 w-40" />
               <p className="mt-5 text-sm font-extrabold uppercase tracking-widest text-[#7755e8]">Simulação concluída</p>
               <h2 className="mt-2 font-[family-name:var(--font-display)] text-3xl font-bold text-[#1d1b33]">Desempenho geral: {averageScore}/100</h2>
               <p className="mx-auto mt-3 max-w-xl leading-relaxed text-[#6d698a]">Sua devolutiva conecta as respostas às competências avaliadas e indica onde concentrar a preparação.</p>
@@ -444,6 +444,7 @@ export default function AgenteEntrevista() {
                     <p className="mt-2 text-xs leading-relaxed text-[#777286]"><strong>Dica:</strong> {question.hint}</p>
                     <p className="mt-3 flex items-start gap-2 border-t border-[#ded8e8] pt-3 text-xs leading-relaxed text-[#625c7c]"><Info className="mt-0.5 h-3.5 w-3.5 shrink-0 text-[#7755e8]" /><span><strong>Por que esta pergunta:</strong> {getQuestionReason(question, jobDescription)}</span></p>
                   </div>
+                  <Mascot pose="coach" className="ml-auto hidden h-28 w-28 shrink-0 xl:block" />
                 </div>
 
                 <form onSubmit={submitAnswer} className="mt-6">

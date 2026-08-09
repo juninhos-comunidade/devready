@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { MailCheck } from "lucide-react";
 import { Logo } from "@/components/Logo";
+import { Mascot } from "@/components/Mascot";
 
 export default function VerifiqueEmail() {
   return (
@@ -9,9 +10,12 @@ export default function VerifiqueEmail() {
         <div className="flex justify-center">
           <Logo />
         </div>
-        <span className="mx-auto mt-8 grid h-16 w-16 place-items-center rounded-2xl bg-[#efeaff] text-[#7755e8]">
-          <MailCheck className="h-8 w-8" />
-        </span>
+        <div className="relative mx-auto mt-5 w-fit">
+          <Mascot pose="wave" motion="arrive" priority className="h-40 w-40" />
+          <span className="absolute bottom-2 right-1 grid h-12 w-12 place-items-center rounded-2xl bg-[#efeaff] text-[#7755e8] shadow-lg">
+            <MailCheck className="h-6 w-6" />
+          </span>
+        </div>
         <h1 className="mt-5 font-[family-name:var(--font-display)] text-3xl font-bold text-[#1d1b33]">
           Confirme seu e-mail
         </h1>
