@@ -18,9 +18,6 @@ model User {
   emailVerified Boolean   @default(false)
   name          String?
   image         String?
-  skills        String[]  @default([])
-  curriculum_URL String?
-  githubUrl      String?
   areaInterest   String?
   experienceLevel String?
   privacyConsent Boolean  @default(false)
@@ -28,6 +25,31 @@ model User {
   updatedAt     DateTime  @updatedAt
   sessions      Session[]
   accounts      Account[]
+  curriculum    Curriculum?
+  trainingSessions TrainingSession[]
+  trainingAnswers  TrainingAnswer[]
+}
+
+// Modelo trazido da branch feat/signgnin-integration (colega) — já está
+// aplicado no banco compartilhado de verdade, então precisa existir aqui
+// pro Prisma não achar que "sumiu" e tentar desfazer.
+enum CurriculumStatus {
+  PENDING
+  PROCESSING
+  COMPLETED
+  FAILED
+}
+
+model Curriculum {
+  id Int @id @default(autoincrement())
+  userId String @unique
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+  bruteData String?
+  extractedData Json?
+  status CurriculumStatus @default(PENDING)
+  githubUrl      String?
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
 }
 
 model Session {
@@ -66,5 +88,76 @@ model Verification {
   expiresAt  DateTime
   createdAt  DateTime @default(now())
   updatedAt  DateTime @updatedAt
+}
+
+// ---------------------------------------------------------------------------
+// Modelos da Trilha de Estudo (seção 4.4/4.5 dos requisitos).
+//
+// userId é OPCIONAL de propósito: o site roda em "modo demo" sem exigir
+// login (NEXT_PUBLIC_DEMO_MODE=true), então precisamos conseguir gravar uma
+// sessão de treino mesmo sem um usuário autenticado de verdade. Quando
+// existir login real, o userId é preenchido; no modo demo, fica nulo.
+// ---------------------------------------------------------------------------
+
+// Uma "rodada" de treino — hoje ligada a uma vaga fixa mocada, futuramente
+// à sessão real criada em "Nova Sessão".
+model TrainingSession {
+  id        String   @id @default(uuid())
+  userId    String?
+  user      User?    @relation(fields: [userId], references: [id], onDelete: Cascade)
+  jobTitle  String?
+  createdAt DateTime @default(now())
+
+  questions TrainingQuestion[]
+  answers   TrainingAnswer[]
+}
+
+// Uma pergunta que apareceu numa sessão de treino. "competency" é a chave
+// estável usada pra ligar erros a materiais de estudo (ex.: "java",
+// "sql") — "source" registra se ela veio da lista mocada ou (no futuro)
+// de uma IA, sem que o resto do sistema precise saber a diferença.
+model TrainingQuestion {
+  id              String   @id @default(uuid())
+  sessionId       String
+  session         TrainingSession @relation(fields: [sessionId], references: [id], onDelete: Cascade)
+  competency      String
+  competencyLabel String
+  difficulty      String
+  prompt          String
+  options         Json
+  correctIndex    Int
+  explanation     String
+  source          String   @default("mock")
+  createdAt       DateTime @default(now())
+
+  answers TrainingAnswer[]
+}
+
+// O registro de "a pessoa respondeu esta pergunta, e acertou ou errou".
+// A Trilha de Estudo é inteiramente calculada a partir desses registros —
+// não existe uma tabela separada de "desempenho", pra não correr o risco
+// de ela ficar desatualizada em relação às respostas reais.
+model TrainingAnswer {
+  id         String   @id @default(uuid())
+  sessionId  String
+  session    TrainingSession  @relation(fields: [sessionId], references: [id], onDelete: Cascade)
+  questionId String
+  question   TrainingQuestion @relation(fields: [questionId], references: [id], onDelete: Cascade)
+  userId     String?
+  user       User?    @relation(fields: [userId], references: [id], onDelete: Cascade)
+  wasCorrect Boolean
+  answeredAt DateTime @default(now())
+}
+
+// A base de conteúdo curada pela equipe (seção 4.5) — título, link, tipo
+// de conteúdo e nível, por tecnologia. Não é gerada por IA, é mantida à mão.
+model StudyMaterial {
+  id          String   @id @default(uuid())
+  competency  String
+  title       String
+  url         String
+  contentType String
+  level       String
+  createdAt   DateTime @default(now())
 }
 
