@@ -21,6 +21,7 @@ Profissionais juniores costumam encontrar descrições de vaga extensas, requisi
 - resultado demonstrativo com compatibilidade e modalidades de treino;
 - agente de entrevista técnica, comportamental ou mista;
 - identidade visual com mascote contextual em carregamentos, orientação e estados de sucesso;
+- trilha de estudo com materiais reais recomendados para cada lacuna;
 - banco com **35 perguntas por área técnica**;
 - seleção manual da área ou detecção pela descrição da vaga;
 - perguntas adaptadas às lacunas encontradas nas respostas;
@@ -160,6 +161,7 @@ npm run build
 | `/dashboard/nova-sessao` | Configuração de uma análise por vaga |
 | `/dashboard/resultado` | Resultado e modalidades de treino |
 | `/dashboard/agente` | Entrevista adaptativa e ciclo de 7 dias |
+| `/dashboard/trilha` | Trilha de estudo com materiais recomendados |
 
 ## Dados fictícios, privacidade e limitações
 
