@@ -47,7 +47,6 @@ export const auth = betterAuth({
         subject: "Confirme seu e-mail no DevReady",
         text: `Olá, ${user.name}. Confirme seu e-mail para liberar o DevReady: ${url}`,
       }).catch(reportEmailError);
-      console.log(`Olá, ${user.name}. Confirme seu e-mail para liberar o DevReady: ${url}`)
     },
   },
   user: {
