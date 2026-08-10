@@ -1,10 +1,8 @@
-// Strategy pattern: isola "de onde vêm as perguntas de treino" do resto do
-// app. Hoje só existe a MockQuizQuestionSource, que reaproveita a lista
-// fixa de lib/mock-quiz.ts. Quando a geração por IA (currículo + vaga)
-// estiver pronta, basta criar uma AiQuizQuestionSource que implementa a
-// mesma interface e trocar o retorno de getQuestionSource() — nenhuma tela
-// nem Server Action precisa mudar, porque todas conversam só com
-// QuestionSource e com o tipo TrainingQuestionDTO (lib/training/types.ts).
+// Strategy pattern. Isola de onde vêm as perguntas de treino do resto do
+// app. Hoje só existe a MockQuizQuestionSource, que usa a lista fixa de
+// lib/mock-quiz.ts. Quando a geração por IA estiver pronta, basta criar
+// uma nova classe que implemente a mesma interface e trocar o retorno de
+// getQuestionSource(). Nenhuma tela precisa mudar.
 
 import {
   nextQuizDifficulty,
@@ -14,13 +12,14 @@ import {
 import type { Difficulty, TrainingQuestionDTO } from "./types";
 
 export interface QuestionSource {
-  pickQuestion(difficulty: Difficulty, askedIds: string[]): TrainingQuestionDTO | null;
+  // "competency" é opcional. Quando a pessoa chega no quiz a partir de uma
+  // competência específica (Resultado da vaga), a rodada fica restrita a
+  // ela.
+  pickQuestion(difficulty: Difficulty, askedIds: string[], competency?: string): TrainingQuestionDTO | null;
   nextDifficulty(current: Difficulty, wasCorrect: boolean): Difficulty;
 }
 
-// rótulo de exibição por competência — usado quando queremos um texto
-// padronizado, mas cada pergunta mocada já carrega o seu próprio "topic"
-// como rótulo (ver lib/mock-quiz.ts), que é o que de fato aparece na tela
+// Rótulo de exibição por competência.
 const competencyLabels: Record<string, string> = {
   javascript: "JavaScript",
   react: "React",
@@ -34,8 +33,8 @@ export function competencyLabelFor(competency: string): string {
 }
 
 class MockQuizQuestionSource implements QuestionSource {
-  pickQuestion(difficulty: Difficulty, askedIds: string[]): TrainingQuestionDTO | null {
-    const question = pickQuizQuestion(difficulty, askedIds);
+  pickQuestion(difficulty: Difficulty, askedIds: string[], competency?: string): TrainingQuestionDTO | null {
+    const question = pickQuizQuestion(difficulty, askedIds, competency);
     if (!question) return null;
     return {
       id: question.id,
@@ -55,14 +54,18 @@ class MockQuizQuestionSource implements QuestionSource {
   }
 }
 
-// ponto único de troca: quando a colega entregar a geração via IA, é aqui
-// (e só aqui) que a nova fonte entra
+// Ponto único de troca. Quando a geração via IA existir, entra aqui.
 export function getQuestionSource(): QuestionSource {
   return new MockQuizQuestionSource();
 }
 
-// usado pela Trilha pra saber quantas competências existem no total —
-// não depende da fonte ativa, é só a lista de chaves conhecidas hoje
+// Lista de competências conhecidas hoje, usada pela Trilha.
 export function knownCompetencies(): string[] {
   return [...new Set(quizQuestions.map((question) => question.competency))];
+}
+
+// Usado pelo Resultado pra decidir se mostra o botão de quiz numa
+// competência sem perguntas disponíveis.
+export function hasQuestionsForCompetency(competency: string): boolean {
+  return quizQuestions.some((question) => question.competency === competency);
 }

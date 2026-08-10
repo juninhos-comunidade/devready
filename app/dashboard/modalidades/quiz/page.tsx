@@ -1,10 +1,11 @@
 "use client";
 
-import { useEffect, useRef, useState } from "react";
+import { Suspense, useEffect, useRef, useState } from "react";
 import Link from "next/link";
+import { useSearchParams } from "next/navigation";
 import { ArrowRight, Check, Gauge, ListChecks, RotateCcw, X } from "lucide-react";
 import { Sidebar } from "@/components/Sidebar";
-import { getQuestionSource } from "@/lib/training/question-source";
+import { competencyLabelFor, getQuestionSource } from "@/lib/training/question-source";
 import type { Difficulty, TrainingQuestionDTO } from "@/lib/training/types";
 import { recordTrainingAnswer, startTrainingSession } from "@/lib/training/actions";
 import { addLocalTrainingSessionId } from "@/lib/training/client-sessions";
@@ -17,42 +18,51 @@ const difficultyLabels: Record<Difficulty, string> = {
 
 const QUESTION_LIMIT = 6;
 
-// a fonte de perguntas é escolhida uma vez só, fora do componente: hoje é
-// a lista mocada, mas a tela nunca precisa saber disso (ver lib/training/question-source.ts)
+// A fonte de perguntas é escolhida uma vez, fora do componente. Hoje é a
+// lista mocada, mas a tela não precisa saber disso.
 const questionSource = getQuestionSource();
 
-export default function QuizMultiplaEscolha() {
+// useSearchParams() exige um Suspense por volta de quem usa ela.
+export default function QuizPage() {
+  return (
+    <Suspense fallback={null}>
+      <QuizMultiplaEscolha />
+    </Suspense>
+  );
+}
+
+function QuizMultiplaEscolha() {
+  // Vem do link "Fazer quiz de X" no Resultado da vaga (?competency=react).
+  // Sem esse parâmetro, o quiz mistura todas as competências.
+  const searchParams = useSearchParams();
+  const competency = searchParams.get("competency") ?? undefined;
+
   const [difficulty, setDifficulty] = useState<Difficulty>("iniciante");
   const [askedIds, setAskedIds] = useState<string[]>([]);
   const [selected, setSelected] = useState<number | null>(null);
   const [correctCount, setCorrectCount] = useState(0);
-  // começa como null de propósito: sortear a pergunta (Math.random) direto
-  // no render faria o servidor e o navegador sortearem números diferentes,
-  // e o React reclama de "hydration mismatch". Sorteando só depois de montado
-  // (useEffect), o servidor nunca chega a desenhar uma pergunta aleatória
+  // Começa como null de propósito. Sortear a pergunta direto no render
+  // faria o servidor e o navegador sortearem números diferentes, causando
+  // hydration mismatch. Sorteando só depois de montado, isso não acontece.
   const [question, setQuestion] = useState<TrainingQuestionDTO | null>(null);
-  // guarda a PROMESSA da sessão, não só o id — assim, se alguém responder
-  // rápido (antes do banco confirmar a criação da sessão, o que pode
-  // demorar quando ele "acorda" de um período sem uso), a resposta não é
-  // perdida: ela só espera essa promessa terminar antes de ser gravada.
-  // Um useState com "sessionId ou null" tentava isso antes e descartava
-  // silenciosamente qualquer resposta dada antes da promessa resolver.
+  // Guarda a promessa da sessão, não só o id. Assim, se alguém responder
+  // rápido demais, a resposta espera essa promessa terminar antes de ser
+  // gravada, em vez de ser descartada.
   const sessionPromiseRef = useRef<Promise<string> | null>(null);
 
   function beginNewTrainingSession() {
     const promise = startTrainingSession();
     sessionPromiseRef.current = promise;
     promise.then((id) => addLocalTrainingSessionId(id)).catch(() => {
-      // se nem com as tentativas automáticas (lib/training/with-retry.ts) o
-      // banco respondeu, a pessoa ainda consegue fazer o quiz normalmente —
-      // só não fica salvo na trilha dessa vez
+      // Se nem as tentativas automáticas resolveram, a pessoa ainda
+      // consegue fazer o quiz. Só não fica salvo na trilha dessa vez.
     });
   }
 
   useEffect(() => {
     // eslint-disable-next-line react-hooks/set-state-in-effect
-    setQuestion(questionSource.pickQuestion(difficulty, askedIds));
-  }, [difficulty, askedIds]);
+    setQuestion(questionSource.pickQuestion(difficulty, askedIds, competency));
+  }, [difficulty, askedIds, competency]);
 
   useEffect(() => {
     beginNewTrainingSession();
@@ -62,19 +72,30 @@ export default function QuizMultiplaEscolha() {
   const finished = askedIds.length >= QUESTION_LIMIT || (!question && askedIds.length > 0);
   const isCorrect = answered && question ? selected === question.correctIndex : false;
 
+  // Verifica se depois dessa pergunta ainda sobra alguma. Importa quando a
+  // competência tem poucas perguntas e o quiz acaba antes do limite de 6.
+  const isLastQuestion =
+    answered &&
+    question !== null &&
+    (askedIds.length + 1 >= QUESTION_LIMIT ||
+      questionSource.pickQuestion(
+        questionSource.nextDifficulty(difficulty, isCorrect),
+        [...askedIds, question.id],
+        competency,
+      ) === null);
+
   function handleSelect(index: number) {
     if (answered || !question) return;
     setSelected(index);
     if (index === question.correctIndex) {
       setCorrectCount((count) => count + 1);
     }
-    // a tela não espera o banco pra reagir ao clique (feedback é instantâneo
-    // pelo estado local acima) — mas a gravação em si sempre espera a sessão
-    // existir antes, em vez de desistir se ela ainda não estiver pronta
+    // A tela reage ao clique na hora, mas a gravação espera a sessão
+    // existir antes de rodar.
     sessionPromiseRef.current
       ?.then((sessionId) => recordTrainingAnswer({ sessionId, question, selectedIndex: index }))
       .catch(() => {
-        // falha ao gravar não deve travar a experiência do quiz
+        // Falha ao gravar não deve travar a experiência do quiz.
       });
   }
 
@@ -103,11 +124,12 @@ export default function QuizMultiplaEscolha() {
             <ListChecks className="h-3.5 w-3.5" /> Quiz de múltipla escolha
           </span>
           <h1 className="mt-1 font-[family-name:var(--font-display)] text-3xl font-bold text-[#1d1b33] sm:text-4xl">
-            Teste seus conhecimentos
+            {competency ? `Quiz de ${competencyLabelFor(competency)}` : "Teste seus conhecimentos"}
           </h1>
           <p className="mt-2 leading-relaxed text-[#6d698a]">
-            A cada acerto, a próxima pergunta fica um pouco mais difícil; a
-            cada erro, um pouco mais fácil.
+            {competency
+              ? "Foco só nessa competência, a lacuna que a análise da vaga identificou."
+              : "A cada acerto, a próxima pergunta fica um pouco mais difícil; a cada erro, um pouco mais fácil."}
           </p>
 
           {finished ? (
@@ -141,7 +163,7 @@ export default function QuizMultiplaEscolha() {
                   Ver trilha de estudo
                 </Link>
                 <Link
-                  href="/dashboard/modalidades"
+                  href={competency ? "/dashboard/resultado" : "/dashboard/modalidades"}
                   className="inline-flex min-h-11 items-center justify-center rounded-full px-5 font-extrabold text-[#5d43c4]"
                 >
                   Voltar
@@ -171,8 +193,8 @@ export default function QuizMultiplaEscolha() {
                   {question.options.map((option, index) => {
                     const isSelected = selected === index;
                     const isRightAnswer = index === question.correctIndex;
-                    // depois de responder, sempre mostra qual era a certa —
-                    // mesmo se a pessoa não tiver escolhido ela
+                    // Depois de responder, sempre mostra qual era a certa,
+                    // mesmo se a pessoa não tiver escolhido ela.
                     const showAsCorrect = answered && isRightAnswer;
                     const showAsWrong = answered && isSelected && !isRightAnswer;
 
@@ -218,7 +240,7 @@ export default function QuizMultiplaEscolha() {
                     onClick={handleNext}
                     className="mt-5 ml-auto flex min-h-11 items-center gap-2 rounded-full bg-[#1d1b33] px-6 font-extrabold text-white"
                   >
-                    {askedIds.length + 1 === QUESTION_LIMIT ? "Ver resultado" : "Próxima pergunta"}
+                    {isLastQuestion ? "Ver resultado" : "Próxima pergunta"}
                     <ArrowRight className="h-4 w-4" />
                   </button>
                 )}

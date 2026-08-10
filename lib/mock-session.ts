@@ -17,19 +17,22 @@ export const defaultMockSession: MockSession = {
   source: "text",
 };
 
+// "competency" é a mesma chave usada em lib/mock-quiz.ts. Liga uma linha
+// dessa lista ao quiz certo. "name" é só o texto de exibição. Tecnologias
+// sem competência reconhecida pelo quiz (Node.js hoje) não mostram botão.
 const technologyRules = [
-  { name: "React", terms: ["react", "hooks", "frontend"], base: 86 },
-  { name: "TypeScript", terms: ["typescript", "tipagem"], base: 78 },
-  { name: "Testes", terms: ["teste", "jest", "vitest", "qa"], base: 61 },
-  { name: "SQL", terms: ["sql", "banco", "postgres"], base: 54 },
-  { name: "Node.js", terms: ["node", "backend", "api"], base: 68 },
+  { name: "React", competency: "react", terms: ["react", "hooks", "frontend"], base: 86 },
+  { name: "TypeScript", competency: "typescript", terms: ["typescript", "tipagem"], base: 78 },
+  { name: "Testes", competency: "testes", terms: ["teste", "jest", "vitest", "qa"], base: 61 },
+  { name: "SQL", competency: "sql", terms: ["sql", "banco", "postgres"], base: 54 },
+  { name: "Node.js", competency: "nodejs", terms: ["node", "backend", "api"], base: 68 },
 ] as const;
 
 export function analyzeMockJob(description: string) {
   const normalized = description.toLocaleLowerCase("pt-BR");
   const technologies = technologyRules.map((technology) => {
     const required = technology.terms.some((term) => normalized.includes(term));
-    return { name: technology.name, required, score: required ? technology.base : null };
+    return { name: technology.name, competency: technology.competency, required, score: required ? technology.base : null };
   });
   const required = technologies.filter((technology) => technology.required);
   const compatibility = required.length

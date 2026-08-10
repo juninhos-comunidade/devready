@@ -2,7 +2,7 @@
 
 import { useMemo, useState, useSyncExternalStore } from "react";
 import Link from "next/link";
-import { ArrowRight, BriefcaseBusiness, CheckCircle2, Pencil, Sparkles, Target } from "lucide-react";
+import { ArrowRight, BriefcaseBusiness, CheckCircle2, ListChecks, Pencil, Sparkles, Target } from "lucide-react";
 import { Sidebar } from "@/components/Sidebar";
 import { Mascot } from "@/components/Mascot";
 import {
@@ -11,6 +11,7 @@ import {
   MOCK_SESSION_KEY,
   type MockSession,
 } from "@/lib/mock-session";
+import { hasQuestionsForCompetency } from "@/lib/training/question-source";
 
 const defaultSessionSerialized = JSON.stringify(defaultMockSession);
 const subscribeToStoredSession = () => () => undefined;
@@ -95,12 +96,25 @@ export default function Resultado() {
               <section className="rounded-3xl border border-[#e7e3ee] bg-white p-5 sm:p-6">
                 <div className="flex items-start justify-between gap-4"><div><p className="text-[11px] font-extrabold uppercase tracking-[0.18em] text-[#8b8593]">Aderência por tecnologia</p><h2 className="mt-1 text-xl font-extrabold text-[#1d1b33]">Como seu perfil responde à vaga</h2></div><Target className="h-5 w-5 text-[#7755e8]" /></div>
                 <ul className="mt-5 grid gap-3">
-                  {analysis.technologies.map((technology) => (
-                    <li key={technology.name} className="rounded-2xl border border-[#ece9f1] p-4">
-                      <div className="flex items-center justify-between gap-3"><div><p className="font-extrabold text-[#1d1b33]">{technology.name}</p><p className="text-xs font-semibold text-[#8b8593]">{technology.required ? "Identificada nos requisitos" : "Não identificada nesta vaga"}</p></div><p className="text-xl font-extrabold text-[#1d1b33]">{technology.score === null ? "—" : `${technology.score}%`}</p></div>
-                      <div className="mt-3 h-2 overflow-hidden rounded-full bg-[#eeebf2]">{technology.score !== null && <div className="h-full rounded-full bg-gradient-to-r from-[#7755e8] to-[#e8641d]" style={{ width: `${technology.score}%` }} />}</div>
-                    </li>
-                  ))}
+                  {analysis.technologies.map((technology) => {
+                    // Só oferece o quiz pra competências com pergunta
+                    // disponível, pra não levar a pessoa pra uma rodada vazia.
+                    const canPractice = hasQuestionsForCompetency(technology.competency);
+                    return (
+                      <li key={technology.name} className="rounded-2xl border border-[#ece9f1] p-4">
+                        <div className="flex items-center justify-between gap-3"><div><p className="font-extrabold text-[#1d1b33]">{technology.name}</p><p className="text-xs font-semibold text-[#8b8593]">{technology.required ? "Identificada nos requisitos" : "Não identificada nesta vaga"}</p></div><p className="text-xl font-extrabold text-[#1d1b33]">{technology.score === null ? "—" : `${technology.score}%`}</p></div>
+                        <div className="mt-3 h-2 overflow-hidden rounded-full bg-[#eeebf2]">{technology.score !== null && <div className="h-full rounded-full bg-gradient-to-r from-[#7755e8] to-[#e8641d]" style={{ width: `${technology.score}%` }} />}</div>
+                        {canPractice && (
+                          <Link
+                            href={`/dashboard/modalidades/quiz?competency=${technology.competency}`}
+                            className="mt-3 inline-flex items-center gap-1.5 text-xs font-extrabold text-[#5d43c4] hover:underline"
+                          >
+                            <ListChecks className="h-3.5 w-3.5" /> Fazer quiz de {technology.name}
+                          </Link>
+                        )}
+                      </li>
+                    );
+                  })}
                 </ul>
               </section>
 
@@ -116,8 +130,8 @@ export default function Resultado() {
                 <Link href="/dashboard/agente" className="group mt-5 flex items-center justify-between gap-4 rounded-2xl border border-[#d9d0f2] bg-[#faf8ff] p-4 text-left transition hover:border-[#7755e8]">
                   <div><p className="font-extrabold text-[#1d1b33]">Simular entrevista</p><p className="mt-1 text-xs leading-relaxed text-[#6d698a]">Perguntas técnicas ou comportamentais com dificuldade adaptativa.</p></div><ArrowRight className="h-4 w-4 shrink-0 text-[#7755e8] transition group-hover:translate-x-1" />
                 </Link>
-                {/* gancho pra Trilha de Estudo (seção 4.5) — consolida as lacunas
-                    dessa sessão numa trilha só, com materiais recomendados */}
+                {/* Gancho pra Trilha de Estudo (seção 4.5), que consolida as
+                    lacunas dessa sessão numa trilha só, com materiais recomendados. */}
                 <Link href="/dashboard/trilha" className="group mt-3 flex items-center justify-between gap-4 rounded-2xl border border-[#e7e3ee] bg-white p-4 text-left transition hover:border-[#7755e8]">
                   <div><p className="font-extrabold text-[#1d1b33]">Ver trilha de estudo</p><p className="mt-1 text-xs leading-relaxed text-[#6d698a]">Materiais recomendados pra fechar as lacunas dessa vaga.</p></div><ArrowRight className="h-4 w-4 shrink-0 text-[#7755e8] transition group-hover:translate-x-1" />
                 </Link>
