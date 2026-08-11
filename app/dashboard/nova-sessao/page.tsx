@@ -9,6 +9,7 @@ import { Mascot } from "@/components/Mascot";
 import { ImageDropzone } from "@/components/ImageDropzone";
 import { FormSelect } from "@/components/FormSelect";
 import { MOCK_SESSION_KEY, type MockSession } from "@/lib/mock-session";
+import type { JobAnalysis } from "@/lib/job-training";
 
 const focusOptions = [
   "Entrevista completa",
@@ -38,17 +39,45 @@ export default function NovaSessao() {
     }
 
     setIsAnalyzing(true);
-    const session: MockSession = {
-      name: name.trim(),
-      company: company.trim() || "Empresa não informada",
-      description: description.trim() || "Vaga enviada por imagem com foco em desenvolvimento, APIs, testes e trabalho em equipe.",
-      focus,
-      source: image ? "image" : "text",
-    };
 
-    window.sessionStorage.setItem(MOCK_SESSION_KEY, JSON.stringify(session));
-    await new Promise((resolve) => window.setTimeout(resolve, 700));
-    router.push("/dashboard/resultado");
+    try {
+      const formData = new FormData();
+      formData.set("description", description.trim());
+      formData.set("company", company.trim());
+      if (image) formData.set("image", image);
+
+      const response = await fetch("/api/job-training/analyze", {
+        method: "POST",
+        body: formData,
+      });
+      const payload = await response.json() as {
+        analysis?: JobAnalysis;
+        extractedDescription?: string;
+        notice?: string;
+        error?: string;
+      };
+
+      if (!response.ok || !payload.analysis) {
+        throw new Error(payload.error || "Não foi possível analisar a vaga.");
+      }
+
+      const session: MockSession = {
+        id: crypto.randomUUID(),
+        name: name.trim(),
+        company: company.trim() || payload.analysis.company,
+        description: payload.extractedDescription || description.trim(),
+        focus,
+        source: image ? "image" : "text",
+        analysis: payload.analysis,
+        analysisNotice: payload.notice,
+      };
+
+      window.sessionStorage.setItem(MOCK_SESSION_KEY, JSON.stringify(session));
+      router.push("/dashboard/resultado");
+    } catch (error) {
+      setErrorMessage(error instanceof Error ? error.message : "Não foi possível analisar a vaga.");
+      setIsAnalyzing(false);
+    }
   }
 
   return (

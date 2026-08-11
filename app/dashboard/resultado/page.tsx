@@ -6,11 +6,12 @@ import { ArrowRight, BriefcaseBusiness, CheckCircle2, Pencil, Sparkles, Target }
 import { Sidebar } from "@/components/Sidebar";
 import { Mascot } from "@/components/Mascot";
 import {
-  analyzeMockJob,
   defaultMockSession,
   MOCK_SESSION_KEY,
+  parseMockSession,
   type MockSession,
 } from "@/lib/mock-session";
+import { analyzeJobLocally } from "@/lib/job-training";
 
 const defaultSessionSerialized = JSON.stringify(defaultMockSession);
 const subscribeToStoredSession = () => () => undefined;
@@ -18,11 +19,7 @@ const getStoredSession = () => window.sessionStorage.getItem(MOCK_SESSION_KEY) ?
 const getServerSession = () => defaultSessionSerialized;
 
 function parseStoredSession(value: string): MockSession {
-  try {
-    return JSON.parse(value) as MockSession;
-  } catch {
-    return defaultMockSession;
-  }
+  return parseMockSession(value);
 }
 
 export default function Resultado() {
@@ -35,11 +32,21 @@ export default function Resultado() {
   const session = sessionOverride ?? storedSession;
   const description = descriptionOverride ?? session.description;
 
-  const analysis = useMemo(() => analyzeMockJob(description), [description]);
+  const analysis = useMemo(
+    () => description === session.description
+      ? session.analysis
+      : analyzeJobLocally(description, session.company),
+    [description, session.analysis, session.company, session.description],
+  );
 
   function saveAndReanalyze(event: React.SubmitEvent<HTMLFormElement>) {
     event.preventDefault();
-    const updated = { ...session, description };
+    const updated = {
+      ...session,
+      description,
+      analysis: analyzeJobLocally(description, session.company),
+      analysisNotice: "Análise recalculada localmente após a edição.",
+    };
     setSessionOverride(updated);
     setDescriptionOverride(null);
     window.sessionStorage.setItem(MOCK_SESSION_KEY, JSON.stringify(updated));
@@ -74,6 +81,7 @@ export default function Resultado() {
           ) : (
             <>
               {reanalyzed && <p role="status" className="mt-5 rounded-xl bg-[#eaf7ef] px-4 py-3 text-sm font-bold text-[#247544]">Análise atualizada com os novos requisitos da vaga.</p>}
+              {session.analysisNotice && !reanalyzed && <p role="status" className="mt-5 rounded-xl border border-[#e3d9b5] bg-[#fff9e8] px-4 py-3 text-sm font-bold text-[#725b1e]">{session.analysisNotice}</p>}
               <section className="relative mt-6 overflow-hidden rounded-[28px] bg-[#17172f] p-6 text-white sm:p-8">
                 <div className="pointer-events-none absolute -right-20 -top-20 h-64 w-64 rounded-full bg-[#7755e8]/35 blur-2xl" />
                 <div className="relative grid items-center gap-7 md:grid-cols-[1fr_auto]">
@@ -97,8 +105,8 @@ export default function Resultado() {
                 <ul className="mt-5 grid gap-3">
                   {analysis.technologies.map((technology) => (
                     <li key={technology.name} className="rounded-2xl border border-[#ece9f1] p-4">
-                      <div className="flex items-center justify-between gap-3"><div><p className="font-extrabold text-[#1d1b33]">{technology.name}</p><p className="text-xs font-semibold text-[#8b8593]">{technology.required ? "Identificada nos requisitos" : "Não identificada nesta vaga"}</p></div><p className="text-xl font-extrabold text-[#1d1b33]">{technology.score === null ? "—" : `${technology.score}%`}</p></div>
-                      <div className="mt-3 h-2 overflow-hidden rounded-full bg-[#eeebf2]">{technology.score !== null && <div className="h-full rounded-full bg-gradient-to-r from-[#7755e8] to-[#e8641d]" style={{ width: `${technology.score}%` }} />}</div>
+                      <div className="flex items-center justify-between gap-3"><div><p className="font-extrabold text-[#1d1b33]">{technology.name}</p><p className="text-xs font-semibold text-[#8b8593]">{technology.required ? "Identificada nos requisitos" : "Não identificada nesta vaga"}</p></div><p className="text-xl font-extrabold text-[#1d1b33]">{technology.profileScore === null ? "—" : `${technology.profileScore}%`}</p></div>
+                      <div className="mt-3 h-2 overflow-hidden rounded-full bg-[#eeebf2]">{technology.profileScore !== null && <div className="h-full rounded-full bg-gradient-to-r from-[#7755e8] to-[#e8641d]" style={{ width: `${technology.profileScore}%` }} />}</div>
                     </li>
                   ))}
                 </ul>
@@ -115,6 +123,9 @@ export default function Resultado() {
                 </div>
                 <Link href="/dashboard/agente" className="group mt-5 flex items-center justify-between gap-4 rounded-2xl border border-[#d9d0f2] bg-[#faf8ff] p-4 text-left transition hover:border-[#7755e8]">
                   <div><p className="font-extrabold text-[#1d1b33]">Simular entrevista</p><p className="mt-1 text-xs leading-relaxed text-[#6d698a]">Perguntas técnicas ou comportamentais com dificuldade adaptativa.</p></div><ArrowRight className="h-4 w-4 shrink-0 text-[#7755e8] transition group-hover:translate-x-1" />
+                </Link>
+                <Link href="/dashboard/treino-vaga" className="group mt-3 flex items-center justify-between gap-4 rounded-2xl border border-[#d9d0f2] bg-[#faf8ff] p-4 text-left transition hover:border-[#7755e8]">
+                  <div><p className="font-extrabold text-[#1d1b33]">Treinar para esta vaga</p><p className="mt-1 text-xs leading-relaxed text-[#6d698a]">Quiz técnico, resposta STAR e desafio prático com dificuldade adaptativa.</p></div><ArrowRight className="h-4 w-4 shrink-0 text-[#7755e8] transition group-hover:translate-x-1" />
                 </Link>
                 {/* gancho pra Trilha de Estudo (seção 4.5) — consolida as lacunas
                     dessa sessão numa trilha só, com materiais recomendados */}

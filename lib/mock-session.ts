@@ -1,21 +1,53 @@
+import { analyzeJobLocally, type JobAnalysis } from "@/lib/job-training";
+
 export const MOCK_SESSION_KEY = "devready:mock-session";
 
 export type MockSession = {
+  id: string;
   name: string;
   company: string;
   description: string;
   focus: string;
   source: "text" | "image";
+  analysis: JobAnalysis;
+  analysisNotice?: string;
 };
 
+const defaultDescription =
+  "Vaga para pessoa desenvolvedora frontend com React, TypeScript, testes automatizados, consumo de APIs e noções de SQL. Valorizamos comunicação, colaboração e vontade de aprender.";
+
 export const defaultMockSession: MockSession = {
+  id: "demo-frontend-junior",
   name: "Frontend Júnior",
   company: "Fintech Aurora",
-  description:
-    "Vaga para pessoa desenvolvedora frontend com React, TypeScript, testes automatizados, consumo de APIs e noções de SQL. Valorizamos comunicação, colaboração e vontade de aprender.",
+  description: defaultDescription,
   focus: "Entrevista completa",
   source: "text",
+  analysis: analyzeJobLocally(defaultDescription, "Fintech Aurora"),
 };
+
+export function parseMockSession(value: string | null): MockSession {
+  if (!value) return defaultMockSession;
+
+  try {
+    const parsed = JSON.parse(value) as Partial<MockSession>;
+    const description = parsed.description?.trim() || defaultMockSession.description;
+    const company = parsed.company?.trim() || "Empresa não informada";
+
+    return {
+      id: parsed.id || "legacy-session",
+      name: parsed.name?.trim() || "Treino personalizado",
+      company,
+      description,
+      focus: parsed.focus?.trim() || "Entrevista completa",
+      source: parsed.source === "image" ? "image" : "text",
+      analysis: parsed.analysis ?? analyzeJobLocally(description, company),
+      analysisNotice: parsed.analysisNotice,
+    };
+  } catch {
+    return defaultMockSession;
+  }
+}
 
 const technologyRules = [
   { name: "React", terms: ["react", "hooks", "frontend"], base: 86 },

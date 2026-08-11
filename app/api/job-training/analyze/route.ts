@@ -2,6 +2,7 @@ import { analyzeJobLocally } from "@/lib/job-training";
 import { analyzeJobWithGroq, groqIsConfigured } from "@/lib/groq-job-training";
 
 export const runtime = "nodejs";
+export const maxDuration = 60;
 
 const MAX_IMAGE_BYTES = 5 * 1024 * 1024;
 const acceptedImageTypes = new Set(["image/png", "image/jpeg"]);
@@ -36,7 +37,7 @@ export async function POST(request: Request) {
 
   if (!description) {
     return Response.json({
-      error: "A leitura da imagem precisa da chave GROQ_API_KEY. Cole também a descrição para usar sem conexão.",
+      error: "A leitura automática da imagem está indisponível neste ambiente. Cole também a descrição da vaga para continuar.",
       aiAvailable: false,
     }, { status: 503 });
   }
@@ -44,6 +45,8 @@ export async function POST(request: Request) {
     analysis: analyzeJobLocally(description, company),
     extractedDescription: description,
     aiAvailable: false,
-    notice: groqIsConfigured() ? "A IA ficou indisponível; a análise local foi usada." : "Chave não configurada; a análise local foi usada.",
+    notice: groqIsConfigured()
+      ? "O serviço inteligente ficou indisponível; ativamos a análise local sem interromper sua sessão."
+      : "Modo demonstração: diagnóstico gerado com dados locais.",
   });
 }

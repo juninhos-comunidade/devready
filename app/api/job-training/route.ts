@@ -11,6 +11,7 @@ import {
 } from "@/lib/groq-job-training";
 
 export const runtime = "nodejs";
+export const maxDuration = 60;
 
 type GenerateRequest = {
   action: "generate";
@@ -51,7 +52,9 @@ export async function POST(request: Request) {
     return Response.json({
       content: buildLocalTraining(body.analysis),
       aiAvailable: false,
-      notice: groqIsConfigured() ? "A IA ficou indisponível; o banco local foi usado." : "Chave não configurada; o banco local foi usado.",
+      notice: groqIsConfigured()
+        ? "O serviço inteligente ficou indisponível; ativamos a contingência local sem interromper seu treino."
+        : "Modo demonstração: treino preparado com o banco local.",
     });
   }
 
@@ -79,7 +82,9 @@ export async function POST(request: Request) {
     return Response.json({
       evaluation: evaluateAnswerLocally(body.mode, answer, body.difficulty),
       aiAvailable: false,
-      notice: groqIsConfigured() ? "A IA ficou indisponível; a avaliação local foi usada." : "Chave não configurada; a avaliação local foi usada.",
+      notice: groqIsConfigured()
+        ? "O serviço inteligente ficou indisponível; ativamos a avaliação local."
+        : "Modo demonstração: feedback gerado localmente.",
     });
   }
 

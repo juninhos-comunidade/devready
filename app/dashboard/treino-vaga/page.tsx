@@ -15,7 +15,7 @@ import {
 import { Sidebar } from "@/components/Sidebar";
 import { BrandLoading } from "@/components/BrandLoading";
 import { Mascot } from "@/components/Mascot";
-import { defaultMockSession, MOCK_SESSION_KEY, type MockSession } from "@/lib/mock-session";
+import { MOCK_SESSION_KEY, parseMockSession, type MockSession } from "@/lib/mock-session";
 import {
   TRAINING_HISTORY_KEY,
   nextDifficulty,
@@ -40,12 +40,7 @@ const modeItems: Array<{ id: Mode; label: string; description: string; icon: typ
 ];
 
 function readSession() {
-  try {
-    const stored = window.sessionStorage.getItem(MOCK_SESSION_KEY);
-    return stored ? JSON.parse(stored) as MockSession : defaultMockSession;
-  } catch {
-    return defaultMockSession;
-  }
+  return parseMockSession(window.sessionStorage.getItem(MOCK_SESSION_KEY));
 }
 
 function readAttempts() {

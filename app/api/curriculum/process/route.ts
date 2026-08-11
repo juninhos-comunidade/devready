@@ -2,6 +2,11 @@ import { NextResponse } from "next/server";
 import type { Prisma } from "@/app/generated/prisma/client";
 import { prisma } from "@/lib/prisma";
 import { extractCurriculumData } from "@/lib/extraction";
+import { headers } from "next/headers";
+import { auth } from "@/lib/auth";
+
+export const runtime = "nodejs";
+export const maxDuration = 60;
 
 interface ProcessRequestBody {
   curriculumId: number;
@@ -9,6 +14,11 @@ interface ProcessRequestBody {
 
 export async function POST(request: Request) {
   try {
+    const session = await auth.api.getSession({ headers: await headers() });
+    if (!session) {
+      return NextResponse.json({ error: "Não autenticado." }, { status: 401 });
+    }
+
     const body: unknown = await request.json().catch(() => null);
 
     if (
@@ -27,7 +37,7 @@ export async function POST(request: Request) {
 
     // Lock atômico: só assume o job se ainda estiver PENDING.
     const lock = await prisma.curriculum.updateMany({
-      where: { id: curriculumId, status: "PENDING" },
+      where: { id: curriculumId, userId: session.user.id, status: "PENDING" },
       data: { status: "PROCESSING" },
     });
 
@@ -38,6 +48,10 @@ export async function POST(request: Request) {
     const curriculum = await prisma.curriculum.findUnique({
       where: { id: curriculumId },
     });
+
+    if (!curriculum || curriculum.userId !== session.user.id) {
+      return NextResponse.json({ error: "Currículo não encontrado." }, { status: 404 });
+    }
 
     if (!curriculum?.bruteData) {
       console.error(

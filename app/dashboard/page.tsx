@@ -20,6 +20,12 @@ import { redirect } from "next/navigation";
 import { prisma } from "@/lib/prisma";
 import { CurriculumProcessingTrigger } from "@/components/dashboard/CurriculumProcessingTrigger";
 import { GithubAnalysisCard } from "@/components/dashboard/GithubAnalysisCard";
+import { demoModeEnabled } from "@/lib/demo-mode";
+import type { Prisma } from "@/app/generated/prisma/client";
+
+type CurriculumWithGithub = Prisma.CurriculumGetPayload<{
+  include: { githubProfile: { include: { repos: true } } };
+}>;
 
 function TechnologyRow({ technology }: { technology: TechnologyScore }) {
   const tested = technology.score !== null;
@@ -78,14 +84,19 @@ function TechnologyRow({ technology }: { technology: TechnologyScore }) {
 }
 
 export default async function Dashboard() {
-  const session = await auth.api.getSession({headers: await headers()})
-  if (!session) {
-    redirect("/login");
+  let curriculum: CurriculumWithGithub | null = null;
+
+  if (!demoModeEnabled) {
+    const session = await auth.api.getSession({ headers: await headers() });
+    if (!session) {
+      redirect("/login");
+    }
+
+    curriculum = await prisma.curriculum.findUnique({
+      where: { userId: session.user.id },
+      include: { githubProfile: { include: { repos: true } } },
+    });
   }
-  const curriculum = await prisma.curriculum.findUnique({
-  where: { userId: session.user.id },
-  include: { githubProfile: { include: { repos: true } } },
-});
 
   const readinessDelta =
     dashboardData.readiness - dashboardData.previousReadiness;
@@ -124,6 +135,15 @@ export default async function Dashboard() {
               </Link>
             </div>
           </header>
+
+          {curriculum && (curriculum.status === "PENDING" || curriculum.status === "PROCESSING") && (
+            <div className="mt-5 rounded-2xl border border-[#d9d0f2] bg-[#faf8ff] px-5 py-4">
+              <CurriculumProcessingTrigger
+                curriculumId={curriculum.id}
+                initialStatus={curriculum.status}
+              />
+            </div>
+          )}
 
           <section className="relative mt-7 overflow-hidden rounded-[28px] bg-[#17172f] px-6 py-7 text-white shadow-[0_28px_80px_-45px_rgba(21,22,50,0.9)] sm:px-8 sm:py-8">
             <div className="pointer-events-none absolute -right-20 -top-28 h-72 w-72 rounded-full bg-[#7755e8]/35 blur-2xl" />
@@ -245,7 +265,7 @@ export default async function Dashboard() {
               </ul>
             </section>
 
-            <GithubAnalysisCard curriculum={curriculum} />
+            <GithubAnalysisCard curriculum={curriculum} demoMode={demoModeEnabled} />
           </div>
 
           <div className="mt-6">
@@ -280,14 +300,6 @@ export default async function Dashboard() {
           </section>
         </div>
       </main>
-      {!curriculum ? (
-        <p>Curriculo vazio</p>
-      ) : curriculum.status === "PENDING" || curriculum.status === "PROCESSING" ? (
-        <CurriculumProcessingTrigger
-          curriculumId={curriculum.id}
-          initialStatus={curriculum.status}
-        />
-      ) : null}
     </div>
   );
 }
