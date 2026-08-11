@@ -15,7 +15,8 @@ import {
 import { Sidebar } from "@/components/Sidebar";
 import { BrandLoading } from "@/components/BrandLoading";
 import { Mascot } from "@/components/Mascot";
-import { defaultMockSession, MOCK_SESSION_KEY, type MockSession } from "@/lib/mock-session";
+import { PreparationJourney } from "@/components/PreparationJourney";
+import { MOCK_SESSION_KEY, parseMockSession, persistMockSession, type MockSession } from "@/lib/mock-session";
 import {
   TRAINING_HISTORY_KEY,
   nextDifficulty,
@@ -40,12 +41,7 @@ const modeItems: Array<{ id: Mode; label: string; description: string; icon: typ
 ];
 
 function readSession() {
-  try {
-    const stored = window.sessionStorage.getItem(MOCK_SESSION_KEY);
-    return stored ? JSON.parse(stored) as MockSession : defaultMockSession;
-  } catch {
-    return defaultMockSession;
-  }
+  return parseMockSession(window.sessionStorage.getItem(MOCK_SESSION_KEY));
 }
 
 function readAttempts() {
@@ -122,8 +118,17 @@ export default function TreinoVaga() {
     };
     const updated = [item, ...readAttempts()].slice(0, 50);
     setAttempts(updated);
+    const updatedSession: MockSession = {
+      ...session,
+      progress: {
+        ...session.progress,
+        trainingAttempts: [item, ...session.progress.trainingAttempts].slice(0, 20),
+      },
+    };
+    setSession(updatedSession);
     try {
       window.localStorage.setItem(TRAINING_HISTORY_KEY, JSON.stringify(updated));
+      persistMockSession(updatedSession);
     } catch {}
   }
 
@@ -142,6 +147,7 @@ export default function TreinoVaga() {
             </div>
             <Mascot pose="coach" className="hidden h-28 w-28 sm:block" />
           </header>
+          <PreparationJourney current="pratica" sessionName={session ? `${session.name} · ${session.company}` : undefined} />
 
           {notice && <p role="status" className="mt-5 rounded-xl border border-[#e3d9b5] bg-[#fff9e8] px-4 py-3 text-sm font-bold text-[#725b1e]">{notice}</p>}
           {errorMessage && (

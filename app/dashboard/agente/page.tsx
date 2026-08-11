@@ -6,7 +6,6 @@ import {
   ArrowRight,
   BookOpen,
   Bot,
-  CalendarDays,
   CheckCircle2,
   Gauge,
   Info,
@@ -19,6 +18,10 @@ import {
 } from "lucide-react";
 import { Sidebar } from "@/components/Sidebar";
 import { Mascot } from "@/components/Mascot";
+import { PreparationJourney } from "@/components/PreparationJourney";
+import { PreparationCycle } from "@/components/interview/PreparationCycle";
+import { MOCK_SESSION_KEY, parseMockSession, persistMockSession, type MockSession } from "@/lib/mock-session";
+import type { PreparationPlan } from "@/lib/preparation-journey";
 import {
   buildInterviewSummary,
   detectInterviewArea,
@@ -41,101 +44,7 @@ type InterviewTurn = {
   evaluation: InterviewEvaluation;
 };
 
-type PreparationTask = {
-  id: string;
-  period: string;
-  action: string;
-  completed: boolean;
-};
-
-type SavedPreparationPlan = {
-  id: string;
-  priority: string;
-  sourceScore: number;
-  createdAt: string;
-  tasks: PreparationTask[];
-};
-
-const preparationPlanStorageKey = "devready.interview-preparation-plan.v1";
-
-function isSavedPreparationPlan(value: unknown): value is SavedPreparationPlan {
-  if (!value || typeof value !== "object") return false;
-  const plan = value as Partial<SavedPreparationPlan>;
-  return typeof plan.id === "string"
-    && typeof plan.priority === "string"
-    && typeof plan.sourceScore === "number"
-    && typeof plan.createdAt === "string"
-    && Array.isArray(plan.tasks)
-    && plan.tasks.length > 0
-    && plan.tasks.every((task) => (
-      task
-      && typeof task.id === "string"
-      && typeof task.period === "string"
-      && typeof task.action === "string"
-      && typeof task.completed === "boolean"
-    ));
-}
-
-function PreparationCycle({
-  plan,
-  onToggleTask,
-}: {
-  plan: SavedPreparationPlan;
-  onToggleTask: (taskId: string) => void;
-}) {
-  const completedTasks = plan.tasks.filter((task) => task.completed).length;
-  const progress = Math.round((completedTasks / plan.tasks.length) * 100);
-  const createdDate = new Intl.DateTimeFormat("pt-BR", { day: "2-digit", month: "short" }).format(new Date(plan.createdAt));
-
-  return (
-    <section aria-labelledby="preparation-plan-title" className="rounded-2xl border border-[#e7e3ee] bg-white p-5 text-left">
-      <div className="flex flex-wrap items-start justify-between gap-4">
-        <div>
-          <p className="flex items-center gap-2 font-extrabold text-[#1d1b33]">
-            <CalendarDays className="h-4 w-4 text-[#7755e8]" />
-            <span id="preparation-plan-title">Ciclo de preparação · 7 dias</span>
-          </p>
-          <p className="mt-1 text-xs leading-relaxed text-[#6d698a]">
-            Foco em {plan.priority} · iniciado em {createdDate}
-          </p>
-        </div>
-        <span className="rounded-full bg-[#f0ecff] px-3 py-1 text-xs font-extrabold text-[#654bc9]">
-          {completedTasks} de {plan.tasks.length} etapas
-        </span>
-      </div>
-
-      <div className="mt-4" aria-label={`${progress}% do plano concluído`}>
-        <div className="h-2 overflow-hidden rounded-full bg-[#ece9f1]">
-          <div className="h-full rounded-full bg-gradient-to-r from-[#7755e8] to-[#e8641d] transition-all" style={{ width: `${progress}%` }} />
-        </div>
-        <p className="mt-2 text-right text-xs font-bold text-[#6d698a]">{progress}% concluído</p>
-      </div>
-
-      <div className="mt-4 grid gap-3 sm:grid-cols-2">
-        {plan.tasks.map((task) => (
-          <label key={task.id} className={`flex cursor-pointer gap-3 rounded-xl border p-4 transition ${task.completed ? "border-[#bfe5cf] bg-[#edf8f1]" : "border-[#e7e3ee] bg-[#f7f5fa] hover:border-[#c8bdeb]"}`}>
-            <input
-              type="checkbox"
-              checked={task.completed}
-              onChange={() => onToggleTask(task.id)}
-              className="mt-0.5 h-5 w-5 shrink-0 accent-[#7755e8]"
-            />
-            <span>
-              <span className={`block text-xs font-extrabold ${task.completed ? "text-[#247544]" : "text-[#7755e8]"}`}>{task.period}</span>
-              <span className={`mt-1 block text-sm leading-relaxed ${task.completed ? "text-[#52705e] line-through" : "text-[#514c6a]"}`}>{task.action}</span>
-            </span>
-          </label>
-        ))}
-      </div>
-
-      {progress === 100 && (
-        <p role="status" className="mt-4 flex items-center gap-2 rounded-xl bg-[#edf8f1] px-4 py-3 text-sm font-extrabold text-[#247544]">
-          <CheckCircle2 className="h-4 w-4" /> Ciclo concluído. Você já pode refazer a entrevista e comparar sua evolução.
-        </p>
-      )}
-    </section>
-  );
-}
+type SavedPreparationPlan = PreparationPlan;
 
 const difficultyLabels: Record<InterviewDifficulty, string> = {
   iniciante: "Iniciante",
@@ -171,6 +80,7 @@ export default function AgenteEntrevista() {
   const [previousScore, setPreviousScore] = useState<number | null>(null);
   const [savedPlan, setSavedPlan] = useState<SavedPreparationPlan | null>(null);
   const [configurationError, setConfigurationError] = useState("");
+  const [activeSession, setActiveSession] = useState<MockSession | null>(null);
   const effectiveArea = areaChoice === "auto" ? detectInterviewArea(jobDescription) : areaChoice;
   const effectiveAreaLabel = interviewAreaOptions.find(({ value }) => value === effectiveArea)?.label ?? "Frontend";
 
@@ -191,32 +101,42 @@ export default function AgenteEntrevista() {
   useEffect(() => {
     const loadSavedPlan = window.setTimeout(() => {
       try {
-        const storedPlan = window.localStorage.getItem(preparationPlanStorageKey);
-        if (storedPlan) {
-          const parsedPlan: unknown = JSON.parse(storedPlan);
-          if (isSavedPreparationPlan(parsedPlan)) setSavedPlan(parsedPlan);
+        const preparation = parseMockSession(window.sessionStorage.getItem(MOCK_SESSION_KEY));
+        setActiveSession(preparation);
+        setJobDescription((current) => current || preparation.description);
+        setAreaChoice("auto");
+        if (preparation.progress.plan) {
+          setSavedPlan(preparation.progress.plan);
         }
-      } catch {
-        window.localStorage.removeItem(preparationPlanStorageKey);
-      }
+      } catch {}
     }, 0);
     return () => window.clearTimeout(loadSavedPlan);
   }, []);
 
-  useEffect(() => {
-    if (!savedPlan) return;
-    try {
-      window.localStorage.setItem(preparationPlanStorageKey, JSON.stringify(savedPlan));
-    } catch {
-      // O progresso permanece disponível na sessão mesmo se o navegador bloquear o armazenamento local.
-    }
-  }, [savedPlan]);
+  function persistJourney(plan: PreparationPlan, interview?: MockSession["progress"]["interview"]) {
+    const current = parseMockSession(window.sessionStorage.getItem(MOCK_SESSION_KEY));
+    const updated: MockSession = {
+      ...current,
+      progress: {
+        ...current.progress,
+        plan,
+        interview: interview ?? current.progress.interview,
+      },
+    };
+    setActiveSession(updated);
+    persistMockSession(updated);
+  }
 
   function togglePreparationTask(taskId: string) {
-    setSavedPlan((current) => current ? {
-      ...current,
-      tasks: current.tasks.map((task) => task.id === taskId ? { ...task, completed: !task.completed } : task),
-    } : current);
+    setSavedPlan((current) => {
+      if (!current) return current;
+      const updated = {
+        ...current,
+        tasks: current.tasks.map((task) => task.id === taskId ? { ...task, completed: !task.completed } : task),
+      };
+      persistJourney(updated);
+      return updated;
+    });
   }
 
   function submitAnswer(event: React.SubmitEvent<HTMLFormElement>) {
@@ -236,7 +156,7 @@ export default function AgenteEntrevista() {
       const finalSummary = buildInterviewSummary(nextTurns);
       const finalScore = Math.round(nextTurns.reduce((total, turn) => total + turn.evaluation.score, 0) / nextTurns.length);
       const planId = nextTurns.map((turn) => `${turn.question.id}:${turn.evaluation.score}`).join("|");
-      setSavedPlan({
+      const plan: PreparationPlan = {
         id: planId,
         priority: finalSummary.priority.name,
         sourceScore: finalScore,
@@ -247,6 +167,13 @@ export default function AgenteEntrevista() {
           action: item.action,
           completed: false,
         })),
+      };
+      setSavedPlan(plan);
+      persistJourney(plan, {
+        score: finalScore,
+        strongest: finalSummary.strongest.name,
+        priority: finalSummary.priority.name,
+        completedAt: new Date().toISOString(),
       });
     }
     setDifficulty(currentEvaluation.nextDifficulty);
@@ -313,6 +240,7 @@ export default function AgenteEntrevista() {
               <ShieldCheck className="h-4 w-4" /> Processamento local
             </span>
           </header>
+          <PreparationJourney current="entrevista" sessionName={activeSession ? `${activeSession.name} · ${activeSession.company}` : undefined} />
 
           {!started && savedPlan && (
             <div className="mt-7">

@@ -1,0 +1,31 @@
+name: Qualidade
+
+on:
+  pull_request:
+  push:
+    branches: [main]
+
+jobs:
+  validate:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    env:
+      NEXT_PUBLIC_DEMO_MODE: "true"
+    steps:
+      - name: Baixar código
+        uses: actions/checkout@v4
+      - name: Preparar Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+      - name: Instalar dependências
+        run: npm ci
+      - name: Validar lint
+        run: npm run lint
+      - name: Validar tipos
+        run: npm run typecheck
+      - name: Executar testes
+        run: npm test
+      - name: Gerar build de produção
+        run: npm run vercel-build

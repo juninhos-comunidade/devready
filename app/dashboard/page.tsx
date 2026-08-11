@@ -2,7 +2,6 @@ import Link from "next/link";
 import {
   ArrowRight,
   BookOpen,
-  Bot,
   CalendarDays,
   CheckCircle2,
   CircleDotDashed,
@@ -20,6 +19,14 @@ import { redirect } from "next/navigation";
 import { prisma } from "@/lib/prisma";
 import { CurriculumProcessingTrigger } from "@/components/dashboard/CurriculumProcessingTrigger";
 import { GithubAnalysisCard } from "@/components/dashboard/GithubAnalysisCard";
+import { ActivePreparationCard } from "@/components/dashboard/ActivePreparationCard";
+import { PreparationHistory } from "@/components/dashboard/PreparationHistory";
+import { demoModeEnabled } from "@/lib/demo-mode";
+import type { Prisma } from "@/app/generated/prisma/client";
+
+type CurriculumWithGithub = Prisma.CurriculumGetPayload<{
+  include: { githubProfile: { include: { repos: true } } };
+}>;
 
 function TechnologyRow({ technology }: { technology: TechnologyScore }) {
   const tested = technology.score !== null;
@@ -78,14 +85,19 @@ function TechnologyRow({ technology }: { technology: TechnologyScore }) {
 }
 
 export default async function Dashboard() {
-  const session = await auth.api.getSession({headers: await headers()})
-  if (!session) {
-    redirect("/login");
+  let curriculum: CurriculumWithGithub | null = null;
+
+  if (!demoModeEnabled) {
+    const session = await auth.api.getSession({ headers: await headers() });
+    if (!session) {
+      redirect("/login");
+    }
+
+    curriculum = await prisma.curriculum.findUnique({
+      where: { userId: session.user.id },
+      include: { githubProfile: { include: { repos: true } } },
+    });
   }
-  const curriculum = await prisma.curriculum.findUnique({
-  where: { userId: session.user.id },
-  include: { githubProfile: { include: { repos: true } } },
-});
 
   const readinessDelta =
     dashboardData.readiness - dashboardData.previousReadiness;
@@ -116,16 +128,24 @@ export default async function Dashboard() {
             </div>
 
             <div className="flex flex-wrap gap-3">
-              <Link href="/dashboard/agente" className="inline-flex min-h-11 items-center gap-2 rounded-full border border-[#d9d0f2] bg-white px-5 py-3 text-sm font-extrabold text-[#5d43c4] transition hover:border-[#7755e8] hover:bg-[#faf8ff]">
-                <Bot className="h-4 w-4" /> Treinar entrevista
-              </Link>
               <Link href="/dashboard/nova-sessao" className="inline-flex min-h-11 items-center gap-2 rounded-full bg-gradient-to-r from-[#7755e8] to-[#e8641d] px-5 py-3 text-sm font-extrabold text-white shadow-[0_16px_34px_-18px_rgba(119,85,232,0.85)] transition hover:-translate-y-0.5 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#7755e8]">
-                <Plus className="h-4 w-4" /> Nova sessão
+                <Plus className="h-4 w-4" /> Preparar outra vaga
               </Link>
             </div>
           </header>
 
-          <section className="relative mt-7 overflow-hidden rounded-[28px] bg-[#17172f] px-6 py-7 text-white shadow-[0_28px_80px_-45px_rgba(21,22,50,0.9)] sm:px-8 sm:py-8">
+          {curriculum && (curriculum.status === "PENDING" || curriculum.status === "PROCESSING") && (
+            <div className="mt-5 rounded-2xl border border-[#d9d0f2] bg-[#faf8ff] px-5 py-4">
+              <CurriculumProcessingTrigger
+                curriculumId={curriculum.id}
+                initialStatus={curriculum.status}
+              />
+            </div>
+          )}
+
+          <ActivePreparationCard />
+
+          <section className="relative mt-6 overflow-hidden rounded-[28px] border border-[#e7e3ee] bg-white px-6 py-7 text-[#1d1b33] sm:px-8 sm:py-8">
             <div className="pointer-events-none absolute -right-20 -top-28 h-72 w-72 rounded-full bg-[#7755e8]/35 blur-2xl" />
             <div className="pointer-events-none absolute -bottom-32 right-24 h-72 w-72 rounded-full bg-[#e8641d]/25 blur-2xl" />
 
@@ -133,37 +153,36 @@ export default async function Dashboard() {
               <div className="max-w-2xl">
                 <span className="inline-flex items-center gap-2 rounded-full border border-white/15 bg-white/10 px-3 py-1.5 text-xs font-extrabold text-[#dcd8ff]">
                   <Sparkles className="h-3.5 w-3.5" />
-                  Diagnóstico mais recente
+                  Exemplo de evolução
                 </span>
                 <h2 className="mt-4 font-[family-name:var(--font-display)] text-2xl font-bold sm:text-3xl">
-                  Testes automatizados são sua principal prioridade.
+                  Visualize como a prática muda sua prontidão.
                 </h2>
                 <p className="mt-2 max-w-xl text-sm leading-relaxed text-[#c2bfd7] sm:text-base">
-                  React e TypeScript já sustentam uma boa base. Priorize testes
-                  automatizados e valide SQL antes da próxima entrevista.
+                  Os indicadores abaixo são fictícios e demonstram como o histórico será apresentado depois de novas tentativas.
                 </p>
-                <Link href="/dashboard/nova-sessao" className="mt-5 inline-flex items-center gap-2 text-sm font-extrabold text-white underline decoration-[#e8641d] decoration-2 underline-offset-4">
-                  Criar treino direcionado <ArrowRight className="h-4 w-4" />
+                <Link href="/dashboard/resultado" className="mt-5 inline-flex items-center gap-2 text-sm font-extrabold text-[#5d43c4] underline decoration-[#e8641d] decoration-2 underline-offset-4">
+                  Abrir preparação ativa <ArrowRight className="h-4 w-4" />
                 </Link>
               </div>
 
-              <div className="relative flex items-center gap-4 rounded-2xl border border-white/10 bg-white/[0.07] p-5 pr-24 backdrop-blur-sm sm:min-w-64">
+              <div className="relative flex items-center gap-4 rounded-2xl border border-[#e7e3ee] bg-[#f7f5fa] p-5 pr-24 sm:min-w-64">
                 <Mascot pose="launch" className="pointer-events-none absolute -right-4 -top-14 h-32 w-32" />
                 <div className="grid h-24 w-24 shrink-0 place-items-center rounded-full bg-[conic-gradient(#e8641d_0_76%,rgba(255,255,255,0.12)_76%_100%)] p-2">
-                  <div className="grid h-full w-full place-items-center rounded-full bg-[#1b1b38]">
+                  <div className="grid h-full w-full place-items-center rounded-full bg-white">
                     <span className="font-[family-name:var(--font-display)] text-3xl font-extrabold">
                       {dashboardData.readiness}%
                     </span>
                   </div>
                 </div>
                 <div>
-                  <p className="text-xs font-extrabold uppercase tracking-[0.14em] text-[#aaa6d6]">
+                  <p className="text-xs font-extrabold uppercase tracking-[0.14em] text-[#6d698a]">
                     Prontidão geral
                   </p>
                   <p className="mt-1 flex items-center gap-1 text-sm font-extrabold text-[#78ddb0]">
                     <TrendingUp className="h-4 w-4" /> +{readinessDelta} pts
                   </p>
-                  <p className="mt-1 text-xs text-[#aaa6d6]">desde o último treino</p>
+                  <p className="mt-1 text-xs text-[#6d698a]">exemplo demonstrativo</p>
                 </div>
               </div>
             </div>
@@ -245,49 +264,16 @@ export default async function Dashboard() {
               </ul>
             </section>
 
-            <GithubAnalysisCard curriculum={curriculum} />
+            <GithubAnalysisCard curriculum={curriculum} demoMode={demoModeEnabled} />
           </div>
 
           <div className="mt-6">
             <EvolutionChart series={dashboardData.history} />
           </div>
 
-          <section className="mt-6 rounded-3xl border border-[#e7e3ee] bg-white p-5 shadow-[0_18px_55px_-42px_rgba(29,27,51,0.45)] sm:p-6">
-            <div className="flex flex-wrap items-end justify-between gap-3">
-              <div>
-                <p className="text-[11px] font-extrabold uppercase tracking-[0.18em] text-[#8b8593]">Atividade recente</p>
-                <h2 className="mt-1 font-[family-name:var(--font-display)] text-2xl font-bold text-[#1d1b33]">Últimas sessões</h2>
-              </div>
-              <Link href="/dashboard/nova-sessao" className="text-sm font-extrabold text-[#5d43c4] hover:underline">Criar nova sessão</Link>
-            </div>
-
-            <div className="mt-5 grid gap-3 lg:grid-cols-3">
-              {dashboardData.recentSessions.map((session) => (
-                <Link href="/dashboard/resultado" key={session.id} className="rounded-2xl border border-[#ece9f1] p-4 transition hover:border-[#7755e8] hover:bg-[#faf8ff]">
-                  <div className="flex items-start justify-between gap-3">
-                    <div>
-                      <p className="font-extrabold text-[#1d1b33]">{session.title}</p>
-                      <p className="mt-0.5 text-xs font-semibold text-[#8b8593]">{session.company} · {session.date}</p>
-                    </div>
-                    <div className="shrink-0 text-right">
-                      <p className="text-xl font-extrabold text-[#1d1b33]">{session.score}%</p>
-                      {session.delta !== null && <p className="text-[10px] font-extrabold text-[#1f9d73]">+{session.delta} pts</p>}
-                    </div>
-                  </div>
-                </Link>
-              ))}
-            </div>
-          </section>
+          <PreparationHistory />
         </div>
       </main>
-      {!curriculum ? (
-        <p>Curriculo vazio</p>
-      ) : curriculum.status === "PENDING" || curriculum.status === "PROCESSING" ? (
-        <CurriculumProcessingTrigger
-          curriculumId={curriculum.id}
-          initialStatus={curriculum.status}
-        />
-      ) : null}
     </div>
   );
 }

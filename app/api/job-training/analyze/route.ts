@@ -1,10 +1,41 @@
-import { analyzeJobLocally } from "@/lib/job-training";
+import { analyzeJobLocally, demoCandidateProfile } from "@/lib/job-training";
 import { analyzeJobWithGroq, groqIsConfigured } from "@/lib/groq-job-training";
+import { demoModeEnabled } from "@/lib/demo-mode";
+import { buildCandidateProfileSnapshot } from "@/lib/candidate-profile";
+import { auth } from "@/lib/auth";
+import { prisma } from "@/lib/prisma";
+import { headers } from "next/headers";
 
 export const runtime = "nodejs";
+export const maxDuration = 60;
 
 const MAX_IMAGE_BYTES = 5 * 1024 * 1024;
 const acceptedImageTypes = new Set(["image/png", "image/jpeg"]);
+
+async function getCandidateProfile() {
+  if (demoModeEnabled) return demoCandidateProfile;
+  try {
+    const session = await auth.api.getSession({ headers: await headers() });
+    if (!session) return undefined;
+    const curriculum = await prisma.curriculum.findUnique({
+      where: { userId: session.user.id },
+      include: { githubProfile: { include: { repos: true } } },
+    });
+    if (!curriculum) return undefined;
+    const curriculumText = [curriculum.bruteData, curriculum.extractedData ? JSON.stringify(curriculum.extractedData) : ""].filter(Boolean).join(" ");
+    const githubText = curriculum.githubProfile
+      ? [
+        curriculum.githubProfile.bio,
+        JSON.stringify(curriculum.githubProfile.topLanguages ?? {}),
+        ...curriculum.githubProfile.repos.flatMap((repo) => [repo.name, repo.description, JSON.stringify(repo.languages ?? {})]),
+      ].filter(Boolean).join(" ")
+      : "";
+    return buildCandidateProfileSnapshot({ curriculumText, githubText });
+  } catch (error) {
+    console.error("Não foi possível reunir as evidências do perfil para a análise.", error);
+    return undefined;
+  }
+}
 
 export async function POST(request: Request) {
   const form = await request.formData();
@@ -25,9 +56,11 @@ export async function POST(request: Request) {
     imageDataUrl = `data:${image.type};base64,${buffer.toString("base64")}`;
   }
 
+  const candidateProfile = await getCandidateProfile();
+
   if (groqIsConfigured()) {
     try {
-      const analysis = await analyzeJobWithGroq({ description, company, imageDataUrl });
+      const analysis = await analyzeJobWithGroq({ description, company, imageDataUrl, profile: candidateProfile });
       return Response.json({ analysis, extractedDescription: description || analysis.summary, aiAvailable: true });
     } catch (error) {
       console.error("Falha na análise Groq; usando contingência local.", error);
@@ -36,14 +69,16 @@ export async function POST(request: Request) {
 
   if (!description) {
     return Response.json({
-      error: "A leitura da imagem precisa da chave GROQ_API_KEY. Cole também a descrição para usar sem conexão.",
+      error: "A leitura automática da imagem está indisponível neste ambiente. Cole também a descrição da vaga para continuar.",
       aiAvailable: false,
     }, { status: 503 });
   }
   return Response.json({
-    analysis: analyzeJobLocally(description, company),
+    analysis: analyzeJobLocally(description, company, candidateProfile),
     extractedDescription: description,
     aiAvailable: false,
-    notice: groqIsConfigured() ? "A IA ficou indisponível; a análise local foi usada." : "Chave não configurada; a análise local foi usada.",
+    notice: groqIsConfigured()
+      ? "O serviço inteligente ficou indisponível; ativamos a análise local sem interromper sua sessão."
+      : "Modo demonstração: diagnóstico gerado com dados locais.",
   });
 }

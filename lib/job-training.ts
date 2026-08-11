@@ -13,6 +13,7 @@ export type TechnologyMatch = {
   name: string;
   required: boolean;
   profileScore: number | null;
+  evidence?: string[];
 };
 
 export type JobAnalysis = {
@@ -26,6 +27,15 @@ export type JobAnalysis = {
   softSkills: string[];
   summary: string;
   source: "groq" | "local";
+  profileLabel?: string;
+  profileIsDemo?: boolean;
+};
+
+export type CandidateProfileSnapshot = {
+  label: string;
+  isDemo: boolean;
+  skillScores: Record<string, number>;
+  skillEvidence?: Record<string, string[]>;
 };
 
 export type QuizQuestion = {
@@ -74,17 +84,46 @@ export type TrainingAttempt = {
 };
 
 const technologyCatalog = [
-  { name: "React", terms: ["react", "hooks", "frontend"], profileScore: 86 },
-  { name: "TypeScript", terms: ["typescript", "tipagem"], profileScore: 78 },
-  { name: "JavaScript", terms: ["javascript", "ecmascript"], profileScore: 81 },
-  { name: "Testes", terms: ["teste", "jest", "vitest", "qa"], profileScore: 61 },
-  { name: "SQL", terms: ["sql", "postgres", "banco de dados"], profileScore: 54 },
-  { name: "Node.js", terms: ["node", "node.js", "backend"], profileScore: 68 },
-  { name: "Python", terms: ["python", "django", "fastapi"], profileScore: 72 },
-  { name: "APIs REST", terms: ["api", "rest", "http"], profileScore: 70 },
-  { name: "Docker", terms: ["docker", "container"], profileScore: 45 },
-  { name: "AWS", terms: ["aws", "cloud"], profileScore: 42 },
+  { name: "React", terms: ["react", "hooks", "frontend"] },
+  { name: "TypeScript", terms: ["typescript", "tipagem"] },
+  { name: "JavaScript", terms: ["javascript", "ecmascript"] },
+  { name: "Testes", terms: ["teste", "jest", "vitest", "qa"] },
+  { name: "SQL", terms: ["sql", "postgres", "banco de dados"] },
+  { name: "Node.js", terms: ["node", "node.js", "backend"] },
+  { name: "Python", terms: ["python", "django", "fastapi"] },
+  { name: "APIs REST", terms: ["api", "rest", "http"] },
+  { name: "Docker", terms: ["docker", "container"] },
+  { name: "AWS", terms: ["aws", "cloud"] },
 ] as const;
+
+export const demoCandidateProfile: CandidateProfileSnapshot = {
+  label: "Perfil fictício de demonstração",
+  isDemo: true,
+  skillScores: {
+    React: 86,
+    TypeScript: 78,
+    JavaScript: 81,
+    Testes: 61,
+    SQL: 54,
+    "Node.js": 68,
+    Python: 72,
+    "APIs REST": 70,
+    Docker: 45,
+    AWS: 42,
+  },
+  skillEvidence: {
+    React: ["Currículo fictício", "GitHub fictício"],
+    TypeScript: ["Currículo fictício", "GitHub fictício"],
+    JavaScript: ["Currículo fictício"],
+    Testes: ["Currículo fictício"],
+    SQL: ["Currículo fictício"],
+    "Node.js": ["GitHub fictício"],
+    Python: ["Currículo fictício"],
+    "APIs REST": ["GitHub fictício"],
+    Docker: ["Currículo fictício"],
+    AWS: ["Currículo fictício"],
+  },
+};
 
 const difficultyOrder: TrainingDifficulty[] = ["iniciante", "intermediaria", "avancada"];
 
@@ -99,18 +138,33 @@ export function nextDifficulty(score: number, current: TrainingDifficulty) {
   return current;
 }
 
-export function analyzeJobLocally(description: string, company = "Empresa não informada"): JobAnalysis {
+export function analyzeJobLocally(
+  description: string,
+  company = "Empresa não informada",
+  profile?: CandidateProfileSnapshot,
+): JobAnalysis {
   const normalized = description.toLocaleLowerCase("pt-BR");
   const technologies = technologyCatalog
     .map((technology) => ({
       name: technology.name,
       required: technology.terms.some((term) => normalized.includes(term)),
-      profileScore: technology.terms.some((term) => normalized.includes(term)) ? technology.profileScore : null,
+      profileScore: technology.terms.some((term) => normalized.includes(term))
+        ? profile?.skillScores[technology.name] ?? null
+        : null,
+      evidence: technology.terms.some((term) => normalized.includes(term))
+        ? profile?.skillEvidence?.[technology.name] ?? []
+        : [],
     }))
     .filter((technology) => technology.required);
-  const selected = technologies.length ? technologies : [{ name: "Fundamentos de tecnologia", required: true, profileScore: 65 }];
-  const compatibility = clampScore(selected.reduce((total, item) => total + (item.profileScore ?? 0), 0) / selected.length);
-  const sorted = [...selected].sort((a, b) => (b.profileScore ?? 0) - (a.profileScore ?? 0));
+  const selected: TechnologyMatch[] = technologies.length
+    ? technologies
+    : [{ name: "Fundamentos de tecnologia", required: true, profileScore: null, evidence: [] }];
+  const scored = selected.filter((item) => item.profileScore !== null);
+  const evidenced = selected.filter((item) => item.profileScore !== null || item.evidence?.length);
+  const compatibility = scored.length
+    ? clampScore(scored.reduce((total, item) => total + (item.profileScore ?? 0), 0) / selected.length)
+    : clampScore((evidenced.length / selected.length) * 100);
+  const sorted = [...selected].sort((a, b) => ((b.profileScore ?? 0) + (b.evidence?.length ? 1 : 0)) - ((a.profileScore ?? 0) + (a.evidence?.length ? 1 : 0)));
   const seniority = /s[eê]nior|senior/.test(normalized)
     ? "Sênior"
     : /pleno/.test(normalized)
@@ -139,6 +193,8 @@ export function analyzeJobLocally(description: string, company = "Empresa não i
     softSkills: softSkills.length ? softSkills : ["comunicação", "colaboração"],
     summary: `A vaga tem perfil ${seniority.toLocaleLowerCase("pt-BR")} e prioriza ${selected.slice(0, 4).map((item) => item.name).join(", ")}.`,
     source: "local",
+    profileLabel: profile?.label ?? "Perfil sem evidências processadas",
+    profileIsDemo: profile?.isDemo ?? false,
   };
 }
 

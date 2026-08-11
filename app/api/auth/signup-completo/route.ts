@@ -3,6 +3,10 @@ import { APIError } from "better-auth/api";
 import { auth } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 
+export const runtime = "nodejs";
+
+const MAX_PDF_BYTES = 3 * 1024 * 1024;
+
 export async function POST(request: Request) {
   const body = await request.json().catch(() => null);
 
@@ -10,10 +14,30 @@ export async function POST(request: Request) {
     return NextResponse.json({ error: "Corpo da requisição inválido." }, { status: 400 });
   }
 
-  const { name, email, password, github, areaInterest, experienceLevel, privacyConsent, pdfBase64 } = body;
+  const { name, email, password, github, areaInterest, experienceLevel, privacyConsent, pdfBase64 } = body as Record<string, unknown>;
 
-  if (!pdfBase64) {
+  if (
+    typeof name !== "string" || name.trim().length < 2 || name.length > 120 ||
+    typeof email !== "string" || email.length > 254 ||
+    typeof password !== "string" || password.length > 128 ||
+    typeof areaInterest !== "string" || areaInterest.length > 80 ||
+    typeof experienceLevel !== "string" || experienceLevel.length > 80 ||
+    privacyConsent !== true
+  ) {
+    return NextResponse.json({ error: "Revise os dados obrigatórios do cadastro." }, { status: 400 });
+  }
+
+  if (typeof pdfBase64 !== "string" || !pdfBase64) {
     return NextResponse.json({ error: "Adicione seu currículo em PDF para concluir o cadastro." }, { status: 400 });
+  }
+
+  if (Buffer.byteLength(pdfBase64, "base64") > MAX_PDF_BYTES) {
+    return NextResponse.json({ error: "O currículo deve ter no máximo 3 MB." }, { status: 413 });
+  }
+
+  const githubUrl = typeof github === "string" && github.trim() ? github.trim() : null;
+  if (githubUrl && !/^https?:\/\/(www\.)?github\.com\/[\w-]+\/?$/i.test(githubUrl)) {
+    return NextResponse.json({ error: "Informe um link válido de perfil do GitHub." }, { status: 400 });
   }
 
   let signUpResult;
@@ -48,7 +72,7 @@ export async function POST(request: Request) {
       data: {
         userId: user.id,
         bruteData: pdfBase64,
-        githubUrl: github || null,
+        githubUrl,
       },
     });
   } catch (error) {

@@ -76,7 +76,7 @@ export default function Cadastro() {
       return;
     }
 
-    if (!curriculumFile) {
+    if (!demoModeEnabled && !curriculumFile) {
       setErrorMessage("Adicione seu currículo em PDF para concluir o cadastro.");
       return;
     }
@@ -91,6 +91,13 @@ export default function Cadastro() {
     setIsSubmitting(true);
 
     try {
+      if (demoModeEnabled) {
+        await new Promise((resolve) => window.setTimeout(resolve, 500));
+        router.replace("/dashboard");
+        return;
+      }
+
+      if (!curriculumFile) return;
       const pdfBase64 = await toBase64(curriculumFile);
 
       const payload = {
@@ -341,12 +348,12 @@ export default function Cadastro() {
 
                   <div className="grid gap-1.5">
                     <label className="text-sm font-extrabold text-[#1d1b33]">
-                      Currículo em PDF <span className="text-[#e8641d]">*</span>
+                      Currículo em PDF {!demoModeEnabled && <span className="text-[#e8641d]">*</span>}
                     </label>
-                     <PdfDropzone required onFileChange={setCurriculumFile} />
+                     <PdfDropzone required={!demoModeEnabled} onFileChange={setCurriculumFile} />
                     {demoModeEnabled && (
                       <p className="text-xs font-semibold leading-relaxed text-[#8b8593]">
-                        Processamento local: nenhum arquivo é enviado.
+                        Opcional na demonstração. Se você selecionar um PDF fictício, ele permanece somente neste navegador.
                       </p>
                     )}
                   </div>

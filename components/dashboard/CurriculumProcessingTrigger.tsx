@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState, useRef } from "react";
+import { LoaderCircle } from "lucide-react";
 import { useRouter } from "next/navigation";
 
 type CurriculumStatus = "PENDING" | "PROCESSING" | "COMPLETED" | "FAILED";
@@ -23,7 +24,7 @@ export function CurriculumProcessingTrigger({curriculumId, initialStatus}: Curri
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ curriculumId }),
         }).catch((err) => console.error("Falha ao disparar processamento", err));
-    }, []);
+    }, [curriculumId, initialStatus]);
     useEffect(() => {
 
   if (initialStatus !== "PENDING" && initialStatus !== "PROCESSING") return;
@@ -54,13 +55,13 @@ export function CurriculumProcessingTrigger({curriculumId, initialStatus}: Curri
   }, 9000);
 
   return () => clearInterval(interval);
-}, []);
+}, [initialStatus, router]);
 if (isStuck) {
-  return <p>Processamento demorando mais que o esperado. Atualize a página em alguns minutos.</p>;
+  return <p role="status" className="text-sm font-bold text-[#725b1e]">O processamento está levando mais tempo que o esperado. Você pode continuar usando o painel e voltar em alguns minutos.</p>;
 }
 
 if (initialStatus === "PENDING" || initialStatus === "PROCESSING") {
-  return <p>Processando seu currículo...</p>;
+  return <p role="status" className="flex items-center gap-2 text-sm font-bold text-[#5d43c4]"><LoaderCircle className="h-4 w-4 animate-spin" /> Processando seu currículo em segundo plano...</p>;
 }
 
 return null;

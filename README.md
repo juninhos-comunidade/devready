@@ -2,15 +2,17 @@
 
 Plataforma de preparação para processos seletivos de tecnologia, desenvolvida para o **Hackathon Comunidade Juninhos & Nortjobs**.
 
-O DevReady ajuda pessoas em início de carreira a entender o que uma vaga exige, identificar competências que precisam de reforço e praticar entrevistas com feedback objetivo. Nesta versão de demonstração, todos os dados são fictícios e o processamento do agente acontece localmente no navegador.
+O DevReady ajuda pessoas em início de carreira a entender o que uma vaga exige, reunir evidências das próprias competências e praticar entrevistas com feedback objetivo. Nesta versão de demonstração, todos os dados são fictícios e o processamento do agente acontece localmente no navegador.
 
 ## O problema
 
-Profissionais juniores costumam encontrar descrições de vaga extensas, requisitos pouco claros e dificuldade para transformar um resultado de avaliação em um próximo passo prático. O DevReady organiza essa jornada em três etapas:
+Profissionais juniores costumam encontrar descrições de vaga extensas, requisitos pouco claros e dificuldade para transformar um resultado de avaliação em um próximo passo prático. O DevReady organiza a preparação como uma jornada única por vaga:
 
-1. interpretar os requisitos da vaga;
-2. praticar competências técnicas e comportamentais;
-3. transformar o desempenho em um plano de evolução.
+1. interpretar os requisitos;
+2. produzir um diagnóstico explicável;
+3. praticar competências técnicas e comportamentais;
+4. simular a entrevista;
+5. transformar o desempenho em um plano de evolução.
 
 ## Principais funcionalidades
 
@@ -19,6 +21,8 @@ Profissionais juniores costumam encontrar descrições de vaga extensas, requisi
 - perfil técnico com área de interesse e nível de experiência;
 - criação de sessão a partir de uma descrição de vaga ou imagem;
 - resultado demonstrativo com compatibilidade e modalidades de treino;
+- matriz de evidências com status, confiança, origem e próxima ação por competência;
+- treino específico por vaga com quiz técnico, resposta STAR e desafio prático;
 - agente de entrevista técnica, comportamental ou mista;
 - identidade visual com mascote contextual em carregamentos, orientação e estados de sucesso;
 - trilha de estudo com materiais reais recomendados para cada lacuna;
@@ -28,6 +32,15 @@ Profissionais juniores costumam encontrar descrições de vaga extensas, requisi
 - feedback explicável por conteúdo, clareza, evidências e estrutura;
 - identificação das competências mais fortes e prioritárias;
 - ciclo de preparação de 7 dias com progresso salvo no dispositivo.
+- histórico por vaga e recomendação de uma única próxima melhor ação.
+
+## Jornada orientada por evidências
+
+Vaga, diagnóstico, prática, entrevista e plano compartilham o mesmo contexto. O usuário não precisa colar novamente a descrição ao abrir o agente e pode retomar uma preparação pelo dashboard.
+
+O diagnóstico diferencia três situações: **demonstrado**, **em desenvolvimento** e **não evidenciado**. “Não evidenciado” não significa falta de conhecimento; significa apenas que o sistema ainda não recebeu uma resposta, tentativa ou informação de perfil capaz de sustentar aquela conclusão.
+
+No modo demonstrativo, qualquer evidência de currículo ou GitHub é identificada como fictícia. Sem perfil processado, o sistema não inventa pontuações do candidato.
 
 ## Diferencial: preparação que continua após a entrevista
 
@@ -77,6 +90,7 @@ Essas credenciais pertencem exclusivamente ao modo demonstrativo e não concedem
 - Prisma ORM 7
 - Better Auth
 - Lucide React
+- Groq opcional, com contingência local para a demonstração
 
 ## Como executar localmente
 
@@ -137,6 +151,11 @@ Essas credenciais pertencem exclusivamente ao modo demonstrativo e não concedem
 | `BETTER_AUTH_SECRET` | Segredo da autenticação; deve ser longo e privado |
 | `RESEND_API_KEY` | Chave do serviço de envio de e-mails |
 | `EMAIL_FROM` | Remetente das mensagens de autenticação |
+| `GROQ_API_KEY` | Geração e avaliação por IA; o treino usa contingência local quando ausente |
+| `GROQ_MODEL` | Modelo de texto utilizado pela integração Groq |
+| `GROQ_VISION_MODEL` | Modelo usado para interpretar imagens de vagas |
+| `GITHUB_TOKEN` | Consulta do perfil público do GitHub no modo autenticado |
+| `NEXT_PUBLIC_SESSION_LIMIT` | Limite demonstrativo de sessões simultâneas, entre 3 e 5 |
 
 Nunca publique o arquivo `.env` nem utilize os valores ilustrativos de `.env.example` em produção.
 
@@ -144,9 +163,12 @@ Nunca publique o arquivo `.env` nem utilize os valores ilustrativos de `.env.exa
 
 ```bash
 npm run lint
-npx tsc --noEmit
+npm run typecheck
+npm test
 npm run build
 ```
+
+O workflow em `.github/workflows/quality.yml` executa lint, validação de tipos, testes e build de produção em pull requests e atualizações da `main`.
 
 ## Rotas principais
 
@@ -159,21 +181,38 @@ npm run build
 | `/dashboard` | Visão geral de prontidão e evolução |
 | `/dashboard/perfil` | Dados pessoais e perfil técnico |
 | `/dashboard/nova-sessao` | Configuração de uma análise por vaga |
-| `/dashboard/resultado` | Resultado e modalidades de treino |
+| `/dashboard/resultado` | Diagnóstico e matriz de evidências da preparação ativa |
 | `/dashboard/agente` | Entrevista adaptativa e ciclo de 7 dias |
-| `/dashboard/trilha` | Trilha de estudo com materiais recomendados |
+| `/dashboard/trilha` | Plano de 7 dias e materiais recomendados |
+| `/dashboard/treino-vaga` | Quiz, resposta STAR e desafio prático orientados pela vaga |
 
 ## Dados fictícios, privacidade e limitações
 
 - dashboard, perfil, notas, GitHub, vagas e resultados utilizam dados fictícios no modo demo;
 - novas sessões ficam no `sessionStorage` do navegador;
+- o histórico das preparações da demonstração fica no `localStorage` e pode ser retomado pelo dashboard;
 - respostas e progresso do agente ficam no armazenamento local do navegador;
-- imagens e currículos são validados localmente e não são enviados nesta demonstração;
-- o agente usa avaliação determinística e não envia respostas para uma IA externa;
+- o cadastro demonstrativo não envia currículo nem dados pessoais ao servidor;
+- a descrição da vaga usa análise local quando a Groq não está configurada;
+- o agente usa avaliação determinística e explicável no modo local e não envia respostas para uma IA externa;
 - o consentimento para currículo e GitHub é solicitado explicitamente no cadastro;
 - a exclusão de conta é simulada no modo demo e utiliza exclusão em cascata no modo autenticado.
 
 Antes de aceitar currículos reais em produção, o projeto precisa utilizar armazenamento privado e persistente. O sistema de arquivos temporário de plataformas serverless não deve ser usado para documentos pessoais.
+
+## Deploy na Vercel
+
+O projeto possui `vercel-build` e `postinstall` para gerar o Prisma Client antes do build. Para a apresentação do hackathon, recomenda-se publicar com `NEXT_PUBLIC_DEMO_MODE=true`, garantindo um fluxo completo com dados fictícios mesmo quando serviços externos estiverem indisponíveis.
+
+1. importe o repositório na Vercel;
+2. selecione Node.js 20 ou superior;
+3. cadastre as variáveis de `.env.example` em **Settings → Environment Variables**;
+4. defina `BETTER_AUTH_URL` com a URL pública final;
+5. gere um `BETTER_AUTH_SECRET` forte e exclusivo;
+6. execute `npx prisma migrate deploy` no banco de produção antes de habilitar o modo autenticado;
+7. publique e valide `/login`, `/dashboard`, `/dashboard/nova-sessao` e `/dashboard/treino-vaga`.
+
+Groq, Resend e GitHub são opcionais no modo demonstração. No modo autenticado, as respectivas credenciais devem ser configuradas para liberar análise externa, e-mails e consulta do perfil público.
 
 ## Equipe e responsabilidades
 
