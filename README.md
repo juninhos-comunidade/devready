@@ -223,12 +223,6 @@ Groq, Resend e GitHub são opcionais no modo demonstração. No modo autenticado
 | Eduarda (Duda) | Design, Figma, onboarding e trilha de estudo |
 | Geovanna | Sessões de treino por vaga e modalidades de treino |
 
-## Uso de inteligência artificial no desenvolvimento
-
-O **OpenAI Codex** apoiou a equipe na revisão de código, identificação de inconsistências, refinamento de experiência, implementação assistida, validação de fluxos e organização da documentação. Todas as alterações foram revisadas e testadas antes de serem incorporadas ao projeto.
-
-O agente apresentado pelo DevReady nesta versão não consome um modelo externo: as perguntas, adaptações e avaliações são processadas localmente para garantir uma demonstração reproduzível e sem envio de dados pessoais.
-
 ## Referências técnicas
 
 Os temas do banco de entrevistas foram estruturados com apoio de documentação pública e oficial:
