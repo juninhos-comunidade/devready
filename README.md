@@ -152,6 +152,7 @@ Nunca publique o arquivo `.env` nem utilize os valores ilustrativos de `.env.exa
 ```bash
 npm run lint
 npx tsc --noEmit
+npm test
 npm run build
 ```
 

@@ -9,6 +9,7 @@
     "start": "next start",
     "lint": "eslint",
     "typecheck": "tsc --noEmit",
+    "test": "tsx --test tests/job-training.test.ts",
     "check": "npm run lint && npm run typecheck && npm run build",
     "postinstall": "prisma generate"
   },
