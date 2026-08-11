@@ -3,6 +3,7 @@ import { APIError } from "better-auth/api";
 import { prismaAdapter } from "better-auth/adapters/prisma";
 import { prisma } from "./prisma";
 import { sendTransactionalEmail } from "./email";
+import { hashPassword } from "better-auth/crypto";
 
 function reportEmailError(error: unknown) {
   console.error("Não foi possível enviar o e-mail do Better Auth.", error);
@@ -18,6 +19,18 @@ export const auth = betterAuth({
     enabled: true,
     requireEmailVerification: true,
     minPasswordLength: 8,
+    password: {
+      hash: async (password) => {
+        const specialCharCount = (password.match(/[^A-Za-z0-9]/g) ?? []).length;
+        if (specialCharCount < 2) {
+          throw APIError.from("BAD_REQUEST", {
+            code: "PASSWORD_TOO_WEAK",
+            message: "A senha deve conter pelo menos 2 caracteres especiais.",
+          });
+        }
+        return hashPassword(password);
+      },
+    },
     sendResetPassword: async ({ user, url }) => {
       void sendTransactionalEmail({
         to: user.email,
@@ -38,7 +51,6 @@ export const auth = betterAuth({
   },
   user: {
     additionalFields: {
-      githubUrl: { type: "string", required: false },
       areaInterest: { type: "string", required: false },
       experienceLevel: { type: "string", required: false },
       privacyConsent: { type: "boolean", required: true },

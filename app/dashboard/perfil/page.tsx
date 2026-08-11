@@ -98,7 +98,6 @@ function PerfilEditor({
     try {
       const { error } = await authClient.updateUser({
         name,
-        githubUrl: github || null,
         areaInterest: areaInterest || null,
         experienceLevel: experienceLevel || null,
       });

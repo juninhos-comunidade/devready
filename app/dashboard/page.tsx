@@ -6,7 +6,6 @@ import {
   CalendarDays,
   CheckCircle2,
   CircleDotDashed,
-  GitBranch,
   Plus,
   Sparkles,
   TrendingUp,
@@ -15,6 +14,12 @@ import { Sidebar } from "@/components/Sidebar";
 import { Mascot } from "@/components/Mascot";
 import { EvolutionChart } from "@/components/dashboard/EvolutionChart";
 import { dashboardData, type TechnologyScore } from "@/lib/dashboard-data";
+import { headers } from "next/headers";
+import { auth } from "@/lib/auth";
+import { redirect } from "next/navigation";
+import { prisma } from "@/lib/prisma";
+import { CurriculumProcessingTrigger } from "@/components/dashboard/CurriculumProcessingTrigger";
+import { GithubAnalysisCard } from "@/components/dashboard/GithubAnalysisCard";
 
 function TechnologyRow({ technology }: { technology: TechnologyScore }) {
   const tested = technology.score !== null;
@@ -72,7 +77,16 @@ function TechnologyRow({ technology }: { technology: TechnologyScore }) {
   );
 }
 
-export default function Dashboard() {
+export default async function Dashboard() {
+  const session = await auth.api.getSession({headers: await headers()})
+  if (!session) {
+    redirect("/login");
+  }
+  const curriculum = await prisma.curriculum.findUnique({
+  where: { userId: session.user.id },
+  include: { githubProfile: { include: { repos: true } } },
+});
+
   const readinessDelta =
     dashboardData.readiness - dashboardData.previousReadiness;
   const testedTechnologies = dashboardData.technologies.filter(
@@ -231,45 +245,7 @@ export default function Dashboard() {
               </ul>
             </section>
 
-            <section className="overflow-hidden rounded-3xl border border-[#e7e3ee] bg-white shadow-[0_18px_55px_-42px_rgba(29,27,51,0.45)]">
-              <div className="bg-[#1d1b33] p-5 text-white sm:p-6">
-                <div className="flex items-start justify-between gap-4">
-                  <div>
-                    <span className="inline-flex items-center gap-2 text-[11px] font-extrabold uppercase tracking-[0.18em] text-[#aaa6d6]">
-                      <GitBranch className="h-4 w-4" /> Análise do GitHub
-                    </span>
-                    <p className="mt-3 font-[family-name:var(--font-display)] text-5xl font-extrabold">
-                      {dashboardData.github.score}
-                      <span className="text-lg text-[#aaa6d6]">/100</span>
-                    </p>
-                    <p className="mt-1 text-xs font-semibold text-[#aaa6d6]">
-                      {dashboardData.github.updatedAt}
-                    </p>
-                  </div>
-                  <span className="rounded-full border border-[#78ddb0]/30 bg-[#78ddb0]/10 px-3 py-1 text-xs font-extrabold text-[#78ddb0]">
-                    Muito bom
-                  </span>
-                </div>
-                <p className="mt-5 rounded-xl border border-white/10 bg-white/[0.06] px-3 py-2 text-xs leading-relaxed text-[#d0cde0]">
-                  Esta nota é independente e não entra no cálculo de prontidão.
-                </p>
-              </div>
-
-              <div className="p-5 sm:p-6">
-                <p className="text-xs font-extrabold uppercase tracking-wider text-[#8b8593]">Pontos fortes</p>
-                <ul className="mt-3 grid gap-2">
-                  {dashboardData.github.strengths.map((strength) => (
-                    <li key={strength} className="flex items-center gap-2 text-sm font-bold text-[#1d1b33]">
-                      <CheckCircle2 className="h-4 w-4 text-[#1f9d73]" /> {strength}
-                    </li>
-                  ))}
-                </ul>
-                <div className="mt-5 rounded-2xl bg-[#fff6ef] p-4">
-                  <p className="text-xs font-extrabold uppercase tracking-wider text-[#c55218]">Próximo ajuste</p>
-                  <p className="mt-1 text-sm font-bold text-[#1d1b33]">{dashboardData.github.improvement}</p>
-                </div>
-              </div>
-            </section>
+            <GithubAnalysisCard curriculum={curriculum} />
           </div>
 
           <div className="mt-6">
@@ -304,6 +280,14 @@ export default function Dashboard() {
           </section>
         </div>
       </main>
+      {!curriculum ? (
+        <p>Curriculo vazio</p>
+      ) : curriculum.status === "PENDING" || curriculum.status === "PROCESSING" ? (
+        <CurriculumProcessingTrigger
+          curriculumId={curriculum.id}
+          initialStatus={curriculum.status}
+        />
+      ) : null}
     </div>
   );
 }

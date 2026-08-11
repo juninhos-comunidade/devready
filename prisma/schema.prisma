@@ -18,9 +18,6 @@ model User {
   emailVerified Boolean   @default(false)
   name          String?
   image         String?
-  skills        String[]  @default([])
-  curriculum_URL String?
-  githubUrl      String?
   areaInterest   String?
   experienceLevel String?
   privacyConsent Boolean  @default(false)
@@ -28,6 +25,62 @@ model User {
   updatedAt     DateTime  @updatedAt
   sessions      Session[]
   accounts      Account[]
+  curriculum Curriculum?
+  trainingSessions TrainingSession[]
+  trainingAnswers  TrainingAnswer[]
+}
+
+enum CurriculumStatus {
+  PENDING
+  PROCESSING
+  COMPLETED
+  FAILED
+}
+
+model Curriculum {
+  id Int @id @default(autoincrement())
+  userId String @unique
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+  bruteData String?
+  extractedData Json?
+  status CurriculumStatus @default(PENDING)
+  githubUrl      String?
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  githubProfile GithubProfile?
+}
+
+enum GithubAnalysisStatus {
+  COMPLETED
+  FAILED
+}
+
+model GithubProfile {
+  id               Int      @id @default(autoincrement())
+  curriculumId     Int      @unique
+  curriculum       Curriculum @relation(fields: [curriculumId], references: [id], onDelete: Cascade)
+  username         String
+  bio              String?
+  publicReposCount Int?
+  followers        Int?
+  topLanguages     Json?
+  contributionData Json?
+  status           GithubAnalysisStatus
+  fetchedAt        DateTime @updatedAt
+  createdAt        DateTime @default(now())
+  repos            GithubRepo[]
+}
+
+model GithubRepo {
+  id              Int      @id @default(autoincrement())
+  githubProfileId Int
+  githubProfile   GithubProfile @relation(fields: [githubProfileId], references: [id], onDelete: Cascade)
+  name            String
+  description     String?
+  stars           Int
+  forks           Int
+  languages       Json?
+  url             String
 }
 
 model Session {
@@ -66,5 +119,55 @@ model Verification {
   expiresAt  DateTime
   createdAt  DateTime @default(now())
   updatedAt  DateTime @updatedAt
+}
+
+model TrainingSession {
+  id        String   @id @default(uuid())
+  userId    String?
+  user      User?    @relation(fields: [userId], references: [id], onDelete: Cascade)
+  jobTitle  String?
+  createdAt DateTime @default(now())
+
+  questions TrainingQuestion[]
+  answers   TrainingAnswer[]
+}
+
+model TrainingQuestion {
+  id              String   @id @default(uuid())
+  sessionId       String
+  session         TrainingSession @relation(fields: [sessionId], references: [id], onDelete: Cascade)
+  competency      String
+  competencyLabel String
+  difficulty      String
+  prompt          String
+  options         Json
+  correctIndex    Int
+  explanation     String
+  source          String   @default("mock")
+  createdAt       DateTime @default(now())
+
+  answers TrainingAnswer[]
+}
+
+model TrainingAnswer {
+  id         String   @id @default(uuid())
+  sessionId  String
+  session    TrainingSession  @relation(fields: [sessionId], references: [id], onDelete: Cascade)
+  questionId String
+  question   TrainingQuestion @relation(fields: [questionId], references: [id], onDelete: Cascade)
+  userId     String?
+  user       User?    @relation(fields: [userId], references: [id], onDelete: Cascade)
+  wasCorrect Boolean
+  answeredAt DateTime @default(now())
+}
+
+model StudyMaterial {
+  id          String   @id @default(uuid())
+  competency  String
+  title       String
+  url         String
+  contentType String
+  level       String
+  createdAt   DateTime @default(now())
 }
 
