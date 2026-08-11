@@ -165,8 +165,7 @@ export default function TrilhaDeEstudo() {
               <Sparkles className="h-4.5 w-4.5" />
             </span>
             <p className="text-sm leading-relaxed text-[#6d698a]">
-              Essa trilha reúne todas as lacunas dessa sessão num lugar só —
-              conforme você treina, ela é atualizada automaticamente.
+              Esta prévia reúne as lacunas prioritárias e materiais confiáveis em um só lugar. Refazer uma análise permite gerar um novo foco de preparação.
             </p>
           </div>
         </div>

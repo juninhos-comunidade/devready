@@ -24,6 +24,16 @@ body {
   margin: 0;
 }
 
+::selection {
+  background: rgba(119, 85, 232, 0.24);
+  color: #1d1b33;
+}
+
+:focus-visible {
+  outline: 3px solid rgba(119, 85, 232, 0.8);
+  outline-offset: 3px;
+}
+
 button,
 input,
 select,
@@ -80,6 +90,13 @@ a {
 }
 
 @media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    scroll-behavior: auto !important;
+    transition-duration: 0.01ms !important;
+  }
+
   .mascot-float,
   .mascot-arrive,
   .mascot-launch,

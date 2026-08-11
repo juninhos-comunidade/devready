@@ -19,6 +19,7 @@ Profissionais juniores costumam encontrar descrições de vaga extensas, requisi
 - perfil técnico com área de interesse e nível de experiência;
 - criação de sessão a partir de uma descrição de vaga ou imagem;
 - resultado demonstrativo com compatibilidade e modalidades de treino;
+- treino específico por vaga com quiz técnico, resposta STAR e desafio prático;
 - agente de entrevista técnica, comportamental ou mista;
 - identidade visual com mascote contextual em carregamentos, orientação e estados de sucesso;
 - trilha de estudo com materiais reais recomendados para cada lacuna;
@@ -77,6 +78,7 @@ Essas credenciais pertencem exclusivamente ao modo demonstrativo e não concedem
 - Prisma ORM 7
 - Better Auth
 - Lucide React
+- Groq opcional, com contingência local para a demonstração
 
 ## Como executar localmente
 
@@ -137,6 +139,11 @@ Essas credenciais pertencem exclusivamente ao modo demonstrativo e não concedem
 | `BETTER_AUTH_SECRET` | Segredo da autenticação; deve ser longo e privado |
 | `RESEND_API_KEY` | Chave do serviço de envio de e-mails |
 | `EMAIL_FROM` | Remetente das mensagens de autenticação |
+| `GROQ_API_KEY` | Geração e avaliação por IA; o treino usa contingência local quando ausente |
+| `GROQ_MODEL` | Modelo de texto utilizado pela integração Groq |
+| `GROQ_VISION_MODEL` | Modelo usado para interpretar imagens de vagas |
+| `GITHUB_TOKEN` | Consulta do perfil público do GitHub no modo autenticado |
+| `NEXT_PUBLIC_SESSION_LIMIT` | Limite demonstrativo de sessões simultâneas, entre 3 e 5 |
 
 Nunca publique o arquivo `.env` nem utilize os valores ilustrativos de `.env.example` em produção.
 
@@ -162,18 +169,34 @@ npm run build
 | `/dashboard/resultado` | Resultado e modalidades de treino |
 | `/dashboard/agente` | Entrevista adaptativa e ciclo de 7 dias |
 | `/dashboard/trilha` | Trilha de estudo com materiais recomendados |
+| `/dashboard/treino-vaga` | Quiz, resposta STAR e desafio prático orientados pela vaga |
 
 ## Dados fictícios, privacidade e limitações
 
 - dashboard, perfil, notas, GitHub, vagas e resultados utilizam dados fictícios no modo demo;
 - novas sessões ficam no `sessionStorage` do navegador;
 - respostas e progresso do agente ficam no armazenamento local do navegador;
-- imagens e currículos são validados localmente e não são enviados nesta demonstração;
+- o cadastro demonstrativo não envia currículo nem dados pessoais ao servidor;
+- a descrição da vaga usa análise local quando a Groq não está configurada;
 - o agente usa avaliação determinística e não envia respostas para uma IA externa;
 - o consentimento para currículo e GitHub é solicitado explicitamente no cadastro;
 - a exclusão de conta é simulada no modo demo e utiliza exclusão em cascata no modo autenticado.
 
 Antes de aceitar currículos reais em produção, o projeto precisa utilizar armazenamento privado e persistente. O sistema de arquivos temporário de plataformas serverless não deve ser usado para documentos pessoais.
+
+## Deploy na Vercel
+
+O projeto possui `vercel-build` e `postinstall` para gerar o Prisma Client antes do build. Para a apresentação do hackathon, recomenda-se publicar com `NEXT_PUBLIC_DEMO_MODE=true`, garantindo um fluxo completo com dados fictícios mesmo quando serviços externos estiverem indisponíveis.
+
+1. importe o repositório na Vercel;
+2. selecione Node.js 20 ou superior;
+3. cadastre as variáveis de `.env.example` em **Settings → Environment Variables**;
+4. defina `BETTER_AUTH_URL` com a URL pública final;
+5. gere um `BETTER_AUTH_SECRET` forte e exclusivo;
+6. execute `npx prisma migrate deploy` no banco de produção antes de habilitar o modo autenticado;
+7. publique e valide `/login`, `/dashboard`, `/dashboard/nova-sessao` e `/dashboard/treino-vaga`.
+
+Groq, Resend e GitHub são opcionais no modo demonstração. No modo autenticado, as respectivas credenciais devem ser configuradas para liberar análise externa, e-mails e consulta do perfil público.
 
 ## Equipe e responsabilidades
 

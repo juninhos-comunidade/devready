@@ -5,9 +5,15 @@
   "scripts": {
     "dev": "next dev",
     "build": "next build",
+    "vercel-build": "prisma generate && next build",
     "start": "next start",
     "lint": "eslint",
+    "typecheck": "tsc --noEmit",
+    "check": "npm run lint && npm run typecheck && npm run build",
     "postinstall": "prisma generate"
+  },
+  "engines": {
+    "node": ">=20.9.0"
   },
   "dependencies": {
     "@octokit/graphql": "^9.0.4",
