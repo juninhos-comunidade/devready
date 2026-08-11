@@ -8,7 +8,8 @@ import { BrandLoading } from "@/components/BrandLoading";
 import { Mascot } from "@/components/Mascot";
 import { ImageDropzone } from "@/components/ImageDropzone";
 import { FormSelect } from "@/components/FormSelect";
-import { MOCK_SESSION_KEY, type MockSession } from "@/lib/mock-session";
+import { PreparationJourney } from "@/components/PreparationJourney";
+import { persistMockSession, type MockSession } from "@/lib/mock-session";
 import type { JobAnalysis } from "@/lib/job-training";
 
 const focusOptions = [
@@ -70,9 +71,10 @@ export default function NovaSessao() {
         source: image ? "image" : "text",
         analysis: payload.analysis,
         analysisNotice: payload.notice,
+        progress: { trainingAttempts: [] },
       };
 
-      window.sessionStorage.setItem(MOCK_SESSION_KEY, JSON.stringify(session));
+      persistMockSession(session);
       router.push("/dashboard/resultado");
     } catch (error) {
       setErrorMessage(error instanceof Error ? error.message : "Não foi possível analisar a vaga.");
@@ -91,6 +93,7 @@ export default function NovaSessao() {
             <h1 className="mt-1 font-[family-name:var(--font-display)] text-3xl font-bold text-[#1d1b33] sm:text-4xl">Analisar uma nova vaga</h1>
             <p className="mt-2 max-w-2xl leading-relaxed text-[#6d698a]">Informe os requisitos para comparar a vaga ao seu perfil técnico.</p>
           </header>
+          <PreparationJourney current="vaga" />
 
           <div className="mt-7 grid gap-6 lg:grid-cols-[1fr_300px]">
             <form onSubmit={handleSubmit} className="rounded-3xl border border-[#e7e3ee] bg-white p-5 shadow-[0_20px_60px_-45px_rgba(29,27,51,0.5)] sm:p-7">

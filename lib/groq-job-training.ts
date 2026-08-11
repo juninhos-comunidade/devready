@@ -2,6 +2,7 @@ import "server-only";
 
 import {
   clampScore,
+  type CandidateProfileSnapshot,
   type JobAnalysis,
   type TrainingContent,
   type TrainingDifficulty,
@@ -77,6 +78,7 @@ function parseAnalysis(value: unknown): JobAnalysis {
         name: technology.name,
         required: true,
         profileScore: typeof technology.profileScore === "number" ? clampScore(technology.profileScore) : null,
+        evidence: [],
       }];
     }).slice(0, 12)
     : [];
@@ -100,16 +102,20 @@ export async function analyzeJobWithGroq({
   description,
   company,
   imageDataUrl,
+  profile,
 }: {
   description: string;
   company: string;
   imageDataUrl?: string;
+  profile?: CandidateProfileSnapshot;
 }) {
-  const profile = [
-    "React 86", "TypeScript 78", "JavaScript 81", "Testes 61", "SQL 54",
-    "Node.js 68", "Python 72", "APIs REST 70", "Docker 45", "AWS 42",
-  ].join(", ");
-  const instruction = `Analise a vaga em português do Brasil. Extraia empresa, senioridade, tecnologias, requisitos e competências comportamentais. Compare os requisitos ao perfil demonstrativo (${profile}) e calcule compatibilidade de 0 a 100 somente sobre tecnologias citadas. Retorne JSON puro com: company, seniority, compatibility, strongest, priority, technologies (array de objetos com name e profileScore numérico ou null), requirements (array), softSkills (array), summary. Não invente uma empresa se ela não estiver no texto.`;
+  const profileDescription = profile
+    ? `${profile.label}: ${[
+      ...Object.entries(profile.skillScores).map(([skill, score]) => `${skill} ${score}`),
+      ...Object.entries(profile.skillEvidence ?? {}).map(([skill, evidence]) => `${skill} mencionado em ${evidence.join(" e ")}`),
+    ].join(", ")}`
+    : "nenhuma evidência de perfil disponível";
+  const instruction = `Analise a vaga em português do Brasil. Extraia empresa, senioridade, tecnologias, requisitos e competências comportamentais. Contexto do candidato: ${profileDescription}. Só atribua profileScore quando houver pontuação fornecida no contexto; caso contrário use null. Calcule a compatibilidade somente com evidências disponíveis e não trate ausência de evidência como falta de conhecimento. Retorne JSON puro com: company, seniority, compatibility, strongest, priority, technologies (array de objetos com name e profileScore numérico ou null), requirements (array), softSkills (array), summary. Não invente uma empresa se ela não estiver no texto.`;
   const userText = `Empresa informada no formulário: ${company || "não informada"}\nDescrição digitada: ${description || "não fornecida; leia a imagem"}`;
   const content: GroqMessage["content"] = imageDataUrl
     ? [{ type: "text", text: `${instruction}\n\n${userText}` }, { type: "image_url", image_url: { url: imageDataUrl } }]
@@ -118,7 +124,29 @@ export async function analyzeJobWithGroq({
     { role: "system", content: "Você é um analisador de vagas de tecnologia. Responda exclusivamente com JSON válido." },
     { role: "user", content },
   ], imageDataUrl ? (process.env.GROQ_VISION_MODEL || DEFAULT_VISION_MODEL) : (process.env.GROQ_MODEL || DEFAULT_TEXT_MODEL));
-  return parseAnalysis(raw);
+  const analysis = parseAnalysis(raw);
+  const findProfileEntry = <T,>(entries: Record<string, T> | undefined, name: string) =>
+    Object.entries(entries ?? {}).find(([skill]) => skill.toLocaleLowerCase("pt-BR") === name.toLocaleLowerCase("pt-BR"))?.[1];
+  const technologies = analysis.technologies.map((technology) => ({
+    ...technology,
+    profileScore: findProfileEntry(profile?.skillScores, technology.name) ?? null,
+    evidence: findProfileEntry(profile?.skillEvidence, technology.name) ?? [],
+  }));
+  const scored = technologies.filter((technology) => technology.profileScore !== null);
+  const evidenced = technologies.filter((technology) => technology.profileScore !== null || technology.evidence.length);
+  const compatibility = scored.length
+    ? clampScore(scored.reduce((total, technology) => total + (technology.profileScore ?? 0), 0) / technologies.length)
+    : clampScore((evidenced.length / technologies.length) * 100);
+  const ranked = [...technologies].sort((a, b) => ((b.profileScore ?? 0) + b.evidence.length) - ((a.profileScore ?? 0) + a.evidence.length));
+  return {
+    ...analysis,
+    technologies,
+    compatibility,
+    strongest: ranked[0]?.name ?? analysis.strongest,
+    priority: ranked.at(-1)?.name ?? analysis.priority,
+    profileLabel: profile?.label ?? "Perfil sem evidências processadas",
+    profileIsDemo: profile?.isDemo ?? false,
+  };
 }
 
 function parseTrainingContent(value: unknown): TrainingContent {

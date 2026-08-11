@@ -1,4 +1,5 @@
-import { analyzeJobLocally, type JobAnalysis } from "@/lib/job-training";
+import { analyzeJobLocally, demoCandidateProfile, getSessionLimit, SESSION_LIST_KEY, type JobAnalysis } from "@/lib/job-training";
+import type { JourneyProgress } from "@/lib/preparation-journey";
 
 export const MOCK_SESSION_KEY = "devready:mock-session";
 
@@ -11,6 +12,7 @@ export type MockSession = {
   source: "text" | "image";
   analysis: JobAnalysis;
   analysisNotice?: string;
+  progress: JourneyProgress;
 };
 
 const defaultDescription =
@@ -23,7 +25,8 @@ export const defaultMockSession: MockSession = {
   description: defaultDescription,
   focus: "Entrevista completa",
   source: "text",
-  analysis: analyzeJobLocally(defaultDescription, "Fintech Aurora"),
+  analysis: analyzeJobLocally(defaultDescription, "Fintech Aurora", demoCandidateProfile),
+  progress: { trainingAttempts: [] },
 };
 
 export function parseMockSession(value: string | null): MockSession {
@@ -43,9 +46,26 @@ export function parseMockSession(value: string | null): MockSession {
       source: parsed.source === "image" ? "image" : "text",
       analysis: parsed.analysis ?? analyzeJobLocally(description, company),
       analysisNotice: parsed.analysisNotice,
+      progress: parsed.progress && Array.isArray(parsed.progress.trainingAttempts)
+        ? parsed.progress
+        : { trainingAttempts: [] },
     };
   } catch {
     return defaultMockSession;
+  }
+}
+
+export function persistMockSession(session: MockSession) {
+  if (typeof window === "undefined") return;
+  window.sessionStorage.setItem(MOCK_SESSION_KEY, JSON.stringify(session));
+  try {
+    const stored = window.localStorage.getItem(SESSION_LIST_KEY);
+    const parsed: unknown = stored ? JSON.parse(stored) : [];
+    const previous = Array.isArray(parsed) ? parsed as MockSession[] : [];
+    const sessions = [session, ...previous.filter((item) => item.id !== session.id)].slice(0, getSessionLimit());
+    window.localStorage.setItem(SESSION_LIST_KEY, JSON.stringify(sessions));
+  } catch {
+    // A preparação ativa continua disponível se o histórico local estiver bloqueado.
   }
 }
 

@@ -1,172 +1,164 @@
-import Link from "next/link";
-import {
-  Code2,
-  ExternalLink,
-  FileText,
-  GraduationCap,
-  PlayCircle,
-  Sparkles,
-} from "lucide-react";
-import { Sidebar } from "@/components/Sidebar";
+"use client";
 
-// A curadoria de verdade (seção 4.5) ainda vai virar uma tabela própria da
-// equipe (provavelmente vinda de um banco de dados), mas os links abaixo já
-// são reais — documentação oficial e freeCodeCamp — pra quem testar a tela
-// conseguir clicar e estudar de verdade, não só ver um botão sem função.
-const trilha = [
-  {
-    tecnologia: "Testes automatizados",
-    // "ausente" = a pessoa não tem nenhuma base ainda (lacuna total);
-    // "parcial" = ela já sabe algo, mas precisa reforçar (seção 4.5)
-    status: "ausente" as const,
-    mensagem: "Você ainda não tem base aqui — é o seu maior ganho possível antes da próxima entrevista.",
-    materiais: [
-      {
-        titulo: "Testes unitários com Jest",
-        tipo: "Artigo",
-        duracao: "12 min",
-        link: "https://jestjs.io/pt-BR/docs/getting-started",
-      },
-      {
-        titulo: "Fundamentos de testes automatizados",
-        tipo: "Curso",
-        duracao: "1h30",
-        link: "https://testing-library.com/docs/",
-      },
-    ],
-  },
-  {
-    tecnologia: "SQL",
-    status: "ausente" as const,
-    mensagem: "Nenhum teste feito ainda nessa tecnologia — comece pelo básico.",
-    materiais: [
-      {
-        titulo: "Introdução a SQL para devs",
-        tipo: "Curso",
-        duracao: "2h",
-        link: "https://www.freecodecamp.org/learn/relational-database/",
-      },
-    ],
-  },
-  {
-    tecnologia: "React",
-    status: "parcial" as const,
-    mensagem: "Você já tem uma boa base — hora de aprofundar em pontos específicos.",
-    materiais: [
-      {
-        titulo: "Desafio de hooks em React",
-        tipo: "Exercício",
-        duracao: "25 min",
-        link: "https://pt-br.react.dev/reference/react/hooks",
-      },
-    ],
-  },
+import { useEffect, useMemo, useState } from "react";
+import Link from "next/link";
+import { BookOpen, CheckCircle2, ExternalLink, PlayCircle, RotateCcw, Sparkles } from "lucide-react";
+import { Sidebar } from "@/components/Sidebar";
+import { PreparationJourney } from "@/components/PreparationJourney";
+import { Mascot } from "@/components/Mascot";
+import { MOCK_SESSION_KEY, parseMockSession, persistMockSession, type MockSession } from "@/lib/mock-session";
+import type { PreparationPlan } from "@/lib/preparation-journey";
+
+type Material = { title: string; type: string; duration: string; url: string };
+
+const resources: Array<{ terms: string[]; materials: Material[] }> = [
+  { terms: ["react", "frontend", "hooks"], materials: [{ title: "Aprenda React", type: "Documentação oficial", duration: "25 min", url: "https://react.dev/learn" }] },
+  { terms: ["typescript", "tipagem"], materials: [{ title: "TypeScript para novos programadores", type: "Documentação oficial", duration: "20 min", url: "https://www.typescriptlang.org/docs/handbook/typescript-from-scratch.html" }] },
+  { terms: ["teste", "jest", "qa"], materials: [{ title: "Começando com Jest", type: "Documentação oficial", duration: "20 min", url: "https://jestjs.io/pt-BR/docs/getting-started" }] },
+  { terms: ["sql", "postgres", "banco"], materials: [{ title: "Tutorial PostgreSQL", type: "Documentação oficial", duration: "35 min", url: "https://www.postgresql.org/docs/current/tutorial.html" }] },
+  { terms: ["node", "backend", "api"], materials: [{ title: "Introdução ao Node.js", type: "Documentação oficial", duration: "25 min", url: "https://nodejs.org/en/learn/getting-started/introduction-to-nodejs" }] },
+  { terms: ["python", "dados", "ia"], materials: [{ title: "Tutorial Python", type: "Documentação oficial", duration: "35 min", url: "https://docs.python.org/pt-br/3/tutorial/" }] },
+  { terms: ["docker", "container"], materials: [{ title: "Docker: primeiros passos", type: "Documentação oficial", duration: "30 min", url: "https://docs.docker.com/get-started/" }] },
+  { terms: ["javascript", "web", "fundamentos"], materials: [{ title: "Guia JavaScript", type: "Documentação MDN", duration: "30 min", url: "https://developer.mozilla.org/pt-BR/docs/Web/JavaScript/Guide" }] },
 ];
 
-const statusConfig = {
-  ausente: { label: "Recomendação principal", badgeClass: "bg-[#fff0e7] text-[#e8641d]" },
-  parcial: { label: "Reforço", badgeClass: "bg-[#efeaff] text-[#7755e8]" },
+const fallbackMaterial: Material = {
+  title: "Competências essenciais para a web",
+  type: "Currículo MDN",
+  duration: "30 min",
+  url: "https://developer.mozilla.org/en-US/curriculum/core/",
 };
 
-const tipoIcon = {
-  Artigo: FileText,
-  Curso: PlayCircle,
-  Exercício: Code2,
-};
+function createPlan(session: MockSession): PreparationPlan {
+  const priority = session.analysis.priority;
+  const id = `plan:${session.id}:${priority}`;
+  return {
+    id,
+    priority,
+    sourceScore: session.analysis.compatibility,
+    createdAt: new Date().toISOString(),
+    tasks: [
+      { id: `${id}:1`, period: "Dias 1–2", action: `Revisar os fundamentos de ${priority} e registrar três conceitos essenciais.`, completed: false },
+      { id: `${id}:2`, period: "Dias 3–4", action: `Resolver um exercício de ${priority} e explicar as decisões tomadas.`, completed: false },
+      { id: `${id}:3`, period: "Dias 5–6", action: "Praticar uma resposta técnica e uma comportamental com evidências.", completed: false },
+      { id: `${id}:4`, period: "Dia 7", action: "Refazer a entrevista e comparar clareza, conteúdo e evidências.", completed: false },
+    ],
+  };
+}
+
+function materialsFor(competency: string) {
+  const normalized = competency.toLocaleLowerCase("pt-BR");
+  return resources.find((resource) => resource.terms.some((term) => normalized.includes(term)))?.materials ?? [fallbackMaterial];
+}
 
 export default function TrilhaDeEstudo() {
+  const [session, setSession] = useState<MockSession | null>(null);
+  const [plan, setPlan] = useState<PreparationPlan | null>(null);
+
+  useEffect(() => {
+    const timer = window.setTimeout(() => {
+      const current = parseMockSession(window.sessionStorage.getItem(MOCK_SESSION_KEY));
+      const currentPlan = current.progress.plan ?? createPlan(current);
+      const updated = { ...current, progress: { ...current.progress, plan: currentPlan } };
+      setSession(updated);
+      setPlan(currentPlan);
+      persistMockSession(updated);
+    }, 0);
+    return () => window.clearTimeout(timer);
+  }, []);
+
+  const competencies = useMemo(() => {
+    if (!session) return [];
+    return [session.analysis.priority, ...session.analysis.requirements]
+      .filter((item, index, list) => item && list.indexOf(item) === index)
+      .slice(0, 3);
+  }, [session]);
+
+  function updatePlan(next: PreparationPlan) {
+    if (!session) return;
+    const updatedSession = { ...session, progress: { ...session.progress, plan: next } };
+    setPlan(next);
+    setSession(updatedSession);
+    persistMockSession(updatedSession);
+  }
+
+  function toggleTask(taskId: string) {
+    if (!plan) return;
+    updatePlan({ ...plan, tasks: plan.tasks.map((task) => task.id === taskId ? { ...task, completed: !task.completed } : task) });
+  }
+
+  const completed = plan?.tasks.filter((task) => task.completed).length ?? 0;
+  const progress = plan ? Math.round((completed / plan.tasks.length) * 100) : 0;
+
   return (
     <div className="flex min-h-screen bg-[#f4f3f8]">
       <Sidebar />
-
-      <main className="min-w-0 flex-1 px-4 pb-28 pt-6 sm:px-6 lg:px-8 lg:py-8 xl:px-10">
-        <div className="mx-auto max-w-[1440px]">
-          <header>
-            <p className="text-[11px] font-extrabold uppercase tracking-[0.2em] text-[#7755e8]">
-              Trilha de estudo
-            </p>
-            <h1 className="mt-1 font-[family-name:var(--font-display)] text-3xl font-bold text-[#1d1b33] sm:text-4xl">
-              O que estudar pra fechar suas lacunas
-            </h1>
-            <p className="mt-2 max-w-2xl text-sm leading-relaxed text-[#6d698a] sm:text-base">
-              Consolidado a partir da sessão{" "}
-              <Link href="/dashboard/resultado" className="font-extrabold text-[#5d43c4] hover:underline">
-                Frontend Pleno — Empresa X
-              </Link>
-              .
-            </p>
-            <span className="mt-3 inline-flex rounded-full bg-[#ece8f8] px-3 py-1 text-[10px] font-extrabold uppercase tracking-wide text-[#654bc9]">
-              Prévia com dados demonstrativos
-            </span>
+      <main className="min-w-0 flex-1 px-4 pb-28 pt-6 sm:px-6 lg:px-10 lg:py-8">
+        <div className="mx-auto max-w-6xl">
+          <header className="flex flex-wrap items-start justify-between gap-5">
+            <div>
+              <p className="text-[11px] font-extrabold uppercase tracking-[0.2em] text-[#7755e8]">Plano de preparação</p>
+              <h1 className="mt-1 font-[family-name:var(--font-display)] text-3xl font-bold text-[#1d1b33] sm:text-4xl">Transforme lacunas em ações</h1>
+              <p className="mt-2 max-w-2xl leading-relaxed text-[#6d698a]">Um ciclo curto, ligado à vaga e ao que ainda precisa ser demonstrado.</p>
+            </div>
+            <Mascot pose="coach" className="hidden h-28 w-28 sm:block" />
           </header>
 
-          <div className="mt-7 grid gap-5">
-            {trilha.map(({ tecnologia, status, mensagem, materiais }) => {
-              const config = statusConfig[status];
-              return (
-                <section
-                  key={tecnologia}
-                  className="rounded-3xl border border-[#e7e3ee] bg-white p-5 shadow-[0_18px_55px_-42px_rgba(29,27,51,0.45)] sm:p-6"
-                >
-                  <div className="flex flex-wrap items-center gap-3">
-                    <span className="grid h-9 w-9 shrink-0 place-items-center rounded-xl bg-[#eeeef4] text-[#1d1b33]">
-                      <GraduationCap className="h-4.5 w-4.5" />
-                    </span>
-                    <h2 className="font-[family-name:var(--font-display)] text-xl font-bold text-[#1d1b33]">
-                      {tecnologia}
-                    </h2>
-                    <span className={`rounded-full px-2.5 py-1 text-[10px] font-extrabold uppercase tracking-wide ${config.badgeClass}`}>
-                      {config.label}
-                    </span>
-                  </div>
-                  <p className="mt-2 text-sm leading-relaxed text-[#6d698a]">{mensagem}</p>
+          <PreparationJourney current="plano" sessionName={session ? `${session.name} · ${session.company}` : undefined} />
 
-                  <ul className="mt-4 grid gap-3">
-                    {materiais.map((material) => {
-                      const Icon = tipoIcon[material.tipo as keyof typeof tipoIcon];
-                      return (
-                        <li
-                          key={material.titulo}
-                          className="flex items-center justify-between gap-4 rounded-2xl border border-[#ece9f1] p-4 transition hover:border-[#d7d0e8]"
-                        >
-                          <div className="flex min-w-0 items-center gap-3">
-                            <span className="grid h-9 w-9 shrink-0 place-items-center rounded-xl bg-[#efeaff] text-[#7755e8]">
-                              <Icon className="h-4.5 w-4.5" />
-                            </span>
-                            <div className="min-w-0">
-                              <p className="truncate font-extrabold text-[#1d1b33]">{material.titulo}</p>
-                              <p className="text-xs font-semibold text-[#8b8593]">
-                                {material.tipo} · {material.duracao}
-                              </p>
-                            </div>
-                          </div>
-                          {/* target=_blank leva pra fora do site (documentação, curso, etc.) —
-                              rel="noopener noreferrer" evita que a página aberta consiga
-                              manipular a aba do DevReady que ficou pra trás */}
-                          <a
-                            href={material.link}
-                            target="_blank"
-                            rel="noopener noreferrer"
-                            className="flex shrink-0 items-center gap-1.5 text-sm font-extrabold text-[#5d43c4] hover:underline"
-                          >
-                            Abrir material <ExternalLink className="h-3.5 w-3.5" />
-                          </a>
-                        </li>
-                      );
-                    })}
+          {plan && (
+            <section className="mt-6 rounded-3xl bg-[#17172f] p-6 text-white sm:p-8" aria-labelledby="cycle-title">
+              <div className="flex flex-wrap items-start justify-between gap-4">
+                <div>
+                  <span className="inline-flex items-center gap-2 text-xs font-extrabold uppercase tracking-wider text-[#bcb6ec]"><Sparkles className="h-4 w-4" /> Ciclo de 7 dias</span>
+                  <h2 id="cycle-title" className="mt-2 text-2xl font-extrabold">Foco em {plan.priority}</h2>
+                  <p className="mt-1 text-sm text-[#c2bfd7]">Marque cada ação conforme concluir. O progresso fica vinculado a esta preparação.</p>
+                </div>
+                <span className="rounded-full bg-white/10 px-3 py-2 text-sm font-extrabold">{progress}% concluído</span>
+              </div>
+              <div className="mt-5 h-2 overflow-hidden rounded-full bg-white/10" role="progressbar" aria-label="Progresso do plano" aria-valuemin={0} aria-valuemax={100} aria-valuenow={progress}>
+                <div className="h-full rounded-full bg-gradient-to-r from-[#8b6cff] to-[#f27a35] transition-all" style={{ width: `${progress}%` }} />
+              </div>
+              <div className="mt-5 grid gap-3 sm:grid-cols-2">
+                {plan.tasks.map((task) => (
+                  <label key={task.id} className={`flex cursor-pointer gap-3 rounded-2xl border p-4 ${task.completed ? "border-[#78ddb0]/40 bg-[#78ddb0]/10" : "border-white/10 bg-white/[0.05]"}`}>
+                    <input type="checkbox" checked={task.completed} onChange={() => toggleTask(task.id)} className="mt-0.5 h-5 w-5 shrink-0 accent-[#8b6cff]" />
+                    <span><span className="block text-xs font-extrabold text-[#bcb6ec]">{task.period}</span><span className={`mt-1 block text-sm leading-relaxed ${task.completed ? "text-[#9eddbb] line-through" : "text-white"}`}>{task.action}</span></span>
+                  </label>
+                ))}
+              </div>
+              {progress === 100 && <p role="status" className="mt-5 flex items-center gap-2 rounded-xl bg-[#78ddb0]/10 px-4 py-3 text-sm font-extrabold text-[#9eddbb]"><CheckCircle2 className="h-4 w-4" /> Plano concluído. Refaça a entrevista para comparar sua evolução.</p>}
+            </section>
+          )}
+
+          <section className="mt-6 rounded-3xl border border-[#e7e3ee] bg-white p-5 sm:p-6">
+            <div className="flex flex-wrap items-end justify-between gap-3">
+              <div><p className="text-[11px] font-extrabold uppercase tracking-[0.18em] text-[#8b8593]">Curadoria confiável</p><h2 className="mt-1 text-xl font-extrabold text-[#1d1b33]">Materiais para as prioridades da vaga</h2></div>
+              <span className="text-xs font-bold text-[#6d698a]">Links oficiais e gratuitos</span>
+            </div>
+            <div className="mt-5 grid gap-4 lg:grid-cols-3">
+              {competencies.map((competency, index) => (
+                <article key={competency} className="rounded-2xl border border-[#ece9f1] p-4">
+                  <div className="flex items-center gap-2"><BookOpen className="h-4 w-4 text-[#7755e8]" /><h3 className="font-extrabold text-[#1d1b33]">{competency}</h3></div>
+                  <span className={`mt-3 inline-flex rounded-full px-2.5 py-1 text-[10px] font-extrabold uppercase ${index === 0 ? "bg-[#fff0e7] text-[#b65015]" : "bg-[#efeaff] text-[#654bc9]"}`}>{index === 0 ? "Prioridade" : "Reforço"}</span>
+                  <ul className="mt-4 space-y-3">
+                    {materialsFor(competency).map((material) => (
+                      <li key={material.url}>
+                        <a href={material.url} target="_blank" rel="noopener noreferrer" className="group block rounded-xl bg-[#f7f5fa] p-3 hover:bg-[#f0ecfb]">
+                          <p className="flex items-center gap-2 text-sm font-extrabold text-[#1d1b33]"><PlayCircle className="h-4 w-4 text-[#7755e8]" /> {material.title}<ExternalLink className="ml-auto h-3.5 w-3.5" /></p>
+                          <p className="mt-1 text-xs font-semibold text-[#8b8593]">{material.type} · {material.duration}</p>
+                        </a>
+                      </li>
+                    ))}
                   </ul>
-                </section>
-              );
-            })}
-          </div>
+                </article>
+              ))}
+            </div>
+          </section>
 
-          <div className="mt-6 flex items-start gap-3 rounded-2xl border border-[#e7e3ee] bg-white p-5">
-            <span className="grid h-9 w-9 shrink-0 place-items-center rounded-xl bg-[#e7f7ef] text-[#1f9d73]">
-              <Sparkles className="h-4.5 w-4.5" />
-            </span>
-            <p className="text-sm leading-relaxed text-[#6d698a]">
-              Esta prévia reúne as lacunas prioritárias e materiais confiáveis em um só lugar. Refazer uma análise permite gerar um novo foco de preparação.
-            </p>
+          <div className="mt-6 flex flex-wrap gap-3">
+            <Link href="/dashboard/agente" className="inline-flex min-h-11 items-center gap-2 rounded-full bg-gradient-to-r from-[#7755e8] to-[#e8641d] px-5 font-extrabold text-white"><RotateCcw className="h-4 w-4" /> Refazer entrevista</Link>
+            <Link href="/dashboard/resultado" className="inline-flex min-h-11 items-center rounded-full border border-[#dcd7e6] bg-white px-5 font-extrabold text-[#1d1b33]">Rever diagnóstico</Link>
           </div>
         </div>
       </main>

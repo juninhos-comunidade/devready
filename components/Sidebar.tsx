@@ -3,14 +3,7 @@
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import { useState } from "react";
-import {
-  BarChart3,
-  Bot,
-  CirclePlus,
-  CircleUser,
-  LayoutDashboard,
-  LogOut,
-} from "lucide-react";
+import { CircleUser, LayoutDashboard, LogOut, Route } from "lucide-react";
 import { Logo } from "./Logo";
 import { Mascot } from "./Mascot";
 import { authClient } from "@/lib/auth-client";
@@ -18,17 +11,27 @@ import { demoModeEnabled } from "@/lib/demo-mode";
 import { MOCK_SESSION_KEY } from "@/lib/mock-session";
 
 const navItems = [
-  { href: "/dashboard", label: "Dashboard", shortLabel: "Início", icon: LayoutDashboard },
-  { href: "/dashboard/nova-sessao", label: "Nova sessão", shortLabel: "Treinar", icon: CirclePlus },
-  { href: "/dashboard/resultado", label: "Último resultado", shortLabel: "Resultado", icon: BarChart3 },
-  { href: "/dashboard/agente", label: "Agente de entrevista", shortLabel: "Agente", icon: Bot },
-  { href: "/dashboard/perfil", label: "Meu perfil", shortLabel: "Perfil", icon: CircleUser },
+  { href: "/dashboard", label: "Início", shortLabel: "Início", icon: LayoutDashboard, routes: ["/dashboard"] },
+  {
+    href: "/dashboard/resultado",
+    label: "Minha preparação",
+    shortLabel: "Preparação",
+    icon: Route,
+    routes: [
+      "/dashboard/nova-sessao",
+      "/dashboard/resultado",
+      "/dashboard/treino-vaga",
+      "/dashboard/agente",
+      "/dashboard/trilha",
+    ],
+  },
+  { href: "/dashboard/perfil", label: "Meu perfil", shortLabel: "Perfil", icon: CircleUser, routes: ["/dashboard/perfil"] },
 ];
 
-function isCurrentRoute(pathname: string, href: string) {
-  return href === "/dashboard"
-    ? pathname === href
-    : pathname === href || pathname.startsWith(`${href}/`);
+function isCurrentRoute(pathname: string, routes: string[]) {
+  return routes.some((route) => route === "/dashboard"
+    ? pathname === route
+    : pathname === route || pathname.startsWith(`${route}/`));
 }
 
 export function Sidebar() {
@@ -59,8 +62,8 @@ export function Sidebar() {
           Sua jornada
         </p>
         <nav className="flex flex-col gap-1.5" aria-label="Navegação principal">
-          {navItems.map(({ href, label, icon: Icon }) => {
-            const active = isCurrentRoute(pathname, href);
+          {navItems.map(({ href, label, icon: Icon, routes }) => {
+            const active = isCurrentRoute(pathname, routes);
             return (
               <Link
                 key={href}
@@ -95,8 +98,8 @@ export function Sidebar() {
         style={{ gridTemplateColumns: `repeat(${navItems.length + 1}, minmax(0, 1fr))` }}
         aria-label="Navegação principal"
       >
-        {navItems.map(({ href, shortLabel, icon: Icon }) => {
-          const active = isCurrentRoute(pathname, href);
+        {navItems.map(({ href, shortLabel, icon: Icon, routes }) => {
+          const active = isCurrentRoute(pathname, routes);
           return (
             <Link
               key={href}
