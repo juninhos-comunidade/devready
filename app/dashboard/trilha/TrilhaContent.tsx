@@ -26,13 +26,13 @@ function messageFor(item: TrilhaItem): string {
 
 type LoadState = "loading" | "empty" | "ready";
 
-export function TrilhaContent() {
+export function TrilhaContent({ vagaId }: { vagaId: string }) {
   const [items, setItems] = useState<TrilhaItem[]>([]);
   const [state, setState] = useState<LoadState>("loading");
 
   useEffect(() => {
     let cancelled = false;
-    const sessionIds = getLocalTrainingSessionIds();
+    const sessionIds = getLocalTrainingSessionIds(vagaId);
     if (sessionIds.length === 0) {
       // eslint-disable-next-line react-hooks/set-state-in-effect
       setState("empty");
@@ -50,7 +50,7 @@ export function TrilhaContent() {
     return () => {
       cancelled = true;
     };
-  }, []);
+  }, [vagaId]);
 
   if (state === "loading") {
     return <p className="mt-7 text-sm font-bold text-[#8b8593]">Carregando sua trilha...</p>;

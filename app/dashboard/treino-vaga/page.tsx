@@ -76,7 +76,7 @@ export default function TreinoVaga() {
 
       const dbPromise = startTrainingSession(current.name);
       dbSessionPromiseRef.current = dbPromise;
-      dbPromise.then((id) => addLocalTrainingSessionId(id)).catch(() => {});
+      dbPromise.then((id) => addLocalTrainingSessionId(current.id, id)).catch(() => {});
       const cacheKey = `devready:training-content:${current.id}`;
       try {
         const cached = window.sessionStorage.getItem(cacheKey);

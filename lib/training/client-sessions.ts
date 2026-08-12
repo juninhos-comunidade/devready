@@ -1,16 +1,20 @@
-const STORAGE_KEY = "devready-training-session-ids";
+const STORAGE_PREFIX = "devready-training-session-ids";
 
-export function addLocalTrainingSessionId(sessionId: string) {
-  if (typeof window === "undefined") return;
-  const ids = getLocalTrainingSessionIds();
-  if (ids.includes(sessionId)) return;
-  window.sessionStorage.setItem(STORAGE_KEY, JSON.stringify([...ids, sessionId]));
+function storageKey(vagaId: string): string {
+  return `${STORAGE_PREFIX}:${vagaId}`;
 }
 
-export function getLocalTrainingSessionIds(): string[] {
+export function addLocalTrainingSessionId(vagaId: string, trainingSessionId: string) {
+  if (typeof window === "undefined") return;
+  const ids = getLocalTrainingSessionIds(vagaId);
+  if (ids.includes(trainingSessionId)) return;
+  window.sessionStorage.setItem(storageKey(vagaId), JSON.stringify([...ids, trainingSessionId]));
+}
+
+export function getLocalTrainingSessionIds(vagaId: string): string[] {
   if (typeof window === "undefined") return [];
   try {
-    const raw = window.sessionStorage.getItem(STORAGE_KEY);
+    const raw = window.sessionStorage.getItem(storageKey(vagaId));
     if (!raw) return [];
     const parsed = JSON.parse(raw);
     return Array.isArray(parsed) ? parsed : [];

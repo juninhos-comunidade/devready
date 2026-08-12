@@ -30,7 +30,7 @@ export default function TrilhaDeEstudo() {
 
           <PreparationJourney current="plano" sessionName={session ? `${session.name} · ${session.company}` : undefined} />
 
-          <TrilhaContent />
+          {session && <TrilhaContent vagaId={session.id} />}
 
           <div className="mt-6 flex items-start gap-3 rounded-2xl border border-[#e7e3ee] bg-white p-5">
             <span className="grid h-9 w-9 shrink-0 place-items-center rounded-xl bg-[#e7f7ef] text-[#1f9d73]">
