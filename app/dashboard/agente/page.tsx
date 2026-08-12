@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import Link from "next/link";
 import {
   ArrowRight,
@@ -37,6 +37,7 @@ import {
   type InterviewQuestion,
   type InterviewTrack,
 } from "@/lib/interview-agent";
+import { recordOpenAnswer, startTrainingSession } from "@/lib/training/actions";
 
 type InterviewTurn = {
   question: InterviewQuestion;
@@ -81,6 +82,7 @@ export default function AgenteEntrevista() {
   const [savedPlan, setSavedPlan] = useState<SavedPreparationPlan | null>(null);
   const [configurationError, setConfigurationError] = useState("");
   const [activeSession, setActiveSession] = useState<MockSession | null>(null);
+  const dbSessionRef = useRef<Promise<string | null> | null>(null);
   const effectiveArea = areaChoice === "auto" ? detectInterviewArea(jobDescription) : areaChoice;
   const effectiveAreaLabel = interviewAreaOptions.find(({ value }) => value === effectiveArea)?.label ?? "Frontend";
 
@@ -145,13 +147,32 @@ export default function AgenteEntrevista() {
     setCurrentEvaluation(evaluateInterviewAnswer(answer.trim(), question));
   }
 
+  async function recordInterviewTurn(turnQuestion: InterviewQuestion, answerText: string, evaluation: InterviewEvaluation) {
+    const dbSessionId = await dbSessionRef.current;
+    if (!dbSessionId) return;
+    try {
+      await recordOpenAnswer({
+        sessionId: dbSessionId,
+        mode: "entrevista",
+        competencyText: turnQuestion.competency,
+        difficulty: turnQuestion.difficulty,
+        prompt: turnQuestion.prompt,
+        answerText,
+        score: evaluation.score,
+        criteria: evaluation.criteria,
+      });
+    } catch {}
+  }
+
   function nextQuestion() {
     if (!question || !currentEvaluation) return;
+    const trimmedAnswer = answer.trim();
     const nextTurns = [
       ...turns,
-      { question, answer: answer.trim(), evaluation: currentEvaluation },
+      { question, answer: trimmedAnswer, evaluation: currentEvaluation },
     ];
     setTurns(nextTurns);
+    recordInterviewTurn(question, trimmedAnswer, currentEvaluation);
     if (nextTurns.length >= questionLimit) {
       const finalSummary = buildInterviewSummary(nextTurns);
       const finalScore = Math.round(nextTurns.reduce((total, turn) => total + turn.evaluation.score, 0) / nextTurns.length);
@@ -195,6 +216,10 @@ export default function AgenteEntrevista() {
     setReplayIds(null);
     setFocusKeywords([]);
     setPreviousScore(null);
+    dbSessionRef.current = startTrainingSession({
+      jobTitle: `Entrevista ${trackLabels[track]} · ${effectiveAreaLabel}`,
+      jobSessionId: activeSession?.id,
+    }).catch(() => null);
   }
 
   function replayInterview() {
@@ -237,7 +262,7 @@ export default function AgenteEntrevista() {
               </p>
             </div>
             <span className="inline-flex items-center gap-2 rounded-full bg-[#ece8f8] px-3 py-2 text-xs font-extrabold text-[#654bc9]">
-              <ShieldCheck className="h-4 w-4" /> Processamento local
+              <ShieldCheck className="h-4 w-4" /> Avaliação automática
             </span>
           </header>
           <PreparationJourney current="entrevista" sessionName={activeSession ? `${activeSession.name} · ${activeSession.company}` : undefined} />
@@ -319,7 +344,7 @@ export default function AgenteEntrevista() {
                   <li className="flex gap-3"><CheckCircle2 className="mt-0.5 h-4 w-4 shrink-0 text-[#78ddb0]" /> Feedback sobre conteúdo, clareza e estrutura.</li>
                   <li className="flex gap-3"><CheckCircle2 className="mt-0.5 h-4 w-4 shrink-0 text-[#78ddb0]" /> Dificuldade ajustada ao desempenho.</li>
                 </ul>
-                <p className="mt-7 rounded-xl border border-white/10 bg-white/[0.06] p-3 text-xs leading-relaxed text-[#aaa6d6]">As respostas permanecem neste dispositivo.</p>
+                <p className="mt-7 rounded-xl border border-white/10 bg-white/[0.06] p-3 text-xs leading-relaxed text-[#aaa6d6]">Suas respostas ficam salvas na sua conta, disponíveis em qualquer dispositivo.</p>
               </aside>
             </section>
           ) : completed ? (
