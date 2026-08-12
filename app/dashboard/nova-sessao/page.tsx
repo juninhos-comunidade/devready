@@ -7,25 +7,15 @@ import { Sidebar } from "@/components/Sidebar";
 import { BrandLoading } from "@/components/BrandLoading";
 import { Mascot } from "@/components/Mascot";
 import { ImageDropzone } from "@/components/ImageDropzone";
-import { FormSelect } from "@/components/FormSelect";
 import { PreparationJourney } from "@/components/PreparationJourney";
 import { persistMockSession, type MockSession } from "@/lib/mock-session";
 import type { JobAnalysis } from "@/lib/job-training";
-
-const focusOptions = [
-  "Entrevista completa",
-  "Conhecimentos técnicos",
-  "Perguntas comportamentais",
-  "Desafio prático",
-  "Comunicação e apresentação",
-];
 
 export default function NovaSessao() {
   const router = useRouter();
   const [name, setName] = useState("");
   const [company, setCompany] = useState("");
   const [description, setDescription] = useState("");
-  const [focus, setFocus] = useState("Entrevista completa");
   const [image, setImage] = useState<File | null>(null);
   const [errorMessage, setErrorMessage] = useState("");
   const [isAnalyzing, setIsAnalyzing] = useState(false);
@@ -67,7 +57,6 @@ export default function NovaSessao() {
         name: name.trim(),
         company: company.trim() || payload.analysis.company,
         description: payload.extractedDescription || description.trim(),
-        focus,
         source: image ? "image" : "text",
         analysis: payload.analysis,
         analysisNotice: payload.notice,
@@ -116,11 +105,6 @@ export default function NovaSessao() {
 
               <div className="my-5 flex items-center gap-3" aria-hidden="true"><span className="h-px flex-1 bg-[#ece9f1]" /><span className="text-[10px] font-extrabold uppercase tracking-widest text-[#8b8593]">ou envie um print</span><span className="h-px flex-1 bg-[#ece9f1]" /></div>
               <ImageDropzone onFileChange={setImage} />
-
-              <div className="mt-5 grid gap-1.5">
-                <label htmlFor="focus" className="text-sm font-extrabold text-[#1d1b33]">O que você quer priorizar?</label>
-                <FormSelect id="focus" placeholder="Escolha um foco" options={focusOptions} value={focus} onChange={(event) => setFocus(event.target.value)} />
-              </div>
 
               {errorMessage && <p role="alert" className="mt-5 rounded-xl bg-[#fdf2f2] px-4 py-3 text-sm font-bold text-[#a83030]">{errorMessage}</p>}
 
