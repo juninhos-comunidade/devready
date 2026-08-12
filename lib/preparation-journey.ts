@@ -60,17 +60,24 @@ function statusFromScore(score: number | null): EvidenceStatus {
   return "not-evidenced";
 }
 
+function averageScore(attempts: TrainingAttempt[]): number | null {
+  if (!attempts.length) return null;
+  return Math.round(attempts.reduce((total, attempt) => total + attempt.score, 0) / attempts.length);
+}
+
+function firstWord(text: string): string {
+  return text.toLocaleLowerCase("pt-BR").split(" ")[0];
+}
+
 export function buildEvidenceMatrix(
   analysis: JobAnalysis,
   sourceLabel = "Perfil demonstrativo",
   progress?: JourneyProgress,
 ): CompetencyEvidence[] {
+  const quizScore = averageScore((progress?.trainingAttempts ?? []).filter((attempt) => attempt.mode === "quiz"));
   const technologies = analysis.technologies.filter((item) => item.required);
   const technical = technologies.map((item) => {
-    const relevantAttempts = progress?.trainingAttempts ?? [];
-    const practiceScore = item.name === analysis.priority && relevantAttempts.length
-      ? Math.round(relevantAttempts.reduce((total, attempt) => total + attempt.score, 0) / relevantAttempts.length)
-      : null;
+    const practiceScore = quizScore;
     const interviewScore = progress?.interview && [progress.interview.strongest, progress.interview.priority].includes(item.name)
       ? progress.interview.score
       : null;
@@ -79,12 +86,12 @@ export function buildEvidenceMatrix(
     const evidence = ["Requisito identificado na vaga"];
     if (item.profileScore !== null) evidence.push(`${sourceLabel}: registro de ${item.name}`);
     if (item.evidence?.length) evidence.push(...item.evidence.map((source) => `${source}: menção de ${item.name}`));
-    if (practiceScore !== null) evidence.push(`Prática concluída: ${practiceScore}/100`);
+    if (practiceScore !== null) evidence.push(`Quiz técnico concluído: ${practiceScore}/100`);
     if (interviewScore !== null) evidence.push(`Entrevista concluída: ${interviewScore}/100`);
     return {
       competency: item.name,
       status,
-      confidence: interviewScore !== null || practiceScore !== null ? "alta" : item.profileScore !== null || item.evidence?.length ? "média" : "baixa",
+      confidence: interviewScore !== null ? "alta" : practiceScore !== null ? "média" : item.profileScore !== null || item.evidence?.length ? "média" : "baixa",
       score: bestScore,
       evidence: evidence.length === 1 ? [...evidence, "Nenhuma evidência disponível no perfil"] : evidence,
       nextAction: status === "demonstrated"
@@ -95,14 +102,32 @@ export function buildEvidenceMatrix(
     } satisfies CompetencyEvidence;
   });
 
-  const behavioral = analysis.softSkills.slice(0, 3).map((skill) => ({
-    competency: skill,
-    status: "not-evidenced" as const,
-    confidence: "baixa" as const,
-    score: null,
-    evidence: ["Competência citada na vaga", "Ainda não avaliada em entrevista"],
-    nextAction: "Responder a uma pergunta comportamental com contexto, ação e resultado.",
-  }));
+  const starScore = averageScore((progress?.trainingAttempts ?? []).filter((attempt) => attempt.mode === "comportamental"));
+  const behavioral = analysis.softSkills.slice(0, 3).map((skill) => {
+    const interviewMatch = progress?.interview
+      ? [progress.interview.strongest, progress.interview.priority].find(
+          (name) => firstWord(name) === firstWord(skill) || name.toLocaleLowerCase("pt-BR").includes(skill.toLocaleLowerCase("pt-BR")),
+        )
+      : undefined;
+    const interviewScore = interviewMatch ? progress!.interview!.score : null;
+    const bestScore = Math.max(starScore ?? 0, interviewScore ?? 0) || null;
+    const status = statusFromScore(bestScore);
+    const evidence = ["Competência citada na vaga"];
+    if (starScore !== null) evidence.push(`Resposta STAR concluída: ${starScore}/100`);
+    if (interviewScore !== null) evidence.push(`Entrevista concluída: ${interviewScore}/100`);
+    return {
+      competency: skill,
+      status,
+      confidence: starScore !== null || interviewScore !== null ? "média" : "baixa",
+      score: bestScore,
+      evidence: evidence.length === 1 ? [...evidence, "Ainda não avaliada em entrevista ou treino"] : evidence,
+      nextAction: status === "demonstrated"
+        ? "Preparar um exemplo de aplicação e decisões concretas."
+        : status === "developing"
+          ? "Responder mais uma pergunta comportamental com contexto, ação e resultado."
+          : "Responder a uma pergunta comportamental com contexto, ação e resultado.",
+    } satisfies CompetencyEvidence;
+  });
 
   return [...technical, ...behavioral];
 }
