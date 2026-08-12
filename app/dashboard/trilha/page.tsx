@@ -8,6 +8,7 @@ import { PreparationJourney } from "@/components/PreparationJourney";
 import { Mascot } from "@/components/Mascot";
 import { MOCK_SESSION_KEY, parseMockSession, persistMockSession, type MockSession } from "@/lib/mock-session";
 import type { PreparationPlan } from "@/lib/preparation-journey";
+import { TrilhaContent } from "./TrilhaContent";
 
 type Material = { title: string; type: string; duration: string; url: string };
 
@@ -128,6 +129,14 @@ export default function TrilhaDeEstudo() {
                 ))}
               </div>
               {progress === 100 && <p role="status" className="mt-5 flex items-center gap-2 rounded-xl bg-[#78ddb0]/10 px-4 py-3 text-sm font-extrabold text-[#9eddbb]"><CheckCircle2 className="h-4 w-4" /> Plano concluído. Refaça a entrevista para comparar sua evolução.</p>}
+            </section>
+          )}
+
+          {session && (
+            <section className="mt-6">
+              <p className="text-[11px] font-extrabold uppercase tracking-[0.18em] text-[#8b8593]">Baseado no seu desempenho real</p>
+              <h2 className="mt-1 text-xl font-extrabold text-[#1d1b33]">Onde você mais precisa reforçar</h2>
+              <TrilhaContent vagaId={session.id} />
             </section>
           )}
 
