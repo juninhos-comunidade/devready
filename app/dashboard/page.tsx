@@ -2,7 +2,6 @@ import Link from "next/link";
 import {
   ArrowRight,
   BookOpen,
-  CalendarDays,
   CheckCircle2,
   CircleDotDashed,
   Plus,
@@ -21,6 +20,7 @@ import { CurriculumProcessingTrigger } from "@/components/dashboard/CurriculumPr
 import { GithubAnalysisCard } from "@/components/dashboard/GithubAnalysisCard";
 import { ActivePreparationCard } from "@/components/dashboard/ActivePreparationCard";
 import { PreparationHistory } from "@/components/dashboard/PreparationHistory";
+import { SessionsCard } from "@/components/dashboard/SessionsCard";
 import { demoModeEnabled } from "@/lib/demo-mode";
 import type { Prisma } from "@/app/generated/prisma/client";
 
@@ -189,16 +189,7 @@ export default async function Dashboard() {
           </section>
 
           <div className="mt-6 grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
-            <article className="rounded-2xl border border-[#e7e3ee] bg-white p-5">
-              <div className="flex items-center justify-between">
-                <span className="grid h-9 w-9 place-items-center rounded-xl bg-[#efeaff] text-[#7755e8]">
-                  <CalendarDays className="h-4.5 w-4.5" />
-                </span>
-                <span className="text-xs font-bold text-[#8b8593]">{dashboardData.jobsCount} vagas</span>
-              </div>
-              <p className="mt-4 text-3xl font-extrabold text-[#1d1b33]">{dashboardData.sessionsCount}</p>
-              <p className="text-sm font-semibold text-[#6d698a]">Sessões realizadas</p>
-            </article>
+            <SessionsCard />
 
             <article className="rounded-2xl border border-[#e7e3ee] bg-white p-5">
               <div className="flex items-center justify-between">
