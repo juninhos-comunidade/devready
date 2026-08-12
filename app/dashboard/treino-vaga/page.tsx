@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import Link from "next/link";
 import {
   ArrowLeft,
@@ -20,11 +20,14 @@ import { MOCK_SESSION_KEY, parseMockSession, persistMockSession, type MockSessio
 import {
   TRAINING_HISTORY_KEY,
   nextDifficulty,
+  type QuizQuestion,
   type TrainingAttempt,
   type TrainingContent,
   type TrainingDifficulty,
   type TrainingEvaluation,
 } from "@/lib/job-training";
+import { recordOpenAnswer, recordQuizAnswer, startTrainingSession } from "@/lib/training/actions";
+import { addLocalTrainingSessionId } from "@/lib/training/client-sessions";
 
 type Mode = "quiz" | "comportamental" | "codigo";
 
@@ -62,6 +65,7 @@ export default function TreinoVaga() {
   const [errorMessage, setErrorMessage] = useState("");
   const [notice, setNotice] = useState("");
   const [attempts, setAttempts] = useState<TrainingAttempt[]>([]);
+  const dbSessionPromiseRef = useRef<Promise<string> | null>(null);
 
   useEffect(() => {
     let cancelled = false;
@@ -69,6 +73,10 @@ export default function TreinoVaga() {
       const current = readSession();
       setSession(current);
       setAttempts(readAttempts());
+
+      const dbPromise = startTrainingSession(current.name);
+      dbSessionPromiseRef.current = dbPromise;
+      dbPromise.then((id) => addLocalTrainingSessionId(id)).catch(() => {});
       const cacheKey = `devready:training-content:${current.id}`;
       try {
         const cached = window.sessionStorage.getItem(cacheKey);
@@ -170,9 +178,9 @@ export default function TreinoVaga() {
 
               <div className="mt-6 grid gap-6 xl:grid-cols-[1fr_300px]">
                 <div>
-                  {mode === "quiz" && <QuizTraining content={content} onComplete={(score, difficulty) => saveAttempt({ mode: "quiz", score, difficulty })} />}
-                  {mode === "comportamental" && <OpenAnswerTraining mode="comportamental" prompt={content.behavioralQuestion} requirements={["Situação", "Tarefa", "Ação", "Resultado"]} initialAnswer="" onComplete={(score, difficulty) => saveAttempt({ mode: "comportamental", score, difficulty })} />}
-                  {mode === "codigo" && <OpenAnswerTraining mode="codigo" prompt={content.codeChallenge.statement} requirements={content.codeChallenge.requirements} initialAnswer={content.codeChallenge.starterCode} title={content.codeChallenge.title} language={content.codeChallenge.language} onComplete={(score, difficulty) => saveAttempt({ mode: "codigo", score, difficulty })} />}
+                  {mode === "quiz" && <QuizTraining content={content} dbSessionRef={dbSessionPromiseRef} onComplete={(score, difficulty) => saveAttempt({ mode: "quiz", score, difficulty })} />}
+                  {mode === "comportamental" && <OpenAnswerTraining mode="comportamental" prompt={content.behavioralQuestion} requirements={["Situação", "Tarefa", "Ação", "Resultado"]} initialAnswer="" dbSessionRef={dbSessionPromiseRef} onComplete={(score, difficulty) => saveAttempt({ mode: "comportamental", score, difficulty })} />}
+                  {mode === "codigo" && <OpenAnswerTraining mode="codigo" prompt={content.codeChallenge.statement} requirements={content.codeChallenge.requirements} initialAnswer={content.codeChallenge.starterCode} title={content.codeChallenge.title} language={content.codeChallenge.language} dbSessionRef={dbSessionPromiseRef} onComplete={(score, difficulty) => saveAttempt({ mode: "codigo", score, difficulty })} />}
                 </div>
                 <AttemptHistory attempts={attempts.filter((attempt) => attempt.sessionId === session.id)} />
               </div>
@@ -184,7 +192,15 @@ export default function TreinoVaga() {
   );
 }
 
-function QuizTraining({ content, onComplete }: { content: TrainingContent; onComplete: (score: number, difficulty: TrainingDifficulty) => void }) {
+function QuizTraining({
+  content,
+  dbSessionRef,
+  onComplete,
+}: {
+  content: TrainingContent;
+  dbSessionRef: React.RefObject<Promise<string> | null>;
+  onComplete: (score: number, difficulty: TrainingDifficulty) => void;
+}) {
   const [usedIds, setUsedIds] = useState<string[]>([]);
   const [difficulty, setDifficulty] = useState<TrainingDifficulty>("iniciante");
   const [selected, setSelected] = useState<number | null>(null);
@@ -198,8 +214,15 @@ function QuizTraining({ content, onComplete }: { content: TrainingContent; onCom
   const answered = usedIds.length;
   const currentCorrect = selected !== null && question ? selected === question.correctIndex : false;
 
+  function recordAnswer(currentQuestion: QuizQuestion, selectedIndex: number) {
+    dbSessionRef.current
+      ?.then((sessionId) => recordQuizAnswer({ sessionId, question: currentQuestion, selectedIndex }))
+      .catch(() => {});
+  }
+
   function next() {
     if (!question || selected === null) return;
+    recordAnswer(question, selected);
     const totalCorrect = correctCount + (currentCorrect ? 1 : 0);
     const totalAnswered = answered + 1;
     const score = Math.round((totalCorrect / totalAnswered) * 100);
@@ -248,7 +271,25 @@ function QuizTraining({ content, onComplete }: { content: TrainingContent; onCom
   );
 }
 
-function OpenAnswerTraining({ mode, prompt, requirements, initialAnswer, title, language, onComplete }: { mode: "comportamental" | "codigo"; prompt: string; requirements: string[]; initialAnswer: string; title?: string; language?: string; onComplete: (score: number, difficulty: TrainingDifficulty) => void }) {
+function OpenAnswerTraining({
+  mode,
+  prompt,
+  requirements,
+  initialAnswer,
+  title,
+  language,
+  dbSessionRef,
+  onComplete,
+}: {
+  mode: "comportamental" | "codigo";
+  prompt: string;
+  requirements: string[];
+  initialAnswer: string;
+  title?: string;
+  language?: string;
+  dbSessionRef: React.RefObject<Promise<string> | null>;
+  onComplete: (score: number, difficulty: TrainingDifficulty) => void;
+}) {
   const [answer, setAnswer] = useState(initialAnswer);
   const [difficulty, setDifficulty] = useState<TrainingDifficulty>("intermediaria");
   const [evaluation, setEvaluation] = useState<TrainingEvaluation | null>(null);
@@ -270,6 +311,18 @@ function OpenAnswerTraining({ mode, prompt, requirements, initialAnswer, title, 
       setEvaluation(payload.evaluation);
       setDifficulty(payload.evaluation.nextDifficulty);
       onComplete(payload.evaluation.score, payload.evaluation.nextDifficulty);
+      dbSessionRef.current
+        ?.then((sessionId) =>
+          recordOpenAnswer({
+            sessionId,
+            mode,
+            competencySource: language ?? title ?? prompt,
+            difficulty,
+            prompt,
+            score: payload.evaluation!.score,
+          }),
+        )
+        .catch(() => {});
     } catch (error) {
       setErrorMessage(error instanceof Error ? error.message : "Não foi possível avaliar a resposta.");
     } finally {
