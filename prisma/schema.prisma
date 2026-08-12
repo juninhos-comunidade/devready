@@ -122,11 +122,12 @@ model Verification {
 }
 
 model TrainingSession {
-  id        String   @id @default(uuid())
-  userId    String?
-  user      User?    @relation(fields: [userId], references: [id], onDelete: Cascade)
-  jobTitle  String?
-  createdAt DateTime @default(now())
+  id          String   @id @default(uuid())
+  userId      String?
+  user        User?    @relation(fields: [userId], references: [id], onDelete: Cascade)
+  jobTitle    String?
+  jobSessionId String?
+  createdAt   DateTime @default(now())
 
   questions TrainingQuestion[]
   answers   TrainingAnswer[]
@@ -136,12 +137,13 @@ model TrainingQuestion {
   id              String   @id @default(uuid())
   sessionId       String
   session         TrainingSession @relation(fields: [sessionId], references: [id], onDelete: Cascade)
+  mode            String   @default("quiz")
   competency      String
   competencyLabel String
   difficulty      String
   prompt          String
-  options         Json
-  correctIndex    Int
+  options         Json?
+  correctIndex    Int?
   explanation     String
   source          String   @default("mock")
   createdAt       DateTime @default(now())
@@ -157,7 +159,10 @@ model TrainingAnswer {
   question   TrainingQuestion @relation(fields: [questionId], references: [id], onDelete: Cascade)
   userId     String?
   user       User?    @relation(fields: [userId], references: [id], onDelete: Cascade)
-  wasCorrect Boolean
+  wasCorrect Boolean?
+  score      Int?
+  answerText String?
+  criteria   Json?
   answeredAt DateTime @default(now())
 }
 
