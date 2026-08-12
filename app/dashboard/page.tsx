@@ -213,9 +213,6 @@ export default async function Dashboard() {
               <p className="text-sm font-semibold text-[#6d698a]">Tecnologias testadas</p>
             </article>
 
-            {/* único card dessa fileira que vira link — é o gancho pra Trilha de
-                Estudo (seção 4.5): "próximo foco sugerido" já é, na prática,
-                um convite pra abrir a trilha, só faltava ele levar a algum lugar */}
             <Link
               href="/dashboard/trilha"
               className="group rounded-2xl border border-[#e7e3ee] bg-white p-5 transition hover:border-[#d7d0e8] hover:shadow-[0_14px_35px_-30px_rgba(29,27,51,0.55)]"
@@ -233,6 +230,8 @@ export default async function Dashboard() {
               </p>
             </Link>
           </div>
+
+          <PreparationHistory />
 
           <div className="mt-6 grid gap-6 xl:grid-cols-[1.25fr_0.75fr]">
             <section className="rounded-3xl border border-[#e7e3ee] bg-white p-5 shadow-[0_18px_55px_-42px_rgba(29,27,51,0.45)] sm:p-6">
@@ -261,8 +260,6 @@ export default async function Dashboard() {
           <div className="mt-6">
             <EvolutionChart series={dashboardData.history} />
           </div>
-
-          <PreparationHistory />
         </div>
       </main>
     </div>
