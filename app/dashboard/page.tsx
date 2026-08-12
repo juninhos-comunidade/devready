@@ -22,6 +22,7 @@ import { ActivePreparationCard } from "@/components/dashboard/ActivePreparationC
 import { PreparationHistory } from "@/components/dashboard/PreparationHistory";
 import { SessionsCard } from "@/components/dashboard/SessionsCard";
 import { demoModeEnabled } from "@/lib/demo-mode";
+import { getDashboardTrainingStats } from "@/lib/training/dashboard-stats";
 import type { Prisma } from "@/app/generated/prisma/client";
 
 type CurriculumWithGithub = Prisma.CurriculumGetPayload<{
@@ -86,6 +87,7 @@ function TechnologyRow({ technology }: { technology: TechnologyScore }) {
 
 export default async function Dashboard() {
   let curriculum: CurriculumWithGithub | null = null;
+  let trainingStats: Awaited<ReturnType<typeof getDashboardTrainingStats>> | null = null;
 
   if (!demoModeEnabled) {
     const session = await auth.api.getSession({ headers: await headers() });
@@ -97,11 +99,16 @@ export default async function Dashboard() {
       where: { userId: session.user.id },
       include: { githubProfile: { include: { repos: true } } },
     });
+    trainingStats = await getDashboardTrainingStats(session.user.id);
   }
+
+  const hasRealStats = Boolean(trainingStats && trainingStats.technologies.length > 0);
+  const technologies = hasRealStats ? trainingStats!.technologies : dashboardData.technologies;
+  const history = hasRealStats ? trainingStats!.history : dashboardData.history;
 
   const readinessDelta =
     dashboardData.readiness - dashboardData.previousReadiness;
-  const testedTechnologies = dashboardData.technologies.filter(
+  const testedTechnologies = technologies.filter(
     (technology) => technology.score !== null,
   ).length;
 
@@ -123,7 +130,7 @@ export default async function Dashboard() {
                 Acompanhe sua evolução e priorize as competências com maior impacto para a próxima vaga.
               </p>
               <span className="mt-3 inline-flex rounded-full bg-[#ece8f8] px-3 py-1 text-[10px] font-extrabold uppercase tracking-wide text-[#654bc9]">
-                Dados de exemplo
+                {hasRealStats ? "Notas por tecnologia reais" : "Dados de exemplo"}
               </span>
             </div>
 
@@ -153,13 +160,15 @@ export default async function Dashboard() {
               <div className="max-w-2xl">
                 <span className="inline-flex items-center gap-2 rounded-full border border-white/15 bg-white/10 px-3 py-1.5 text-xs font-extrabold text-[#dcd8ff]">
                   <Sparkles className="h-3.5 w-3.5" />
-                  Exemplo de evolução
+                  {hasRealStats ? "Sua evolução" : "Exemplo de evolução"}
                 </span>
                 <h2 className="mt-4 font-[family-name:var(--font-display)] text-2xl font-bold sm:text-3xl">
                   Visualize como a prática muda sua prontidão.
                 </h2>
                 <p className="mt-2 max-w-xl text-sm leading-relaxed text-[#c2bfd7] sm:text-base">
-                  Os indicadores abaixo são fictícios e demonstram como o histórico será apresentado depois de novas tentativas.
+                  {hasRealStats
+                    ? "As notas por tecnologia abaixo vêm das suas tentativas de treino reais."
+                    : "Os indicadores abaixo são fictícios e demonstram como o histórico será apresentado depois de novas tentativas."}
                 </p>
                 <Link href="/dashboard/resultado" className="mt-5 inline-flex items-center gap-2 text-sm font-extrabold text-[#5d43c4] underline decoration-[#e8641d] decoration-2 underline-offset-4">
                   Abrir preparação ativa <ArrowRight className="h-4 w-4" />
@@ -248,7 +257,7 @@ export default async function Dashboard() {
               </div>
 
               <ul className="mt-5 grid gap-3">
-                {dashboardData.technologies.map((technology) => (
+                {technologies.map((technology) => (
                   <TechnologyRow key={technology.name} technology={technology} />
                 ))}
               </ul>
@@ -258,7 +267,7 @@ export default async function Dashboard() {
           </div>
 
           <div className="mt-6">
-            <EvolutionChart series={dashboardData.history} />
+            <EvolutionChart series={history} />
           </div>
         </div>
       </main>
