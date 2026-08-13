@@ -8,6 +8,7 @@ export type TechnologyScore = {
   score: number | null;
   previousScore: number | null;
   lastTestedAt: string | null;
+  jobSessionId: string | null;
 };
 
 export type HistoryPoint = {
@@ -37,6 +38,14 @@ function formatDate(date: Date): string {
   return new Intl.DateTimeFormat("pt-BR", { day: "2-digit", month: "2-digit" }).format(date);
 }
 
+type CompetencyAnswer = {
+  value: number;
+  at: Date;
+  sessionId: string;
+  sessionCreatedAt: Date;
+  jobSessionId: string | null;
+};
+
 export async function getDashboardTrainingStats(userId: string): Promise<{
   technologies: TechnologyScore[];
   history: TechnologyHistory[];
@@ -44,43 +53,51 @@ export async function getDashboardTrainingStats(userId: string): Promise<{
   const answers = await withDbRetry(() =>
     prisma.trainingAnswer.findMany({
       where: { userId },
-      include: { question: true },
+      include: { question: true, session: true },
       orderBy: { answeredAt: "asc" },
     }),
   );
   if (!answers.length) return { technologies: [], history: [] };
 
-  const byCompetency = new Map<string, { label: string; scores: { value: number; at: Date }[] }>();
+  const byCompetency = new Map<string, { label: string; answers: CompetencyAnswer[] }>();
   for (const answer of answers) {
     const value = scoreFor(answer);
     if (value === null) continue;
     const key = answer.question.competency;
-    const entry = byCompetency.get(key) ?? { label: answer.question.competencyLabel, scores: [] };
-    entry.scores.push({ value, at: answer.answeredAt });
+    const entry = byCompetency.get(key) ?? { label: answer.question.competencyLabel, answers: [] };
+    entry.answers.push({
+      value,
+      at: answer.answeredAt,
+      sessionId: answer.sessionId,
+      sessionCreatedAt: answer.session.createdAt,
+      jobSessionId: answer.session.jobSessionId,
+    });
     byCompetency.set(key, entry);
   }
 
-  const ranked = [...byCompetency.entries()].sort((a, b) => b[1].scores.length - a[1].scores.length);
+  const ranked = [...byCompetency.entries()].sort((a, b) => b[1].answers.length - a[1].answers.length);
 
-  const minSampleForTrend = 4;
   const technologies: TechnologyScore[] = ranked.map(([, entry]) => {
-    const half = Math.floor(entry.scores.length / 2);
-    const previousScore = entry.scores.length >= minSampleForTrend
-      ? average(entry.scores.slice(0, half).map((item) => item.value))
-      : null;
-    const currentScores = entry.scores.slice(entry.scores.length >= minSampleForTrend ? half : 0).map((item) => item.value);
+    const latestSessionId = entry.answers.reduce((latest, item) =>
+      item.sessionCreatedAt > latest.sessionCreatedAt ? item : latest,
+    ).sessionId;
+    const latestAnswers = entry.answers.filter((item) => item.sessionId === latestSessionId);
+    const priorAnswers = entry.answers.filter((item) => item.sessionId !== latestSessionId);
+    const lastAnswer = entry.answers[entry.answers.length - 1];
+
     return {
       name: entry.label,
-      score: average(currentScores),
-      previousScore,
-      lastTestedAt: formatDate(entry.scores[entry.scores.length - 1].at),
+      score: average(latestAnswers.map((item) => item.value)),
+      previousScore: priorAnswers.length ? average(priorAnswers.map((item) => item.value)) : null,
+      lastTestedAt: formatDate(lastAnswer.at),
+      jobSessionId: latestAnswers[0]?.jobSessionId ?? null,
     };
   });
 
   const history: TechnologyHistory[] = ranked.slice(0, 3).map(([, entry], index) => {
     const points: HistoryPoint[] = [];
     const running: number[] = [];
-    for (const item of entry.scores.slice(-6)) {
+    for (const item of entry.answers.slice(-6)) {
       running.push(item.value);
       points.push({ label: formatDate(item.at), score: average(running) ?? item.value });
     }
