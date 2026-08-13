@@ -72,7 +72,7 @@ export default function Resultado() {
             <div>
               <span className="text-[11px] font-extrabold uppercase tracking-[0.2em] text-[#7755e8]">Análise da vaga</span>
               <h1 className="mt-1 font-[family-name:var(--font-display)] text-3xl font-bold text-[#1d1b33] sm:text-4xl">{session.name}</h1>
-              <p className="mt-2 flex items-center gap-2 text-sm font-semibold text-[#6d698a]"><BriefcaseBusiness className="h-4 w-4" /> {session.company} · foco em {session.focus.toLocaleLowerCase("pt-BR")}</p>
+              <p className="mt-2 flex items-center gap-2 text-sm font-semibold text-[#6d698a]"><BriefcaseBusiness className="h-4 w-4" /> {session.company}</p>
             </div>
             <button type="button" onClick={() => { setReanalyzed(false); setIsEditing(true); }} className="inline-flex min-h-11 items-center gap-2 rounded-full border border-[#dcd7e6] bg-white px-5 text-sm font-extrabold text-[#1d1b33] transition hover:border-[#7755e8]"><Pencil className="h-4 w-4" /> Editar vaga</button>
           </header>
