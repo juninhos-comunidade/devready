@@ -8,7 +8,6 @@ export type MockSession = {
   name: string;
   company: string;
   description: string;
-  focus: string;
   source: "text" | "image";
   analysis: JobAnalysis;
   analysisNotice?: string;
@@ -23,7 +22,6 @@ export const defaultMockSession: MockSession = {
   name: "Frontend Júnior",
   company: "Fintech Aurora",
   description: defaultDescription,
-  focus: "Entrevista completa",
   source: "text",
   analysis: analyzeJobLocally(defaultDescription, "Fintech Aurora", demoCandidateProfile),
   progress: { trainingAttempts: [] },
@@ -42,7 +40,6 @@ export function parseMockSession(value: string | null): MockSession {
       name: parsed.name?.trim() || "Treino personalizado",
       company,
       description,
-      focus: parsed.focus?.trim() || "Entrevista completa",
       source: parsed.source === "image" ? "image" : "text",
       analysis: parsed.analysis ?? analyzeJobLocally(description, company),
       analysisNotice: parsed.analysisNotice,

@@ -17,15 +17,6 @@ export type TechnologyHistory = {
   points: HistoryPoint[];
 };
 
-export type RecentSession = {
-  id: string;
-  title: string;
-  company: string;
-  date: string;
-  score: number;
-  delta: number | null;
-};
-
 // Contrato temporário da tela. Quando os modelos de treino forem adicionados ao
 // Prisma, somente a origem deste objeto precisa mudar; os componentes continuam
 // recebendo o mesmo formato e não ficam acoplados ao banco.
@@ -73,36 +64,4 @@ export const dashboardData = {
       ],
     },
   ] satisfies TechnologyHistory[],
-  github: {
-    score: 82,
-    updatedAt: "Atualizado há 2 dias",
-    strengths: ["READMEs claros", "Boa organização"],
-    improvement: "Aumentar a frequência de commits",
-  },
-  recentSessions: [
-    {
-      id: "frontend-fintech",
-      title: "Frontend Júnior",
-      company: "Fintech Aurora",
-      date: "30 jul",
-      score: 84,
-      delta: 7,
-    },
-    {
-      id: "react-ecommerce",
-      title: "Desenvolvedor React",
-      company: "Loja Horizonte",
-      date: "27 jul",
-      score: 72,
-      delta: 5,
-    },
-    {
-      id: "estagio-web",
-      title: "Estágio em Desenvolvimento Web",
-      company: "Studio Norte",
-      date: "22 jul",
-      score: 65,
-      delta: null,
-    },
-  ] satisfies RecentSession[],
 };
