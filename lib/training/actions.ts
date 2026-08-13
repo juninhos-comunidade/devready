@@ -137,3 +137,12 @@ export async function getTrilhaCompletionSignal(jobSessionId: string): Promise<b
   const competencies = [...byCompetency.values()];
   return competencies.length > 0 && competencies.every((item) => item.correct / item.total >= 0.8);
 }
+
+export async function deleteVagaTrainingData(jobSessionId: string): Promise<void> {
+  const userId = await getCurrentUserId();
+  await withDbRetry(() =>
+    prisma.trainingSession.deleteMany({
+      where: userId ? { jobSessionId, userId } : { jobSessionId },
+    }),
+  );
+}
