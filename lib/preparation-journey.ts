@@ -132,12 +132,13 @@ export function buildEvidenceMatrix(
   return [...technical, ...behavioral];
 }
 
-export function getJourneyCompletion(progress?: JourneyProgress) {
+export function getJourneyCompletion(progress?: JourneyProgress, trilhaComplete?: boolean) {
   if (!progress) return 20;
   let completed = 2;
   if (progress.trainingAttempts.length > 0) completed += 1;
   if (progress.interview) completed += 1;
   if (progress.plan?.tasks.some((task) => task.completed)) completed += 1;
+  if (trilhaComplete) completed += 1;
   return Math.min(100, completed * 20);
 }
 

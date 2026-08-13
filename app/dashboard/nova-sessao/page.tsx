@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { ArrowRight, Sparkles } from "lucide-react";
 import { Sidebar } from "@/components/Sidebar";
@@ -8,8 +8,8 @@ import { BrandLoading } from "@/components/BrandLoading";
 import { Mascot } from "@/components/Mascot";
 import { ImageDropzone } from "@/components/ImageDropzone";
 import { PreparationJourney } from "@/components/PreparationJourney";
-import { persistMockSession, type MockSession } from "@/lib/mock-session";
-import type { JobAnalysis } from "@/lib/job-training";
+import { persistMockSession, readSessionList, type MockSession } from "@/lib/mock-session";
+import { getSessionLimit, type JobAnalysis } from "@/lib/job-training";
 
 export default function NovaSessao() {
   const router = useRouter();
@@ -19,6 +19,13 @@ export default function NovaSessao() {
   const [image, setImage] = useState<File | null>(null);
   const [errorMessage, setErrorMessage] = useState("");
   const [isAnalyzing, setIsAnalyzing] = useState(false);
+  const [atLimit, setAtLimit] = useState(false);
+  const sessionLimit = getSessionLimit();
+
+  useEffect(() => {
+    const timer = window.setTimeout(() => setAtLimit(readSessionList().length >= sessionLimit), 0);
+    return () => window.clearTimeout(timer);
+  }, [sessionLimit]);
 
   async function handleSubmit(event: React.SubmitEvent<HTMLFormElement>) {
     event.preventDefault();
@@ -83,6 +90,12 @@ export default function NovaSessao() {
             <p className="mt-2 max-w-2xl leading-relaxed text-[#6d698a]">Informe os requisitos para comparar a vaga ao seu perfil técnico.</p>
           </header>
           <PreparationJourney current="vaga" />
+
+          {atLimit && (
+            <p role="status" className="mt-5 rounded-xl border border-[#e3d9b5] bg-[#fff9e8] px-4 py-3 text-sm font-bold text-[#725b1e]">
+              Você já tem {sessionLimit} vagas salvas neste navegador. Analisar uma nova vai substituir a mais antiga automaticamente. Pra escolher qual sai, exclua uma pelo histórico no início.
+            </p>
+          )}
 
           <div className="mt-7 grid gap-6 lg:grid-cols-[1fr_300px]">
             <form onSubmit={handleSubmit} className="rounded-3xl border border-[#e7e3ee] bg-white p-5 shadow-[0_20px_60px_-45px_rgba(29,27,51,0.5)] sm:p-7">

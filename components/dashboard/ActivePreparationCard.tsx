@@ -5,19 +5,25 @@ import Link from "next/link";
 import { ArrowRight, BriefcaseBusiness, Target } from "lucide-react";
 import { MOCK_SESSION_KEY, parseMockSession, type MockSession } from "@/lib/mock-session";
 import { getJourneyCompletion, getNextJourneyAction } from "@/lib/preparation-journey";
+import { getTrilhaCompletionSignal } from "@/lib/training/actions";
 
 export function ActivePreparationCard() {
   const [session, setSession] = useState<MockSession | null>(null);
+  const [trilhaComplete, setTrilhaComplete] = useState<boolean | undefined>(undefined);
 
   useEffect(() => {
-    const timer = window.setTimeout(() => setSession(parseMockSession(window.sessionStorage.getItem(MOCK_SESSION_KEY))), 0);
+    const timer = window.setTimeout(() => {
+      const current = parseMockSession(window.sessionStorage.getItem(MOCK_SESSION_KEY));
+      setSession(current);
+      getTrilhaCompletionSignal(current.id).then(setTrilhaComplete).catch(() => setTrilhaComplete(false));
+    }, 0);
     return () => window.clearTimeout(timer);
   }, []);
 
   if (!session) return <div className="mt-7 h-44 animate-pulse rounded-[28px] bg-[#e9e6ef]" aria-hidden="true" />;
 
   const nextAction = getNextJourneyAction(session.progress);
-  const completion = getJourneyCompletion(session.progress);
+  const completion = getJourneyCompletion(session.progress, trilhaComplete);
 
   return (
     <section className="relative mt-7 overflow-hidden rounded-[28px] bg-[#17172f] px-6 py-7 text-white shadow-[0_28px_80px_-45px_rgba(21,22,50,0.9)] sm:px-8" aria-labelledby="active-preparation-title">

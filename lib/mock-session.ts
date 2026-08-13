@@ -66,6 +66,25 @@ export function persistMockSession(session: MockSession) {
   }
 }
 
+export function readSessionList(): MockSession[] {
+  if (typeof window === "undefined") return [];
+  try {
+    const stored = window.localStorage.getItem(SESSION_LIST_KEY);
+    const parsed: unknown = stored ? JSON.parse(stored) : [];
+    return Array.isArray(parsed) ? parsed.map((item) => parseMockSession(JSON.stringify(item))) : [];
+  } catch {
+    return [];
+  }
+}
+
+export function removeSessionFromList(sessionId: string) {
+  if (typeof window === "undefined") return;
+  try {
+    const sessions = readSessionList().filter((item) => item.id !== sessionId);
+    window.localStorage.setItem(SESSION_LIST_KEY, JSON.stringify(sessions));
+  } catch {}
+}
+
 const technologyRules = [
   { name: "React", terms: ["react", "hooks", "frontend"], base: 86 },
   { name: "TypeScript", terms: ["typescript", "tipagem"], base: 78 },

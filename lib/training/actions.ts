@@ -109,3 +109,40 @@ export async function recordOpenAnswer(params: {
     }),
   );
 }
+
+export async function getTrilhaCompletionSignal(jobSessionId: string): Promise<boolean> {
+  const sessions = await withDbRetry(() =>
+    prisma.trainingSession.findMany({ where: { jobSessionId }, select: { id: true } }),
+  );
+  if (!sessions.length) return false;
+
+  const answers = await withDbRetry(() =>
+    prisma.trainingAnswer.findMany({
+      where: { sessionId: { in: sessions.map((item) => item.id) } },
+      include: { question: true },
+    }),
+  );
+  if (!answers.length) return false;
+
+  const byCompetency = new Map<string, { correct: number; total: number }>();
+  for (const answer of answers) {
+    const key = answer.question.competency;
+    const entry = byCompetency.get(key) ?? { correct: 0, total: 0 };
+    entry.total += 1;
+    const isGood = answer.wasCorrect === true || (answer.score !== null && answer.score >= 70);
+    if (isGood) entry.correct += 1;
+    byCompetency.set(key, entry);
+  }
+
+  const competencies = [...byCompetency.values()];
+  return competencies.length > 0 && competencies.every((item) => item.correct / item.total >= 0.8);
+}
+
+export async function deleteVagaTrainingData(jobSessionId: string): Promise<void> {
+  const userId = await getCurrentUserId();
+  await withDbRetry(() =>
+    prisma.trainingSession.deleteMany({
+      where: userId ? { jobSessionId, userId } : { jobSessionId },
+    }),
+  );
+}

@@ -3,7 +3,6 @@ import {
   ArrowRight,
   BookOpen,
   CheckCircle2,
-  CircleDotDashed,
   Plus,
   Sparkles,
   TrendingUp,
@@ -11,7 +10,7 @@ import {
 import { Sidebar } from "@/components/Sidebar";
 import { Mascot } from "@/components/Mascot";
 import { EvolutionChart } from "@/components/dashboard/EvolutionChart";
-import { dashboardData, type TechnologyScore } from "@/lib/dashboard-data";
+import { dashboardData } from "@/lib/dashboard-data";
 import { headers } from "next/headers";
 import { auth } from "@/lib/auth";
 import { redirect } from "next/navigation";
@@ -21,71 +20,18 @@ import { GithubAnalysisCard } from "@/components/dashboard/GithubAnalysisCard";
 import { ActivePreparationCard } from "@/components/dashboard/ActivePreparationCard";
 import { PreparationHistory } from "@/components/dashboard/PreparationHistory";
 import { SessionsCard } from "@/components/dashboard/SessionsCard";
+import { TechnologyRow } from "@/components/dashboard/TechnologyRow";
 import { demoModeEnabled } from "@/lib/demo-mode";
+import { getDashboardTrainingStats } from "@/lib/training/dashboard-stats";
 import type { Prisma } from "@/app/generated/prisma/client";
 
 type CurriculumWithGithub = Prisma.CurriculumGetPayload<{
   include: { githubProfile: { include: { repos: true } } };
 }>;
 
-function TechnologyRow({ technology }: { technology: TechnologyScore }) {
-  const tested = technology.score !== null;
-  const delta =
-    tested && technology.previousScore !== null
-      ? technology.score! - technology.previousScore
-      : null;
-
-  return (
-    <li className="rounded-2xl border border-[#ece9f1] p-4 transition hover:border-[#d7d0e8] hover:shadow-[0_14px_35px_-30px_rgba(29,27,51,0.55)]">
-      <div className="flex items-center justify-between gap-4">
-        <div className="min-w-0">
-          <div className="flex flex-wrap items-center gap-2">
-            <h3 className="font-extrabold text-[#1d1b33]">{technology.name}</h3>
-            {!tested && (
-              <span className="inline-flex items-center gap-1 rounded-full bg-[#f0eef4] px-2.5 py-1 text-[10px] font-extrabold uppercase tracking-wide text-[#777286]">
-                <CircleDotDashed className="h-3 w-3" />
-                Não testado ainda
-              </span>
-            )}
-          </div>
-          <p className="mt-1 text-xs font-semibold text-[#8b8593]">
-            {tested
-              ? `Último treino em ${technology.lastTestedAt}`
-              : "Está no seu perfil, mas ainda não possui resultado"}
-          </p>
-        </div>
-
-        <div className="shrink-0 text-right">
-          <p className={`text-2xl font-extrabold ${tested ? "text-[#1d1b33]" : "text-[#aaa6b4]"}`}>
-            {tested ? `${technology.score}%` : "—"}
-          </p>
-          {delta !== null && (
-            <p className={`text-[11px] font-extrabold ${delta >= 0 ? "text-[#1f9d73]" : "text-[#c23b3b]"}`}>
-              {delta >= 0 ? "+" : ""}{delta} pts
-            </p>
-          )}
-        </div>
-      </div>
-
-      <div className="mt-3 h-2 overflow-hidden rounded-full bg-[#eeebf2]">
-        {tested && (
-          <div
-            className="h-full rounded-full bg-gradient-to-r from-[#7755e8] to-[#e8641d]"
-            style={{ width: `${technology.score}%` }}
-            role="progressbar"
-            aria-label={`Nota de ${technology.name}`}
-            aria-valuemin={0}
-            aria-valuemax={100}
-            aria-valuenow={technology.score!}
-          />
-        )}
-      </div>
-    </li>
-  );
-}
-
 export default async function Dashboard() {
   let curriculum: CurriculumWithGithub | null = null;
+  let trainingStats: Awaited<ReturnType<typeof getDashboardTrainingStats>> | null = null;
 
   if (!demoModeEnabled) {
     const session = await auth.api.getSession({ headers: await headers() });
@@ -97,11 +43,28 @@ export default async function Dashboard() {
       where: { userId: session.user.id },
       include: { githubProfile: { include: { repos: true } } },
     });
+    trainingStats = await getDashboardTrainingStats(session.user.id);
   }
 
-  const readinessDelta =
-    dashboardData.readiness - dashboardData.previousReadiness;
-  const testedTechnologies = dashboardData.technologies.filter(
+  const hasRealStats = Boolean(trainingStats && trainingStats.technologies.length > 0);
+  const technologies = hasRealStats ? trainingStats!.technologies : dashboardData.technologies;
+  const history = hasRealStats ? trainingStats!.history : dashboardData.history;
+
+  const scoredTechnologies = technologies.filter((technology) => technology.score !== null);
+  const realReadiness = scoredTechnologies.length
+    ? Math.round(scoredTechnologies.reduce((total, technology) => total + technology.score!, 0) / scoredTechnologies.length)
+    : null;
+  const technologiesWithTrend = technologies.filter((technology) => technology.previousScore !== null);
+  const realPreviousReadiness = technologiesWithTrend.length
+    ? Math.round(technologiesWithTrend.reduce((total, technology) => total + technology.previousScore!, 0) / technologiesWithTrend.length)
+    : null;
+
+  const hasRealReadiness = hasRealStats && realReadiness !== null;
+  const readiness = hasRealReadiness ? realReadiness! : dashboardData.readiness;
+  const readinessDelta = hasRealReadiness
+    ? (realPreviousReadiness !== null ? readiness - realPreviousReadiness : null)
+    : dashboardData.readiness - dashboardData.previousReadiness;
+  const testedTechnologies = technologies.filter(
     (technology) => technology.score !== null,
   ).length;
 
@@ -123,7 +86,7 @@ export default async function Dashboard() {
                 Acompanhe sua evolução e priorize as competências com maior impacto para a próxima vaga.
               </p>
               <span className="mt-3 inline-flex rounded-full bg-[#ece8f8] px-3 py-1 text-[10px] font-extrabold uppercase tracking-wide text-[#654bc9]">
-                Dados de exemplo
+                {hasRealStats ? "Notas por tecnologia reais" : "Dados de exemplo"}
               </span>
             </div>
 
@@ -153,13 +116,15 @@ export default async function Dashboard() {
               <div className="max-w-2xl">
                 <span className="inline-flex items-center gap-2 rounded-full border border-white/15 bg-white/10 px-3 py-1.5 text-xs font-extrabold text-[#dcd8ff]">
                   <Sparkles className="h-3.5 w-3.5" />
-                  Exemplo de evolução
+                  {hasRealStats ? "Sua evolução" : "Exemplo de evolução"}
                 </span>
                 <h2 className="mt-4 font-[family-name:var(--font-display)] text-2xl font-bold sm:text-3xl">
                   Visualize como a prática muda sua prontidão.
                 </h2>
                 <p className="mt-2 max-w-xl text-sm leading-relaxed text-[#c2bfd7] sm:text-base">
-                  Os indicadores abaixo são fictícios e demonstram como o histórico será apresentado depois de novas tentativas.
+                  {hasRealStats
+                    ? "As notas por tecnologia abaixo vêm das suas tentativas de treino reais."
+                    : "Os indicadores abaixo são fictícios e demonstram como o histórico será apresentado depois de novas tentativas."}
                 </p>
                 <Link href="/dashboard/resultado" className="mt-5 inline-flex items-center gap-2 text-sm font-extrabold text-[#5d43c4] underline decoration-[#e8641d] decoration-2 underline-offset-4">
                   Abrir preparação ativa <ArrowRight className="h-4 w-4" />
@@ -168,10 +133,13 @@ export default async function Dashboard() {
 
               <div className="relative flex items-center gap-4 rounded-2xl border border-[#e7e3ee] bg-[#f7f5fa] p-5 pr-24 sm:min-w-64">
                 <Mascot pose="launch" className="pointer-events-none absolute -right-4 -top-14 h-32 w-32" />
-                <div className="grid h-24 w-24 shrink-0 place-items-center rounded-full bg-[conic-gradient(#e8641d_0_76%,rgba(255,255,255,0.12)_76%_100%)] p-2">
+                <div
+                  className="grid h-24 w-24 shrink-0 place-items-center rounded-full p-2"
+                  style={{ background: `conic-gradient(#e8641d 0 ${readiness}%, rgba(255,255,255,0.12) ${readiness}% 100%)` }}
+                >
                   <div className="grid h-full w-full place-items-center rounded-full bg-white">
                     <span className="font-[family-name:var(--font-display)] text-3xl font-extrabold">
-                      {dashboardData.readiness}%
+                      {readiness}%
                     </span>
                   </div>
                 </div>
@@ -179,10 +147,14 @@ export default async function Dashboard() {
                   <p className="text-xs font-extrabold uppercase tracking-[0.14em] text-[#6d698a]">
                     Prontidão geral
                   </p>
-                  <p className="mt-1 flex items-center gap-1 text-sm font-extrabold text-[#78ddb0]">
-                    <TrendingUp className="h-4 w-4" /> +{readinessDelta} pts
-                  </p>
-                  <p className="mt-1 text-xs text-[#6d698a]">exemplo demonstrativo</p>
+                  {readinessDelta !== null ? (
+                    <p className={`mt-1 flex items-center gap-1 text-sm font-extrabold ${readinessDelta >= 0 ? "text-[#78ddb0]" : "text-[#f2a35a]"}`}>
+                      <TrendingUp className="h-4 w-4" /> {readinessDelta >= 0 ? "+" : ""}{readinessDelta} pts
+                    </p>
+                  ) : (
+                    <p className="mt-1 text-sm font-extrabold text-[#c2bfd7]">primeira medição</p>
+                  )}
+                  <p className="mt-1 text-xs text-[#6d698a]">{hasRealReadiness ? "média das suas notas reais" : "exemplo demonstrativo"}</p>
                 </div>
               </div>
             </div>
@@ -196,9 +168,13 @@ export default async function Dashboard() {
                 <span className="grid h-9 w-9 place-items-center rounded-xl bg-[#e7f7ef] text-[#1f9d73]">
                   <TrendingUp className="h-4.5 w-4.5" />
                 </span>
-                <span className="text-xs font-extrabold text-[#1f9d73]">+{readinessDelta} pts</span>
+                {readinessDelta !== null && (
+                  <span className={`text-xs font-extrabold ${readinessDelta >= 0 ? "text-[#1f9d73]" : "text-[#c23b3b]"}`}>
+                    {readinessDelta >= 0 ? "+" : ""}{readinessDelta} pts
+                  </span>
+                )}
               </div>
-              <p className="mt-4 text-3xl font-extrabold text-[#1d1b33]">{dashboardData.readiness}%</p>
+              <p className="mt-4 text-3xl font-extrabold text-[#1d1b33]">{readiness}%</p>
               <p className="text-sm font-semibold text-[#6d698a]">Prontidão atual</p>
             </article>
 
@@ -248,7 +224,7 @@ export default async function Dashboard() {
               </div>
 
               <ul className="mt-5 grid gap-3">
-                {dashboardData.technologies.map((technology) => (
+                {technologies.map((technology) => (
                   <TechnologyRow key={technology.name} technology={technology} />
                 ))}
               </ul>
@@ -258,7 +234,7 @@ export default async function Dashboard() {
           </div>
 
           <div className="mt-6">
-            <EvolutionChart series={dashboardData.history} />
+            <EvolutionChart series={history} />
           </div>
         </div>
       </main>

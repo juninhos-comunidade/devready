@@ -3,6 +3,7 @@ export type TechnologyScore = {
   score: number | null;
   previousScore: number | null;
   lastTestedAt: string | null;
+  jobSessionId: string | null;
 };
 
 export type HistoryPoint = {
@@ -25,11 +26,11 @@ export const dashboardData = {
   sessionsCount: 4,
   jobsCount: 3,
   technologies: [
-    { name: "React", score: 86, previousScore: 79, lastTestedAt: "30 jul" },
-    { name: "TypeScript", score: 78, previousScore: 73, lastTestedAt: "30 jul" },
-    { name: "Testes", score: 61, previousScore: 52, lastTestedAt: "27 jul" },
-    { name: "SQL", score: null, previousScore: null, lastTestedAt: null },
-    { name: "Node.js", score: null, previousScore: null, lastTestedAt: null },
+    { name: "React", score: 86, previousScore: 79, lastTestedAt: "30 jul", jobSessionId: null },
+    { name: "TypeScript", score: 78, previousScore: 73, lastTestedAt: "30 jul", jobSessionId: null },
+    { name: "Testes", score: 61, previousScore: 52, lastTestedAt: "27 jul", jobSessionId: null },
+    { name: "SQL", score: null, previousScore: null, lastTestedAt: null, jobSessionId: null },
+    { name: "Node.js", score: null, previousScore: null, lastTestedAt: null, jobSessionId: null },
   ] satisfies TechnologyScore[],
   history: [
     {
