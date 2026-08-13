@@ -106,8 +106,20 @@ export default async function Dashboard() {
   const technologies = hasRealStats ? trainingStats!.technologies : dashboardData.technologies;
   const history = hasRealStats ? trainingStats!.history : dashboardData.history;
 
-  const readinessDelta =
-    dashboardData.readiness - dashboardData.previousReadiness;
+  const scoredTechnologies = technologies.filter((technology) => technology.score !== null);
+  const realReadiness = scoredTechnologies.length
+    ? Math.round(scoredTechnologies.reduce((total, technology) => total + technology.score!, 0) / scoredTechnologies.length)
+    : null;
+  const technologiesWithTrend = technologies.filter((technology) => technology.previousScore !== null);
+  const realPreviousReadiness = technologiesWithTrend.length
+    ? Math.round(technologiesWithTrend.reduce((total, technology) => total + technology.previousScore!, 0) / technologiesWithTrend.length)
+    : null;
+
+  const hasRealReadiness = hasRealStats && realReadiness !== null;
+  const readiness = hasRealReadiness ? realReadiness! : dashboardData.readiness;
+  const readinessDelta = hasRealReadiness
+    ? (realPreviousReadiness !== null ? readiness - realPreviousReadiness : null)
+    : dashboardData.readiness - dashboardData.previousReadiness;
   const testedTechnologies = technologies.filter(
     (technology) => technology.score !== null,
   ).length;
@@ -177,10 +189,13 @@ export default async function Dashboard() {
 
               <div className="relative flex items-center gap-4 rounded-2xl border border-[#e7e3ee] bg-[#f7f5fa] p-5 pr-24 sm:min-w-64">
                 <Mascot pose="launch" className="pointer-events-none absolute -right-4 -top-14 h-32 w-32" />
-                <div className="grid h-24 w-24 shrink-0 place-items-center rounded-full bg-[conic-gradient(#e8641d_0_76%,rgba(255,255,255,0.12)_76%_100%)] p-2">
+                <div
+                  className="grid h-24 w-24 shrink-0 place-items-center rounded-full p-2"
+                  style={{ background: `conic-gradient(#e8641d 0 ${readiness}%, rgba(255,255,255,0.12) ${readiness}% 100%)` }}
+                >
                   <div className="grid h-full w-full place-items-center rounded-full bg-white">
                     <span className="font-[family-name:var(--font-display)] text-3xl font-extrabold">
-                      {dashboardData.readiness}%
+                      {readiness}%
                     </span>
                   </div>
                 </div>
@@ -188,10 +203,14 @@ export default async function Dashboard() {
                   <p className="text-xs font-extrabold uppercase tracking-[0.14em] text-[#6d698a]">
                     Prontidão geral
                   </p>
-                  <p className="mt-1 flex items-center gap-1 text-sm font-extrabold text-[#78ddb0]">
-                    <TrendingUp className="h-4 w-4" /> +{readinessDelta} pts
-                  </p>
-                  <p className="mt-1 text-xs text-[#6d698a]">exemplo demonstrativo</p>
+                  {readinessDelta !== null ? (
+                    <p className={`mt-1 flex items-center gap-1 text-sm font-extrabold ${readinessDelta >= 0 ? "text-[#78ddb0]" : "text-[#f2a35a]"}`}>
+                      <TrendingUp className="h-4 w-4" /> {readinessDelta >= 0 ? "+" : ""}{readinessDelta} pts
+                    </p>
+                  ) : (
+                    <p className="mt-1 text-sm font-extrabold text-[#c2bfd7]">primeira medição</p>
+                  )}
+                  <p className="mt-1 text-xs text-[#6d698a]">{hasRealReadiness ? "média das suas notas reais" : "exemplo demonstrativo"}</p>
                 </div>
               </div>
             </div>
@@ -205,9 +224,13 @@ export default async function Dashboard() {
                 <span className="grid h-9 w-9 place-items-center rounded-xl bg-[#e7f7ef] text-[#1f9d73]">
                   <TrendingUp className="h-4.5 w-4.5" />
                 </span>
-                <span className="text-xs font-extrabold text-[#1f9d73]">+{readinessDelta} pts</span>
+                {readinessDelta !== null && (
+                  <span className={`text-xs font-extrabold ${readinessDelta >= 0 ? "text-[#1f9d73]" : "text-[#c23b3b]"}`}>
+                    {readinessDelta >= 0 ? "+" : ""}{readinessDelta} pts
+                  </span>
+                )}
               </div>
-              <p className="mt-4 text-3xl font-extrabold text-[#1d1b33]">{dashboardData.readiness}%</p>
+              <p className="mt-4 text-3xl font-extrabold text-[#1d1b33]">{readiness}%</p>
               <p className="text-sm font-semibold text-[#6d698a]">Prontidão atual</p>
             </article>
 
