@@ -10,10 +10,6 @@ const vercelUrl = process.env.VERCEL_URL ? `https://${process.env.VERCEL_URL}` :
 const baseURL = process.env.BETTER_AUTH_URL ?? vercelUrl ?? (demoModeEnabled ? "http://localhost:3000" : undefined);
 const secret = process.env.BETTER_AUTH_SECRET ?? (demoModeEnabled ? "devready-demo-only-secret-never-used-for-real-auth" : undefined);
 
-function reportEmailError(error: unknown) {
-  console.error("Não foi possível enviar o e-mail do Better Auth.", error);
-}
-
 export const auth = betterAuth({
   baseURL,
   secret,
@@ -22,7 +18,7 @@ export const auth = betterAuth({
   }),
   emailAndPassword: {
     enabled: true,
-    requireEmailVerification: true,
+    requireEmailVerification: false,
     minPasswordLength: 8,
     password: {
       hash: async (password) => {
@@ -37,21 +33,21 @@ export const auth = betterAuth({
       },
     },
     sendResetPassword: async ({ user, url }) => {
-      void sendTransactionalEmail({
+      await sendTransactionalEmail({
         to: user.email,
         subject: "Redefina sua senha no DevReady",
         text: `Olá, ${user.name}. Use este link para criar uma nova senha: ${url}`,
-      }).catch(reportEmailError);
+      });
     },
   },
   emailVerification: {
-    sendOnSignUp: true,
+    sendOnSignUp: false,
     sendVerificationEmail: async ({ user, url }) => {
-      void sendTransactionalEmail({
+      await sendTransactionalEmail({
         to: user.email,
         subject: "Confirme seu e-mail no DevReady",
         text: `Olá, ${user.name}. Confirme seu e-mail para liberar o DevReady: ${url}`,
-      }).catch(reportEmailError);
+      });
     },
   },
   user: {
