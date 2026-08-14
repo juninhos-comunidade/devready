@@ -79,6 +79,6 @@ export async function POST(request: Request) {
     aiAvailable: false,
     notice: groqIsConfigured()
       ? "O serviço inteligente ficou indisponível; ativamos a análise local sem interromper sua sessão."
-      : "Modo demonstração: diagnóstico gerado com dados locais.",
+      : "Análise local: chave de IA não configurada, diagnóstico gerado com dados locais.",
   });
 }

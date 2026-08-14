@@ -54,7 +54,7 @@ export async function POST(request: Request) {
       aiAvailable: false,
       notice: groqIsConfigured()
         ? "O serviço inteligente ficou indisponível; ativamos a contingência local sem interromper seu treino."
-        : "Modo demonstração: treino preparado com o banco local.",
+        : "Análise local: chave de IA não configurada, treino preparado com o banco local.",
     });
   }
 
@@ -84,7 +84,7 @@ export async function POST(request: Request) {
       aiAvailable: false,
       notice: groqIsConfigured()
         ? "O serviço inteligente ficou indisponível; ativamos a avaliação local."
-        : "Modo demonstração: feedback gerado localmente.",
+        : "Análise local: chave de IA não configurada, feedback gerado localmente.",
     });
   }
 
