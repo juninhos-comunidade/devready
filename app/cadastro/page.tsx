@@ -10,6 +10,7 @@ import { Eye, EyeOff } from "lucide-react";
 import { RequirementItem } from "@/components/RequirementItem";
 import { FormSelect } from "@/components/FormSelect";
 import { PdfDropzone } from "@/components/PdfDropzone";
+import { PrivacyPolicyModal } from "@/components/PrivacyPolicyModal";
 import { demoModeEnabled } from "@/lib/demo-mode";
 import { areaInterestOptions, experienceLevelOptions } from "@/lib/profile-options";
 
@@ -42,8 +43,11 @@ export default function Cadastro() {
   const [github, setGithub] = useState("");
   const [privacyConsent, setPrivacyConsent] = useState(false);
   const [curriculumFile, setCurriculumFile] = useState<File | null>(null);
+  const [areaInterest, setAreaInterest] = useState("");
+  const [experienceLevel, setExperienceLevel] = useState("");
   const [errorMessage, setErrorMessage] = useState("");
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [showPrivacyModal, setShowPrivacyModal] = useState(false);
 
   const githubTouched = github.length > 0;
   const isValidGithubUrl = /^https?:\/\/(www\.)?github\.com\/[\w-]+\/?$/i.test(github);
@@ -80,14 +84,15 @@ export default function Cadastro() {
       setErrorMessage("Adicione seu currículo em PDF para concluir o cadastro.");
       return;
     }
+    if (!areaInterest || !experienceLevel) {
+      setErrorMessage("Selecione sua área de interesse e seu nível de experiência.");
+      return;
+    }
     if (github && !isValidGithubUrl) {
       setErrorMessage("Corrija o link do GitHub ou deixe o campo vazio.");
       return;
     }
 
-    const formData = new FormData(e.currentTarget);
-    const areaInterest = String(formData.get("interesse") ?? "");
-    const experienceLevel = String(formData.get("nivel") ?? "");
     setIsSubmitting(true);
 
     try {
@@ -123,7 +128,7 @@ export default function Cadastro() {
         return;
       }
 
-      router.replace("/verifique-email");
+      router.replace("/dashboard");
     } catch {
       setErrorMessage("Não foi possível conectar ao serviço. Tente novamente.");
     } finally {
@@ -169,7 +174,7 @@ export default function Cadastro() {
           <form className="w-full max-w-[460px]" onSubmit={handleSubmit}>
             <Mascot pose={step === 1 ? "wave" : "coach"} motion="arrive" priority className="mx-auto h-24 w-24 md:hidden" />
             {step === 1 ? (
-              <div key="step-1">
+              <div>
                 <h2 className="font-[family-name:var(--font-display)] mt-3 mb-1 text-2xl md:text-4xl text-[#1d1b33]">
                   Crie sua conta
                 </h2>
@@ -283,12 +288,13 @@ export default function Cadastro() {
                     <span>
                       Autorizo o uso do currículo e do GitHub para gerar meu
                       diagnóstico, conforme a{" "}
-                      <Link
-                        href="/politica-de-privacidade"
+                      <button
+                        type="button"
+                        onClick={() => setShowPrivacyModal(true)}
                         className="font-extrabold text-[#443388] underline underline-offset-2"
                       >
                         política de privacidade
-                      </Link>
+                      </button>
                       . <span className="text-[#e8641d]">*</span>
                     </span>
                   </label>
@@ -317,7 +323,7 @@ export default function Cadastro() {
                 </div>
               </div>
             ) : (
-              <div key="step-2">
+              <div>
                 <h2 className="font-[family-name:var(--font-display)] mt-3 mb-1 text-2xl md:text-4xl text-[#1d1b33]">
                   Configure seu perfil
                 </h2>
@@ -367,6 +373,8 @@ export default function Cadastro() {
                       required
                       placeholder="Selecione sua área..."
                       options={[...areaInterestOptions]}
+                      value={areaInterest}
+                      onChange={setAreaInterest}
                     />
                   </div>
 
@@ -379,6 +387,8 @@ export default function Cadastro() {
                       required
                       placeholder="Onde você está hoje?"
                       options={[...experienceLevelOptions]}
+                      value={experienceLevel}
+                      onChange={setExperienceLevel}
                     />
                   </div>
 
@@ -410,6 +420,7 @@ export default function Cadastro() {
           </form>
         </div>
       </section>
+      <PrivacyPolicyModal open={showPrivacyModal} onClose={() => setShowPrivacyModal(false)} />
     </main>
   );
 }
