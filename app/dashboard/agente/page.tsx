@@ -376,11 +376,15 @@ export default function AgenteEntrevista() {
                   </div>
                 )}
               </div>
-              <div className="mt-7 flex flex-col justify-center gap-3 sm:flex-row">
-                <button type="button" onClick={trainPriorityCompetencies} className="inline-flex min-h-11 items-center justify-center gap-2 rounded-full bg-gradient-to-r from-[#7755e8] to-[#e8641d] px-6 font-extrabold text-white"><Target className="h-4 w-4" /> Treinar pontos prioritários</button>
-                <button type="button" onClick={replayInterview} className="inline-flex min-h-11 items-center justify-center gap-2 rounded-full border border-[#dcd7e6] px-5 font-extrabold text-[#1d1b33]"><RotateCcw className="h-4 w-4" /> Refazer mesmas perguntas</button>
-                <button type="button" onClick={() => setStarted(false)} className="inline-flex min-h-11 items-center justify-center rounded-full px-5 font-extrabold text-[#5d43c4]">Nova configuração</button>
-                <Link href="/dashboard" className="inline-flex min-h-11 items-center justify-center rounded-full px-5 font-extrabold text-[#5d43c4]">Voltar ao dashboard</Link>
+              <div className="mt-7 flex flex-col items-center gap-4">
+                <div className="flex flex-col justify-center gap-3 sm:flex-row">
+                  <button type="button" onClick={trainPriorityCompetencies} className="inline-flex min-h-11 items-center justify-center gap-2 rounded-full bg-gradient-to-r from-[#7755e8] to-[#e8641d] px-6 font-extrabold text-white"><Target className="h-4 w-4" /> Treinar pontos prioritários</button>
+                  <button type="button" onClick={replayInterview} className="inline-flex min-h-11 items-center justify-center gap-2 rounded-full border border-[#dcd7e6] px-5 font-extrabold text-[#1d1b33]"><RotateCcw className="h-4 w-4" /> Refazer mesmas perguntas</button>
+                </div>
+                <div className="flex flex-wrap items-center justify-center gap-x-6 gap-y-2">
+                  <button type="button" onClick={() => setStarted(false)} className="text-sm font-extrabold text-[#5d43c4] underline decoration-[#e8641d] decoration-2 underline-offset-4">Nova configuração</button>
+                  <Link href="/dashboard" className="text-sm font-extrabold text-[#5d43c4] underline decoration-[#e8641d] decoration-2 underline-offset-4">Voltar ao dashboard</Link>
+                </div>
               </div>
             </section>
           ) : question ? (
