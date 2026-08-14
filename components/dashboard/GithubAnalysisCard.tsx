@@ -35,8 +35,9 @@ export function GithubAnalysisCard({ curriculum, demoMode = false }: GithubAnaly
     return [...githubProfile.repos].sort((a, b) => b.stars - a.stars);
   }, [githubProfile]);
 
-  // Disponível para uma futura UI de calendário de contribuições,
-  // intencionalmente não renderizado ainda: githubProfile?.contributionData
+  const contributionsLastYear = (
+    githubProfile?.contributionData as { totalContributions?: number } | null | undefined
+  )?.totalContributions ?? null;
 
   async function handleAnalyze() {
     setErrorMessage("");
@@ -173,7 +174,7 @@ export function GithubAnalysisCard({ curriculum, demoMode = false }: GithubAnaly
           </button>
         </div>
 
-        <div className="mt-5 grid grid-cols-2 gap-3">
+        <div className="mt-5 grid grid-cols-2 gap-3 sm:grid-cols-3">
           <div className="rounded-xl border border-white/10 bg-white/[0.06] px-3 py-2">
             <p className="text-lg font-extrabold">{githubProfile.publicReposCount ?? "—"}</p>
             <p className="text-[11px] font-semibold text-[#aaa6d6]">Repositórios públicos</p>
@@ -181,6 +182,10 @@ export function GithubAnalysisCard({ curriculum, demoMode = false }: GithubAnaly
           <div className="rounded-xl border border-white/10 bg-white/[0.06] px-3 py-2">
             <p className="text-lg font-extrabold">{githubProfile.followers ?? "—"}</p>
             <p className="text-[11px] font-semibold text-[#aaa6d6]">Seguidores</p>
+          </div>
+          <div className="rounded-xl border border-white/10 bg-white/[0.06] px-3 py-2">
+            <p className="text-lg font-extrabold">{contributionsLastYear ?? "—"}</p>
+            <p className="text-[11px] font-semibold text-[#aaa6d6]">Contribuições no último ano</p>
           </div>
         </div>
       </div>
@@ -213,7 +218,7 @@ export function GithubAnalysisCard({ curriculum, demoMode = false }: GithubAnaly
         <p className="mt-5 text-xs font-extrabold uppercase tracking-wider text-[#8b8593]">
           Repositórios
         </p>
-        <ul className="mt-3 grid gap-2">
+        <ul className="mt-3 grid gap-2 sm:grid-cols-2 xl:grid-cols-3">
           {sortedRepos.map((repo) => (
             <li
               key={repo.id}
@@ -228,8 +233,9 @@ export function GithubAnalysisCard({ curriculum, demoMode = false }: GithubAnaly
                 >
                   {repo.name}
                 </a>
-                <span className="inline-flex shrink-0 items-center gap-1 text-xs font-extrabold text-[#8b8593]">
-                  <Star className="h-3.5 w-3.5" /> {repo.stars}
+                <span className="flex shrink-0 items-center gap-2 text-xs font-extrabold text-[#8b8593]">
+                  <span className="inline-flex items-center gap-1"><Star className="h-3.5 w-3.5" /> {repo.stars}</span>
+                  <span className="inline-flex items-center gap-1"><GitBranch className="h-3.5 w-3.5" /> {repo.forks}</span>
                 </span>
               </div>
               {repo.description && (

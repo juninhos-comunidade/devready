@@ -124,8 +124,8 @@ export function EvolutionChart({ series }: { series: TechnologyHistory[] }) {
             strokeLinejoin="round"
           />
 
-          {points.map((point) => (
-            <g key={point.label}>
+          {points.map((point, index) => (
+            <g key={`${point.label}-${index}`}>
               <circle
                 cx={point.x}
                 cy={point.y}

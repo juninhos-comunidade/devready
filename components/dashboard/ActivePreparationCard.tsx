@@ -3,9 +3,10 @@
 import { useEffect, useState } from "react";
 import Link from "next/link";
 import { ArrowRight, BriefcaseBusiness, Target } from "lucide-react";
-import { MOCK_SESSION_KEY, parseMockSession, type MockSession } from "@/lib/mock-session";
+import { defaultMockSession, MOCK_SESSION_KEY, parseMockSession, type MockSession } from "@/lib/mock-session";
 import { getJourneyCompletion, getNextJourneyAction } from "@/lib/preparation-journey";
 import { getTrilhaCompletionSignal } from "@/lib/training/actions";
+import { demoModeEnabled } from "@/lib/demo-mode";
 
 export function ActivePreparationCard() {
   const [session, setSession] = useState<MockSession | null>(null);
@@ -21,6 +22,10 @@ export function ActivePreparationCard() {
   }, []);
 
   if (!session) return <div className="mt-7 h-44 animate-pulse rounded-[28px] bg-[#e9e6ef]" aria-hidden="true" />;
+
+  if (!demoModeEnabled && session.id === defaultMockSession.id) {
+    return null;
+  }
 
   const nextAction = getNextJourneyAction(session.progress);
   const completion = getJourneyCompletion(session.progress, trilhaComplete);
