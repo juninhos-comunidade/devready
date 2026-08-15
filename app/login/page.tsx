@@ -159,10 +159,7 @@ export default function Login() {
               </button>
             </div>
 
-            <div className="mt-4 flex flex-col gap-2 text-sm text-[#59567a] sm:flex-row sm:justify-between">
-              <Link href="/esqueci-senha" className="font-extrabold text-[#443388]">
-                Esqueci minha senha
-              </Link>
+            <div className="mt-4 text-center text-sm text-[#59567a]">
               <span>
                 Sem conta?{" "}
                 <Link href="/cadastro" className="font-extrabold text-[#443388]">

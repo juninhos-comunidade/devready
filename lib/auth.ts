@@ -2,7 +2,6 @@ import { betterAuth } from "better-auth";
 import { APIError } from "better-auth/api";
 import { prismaAdapter } from "better-auth/adapters/prisma";
 import { prisma } from "./prisma";
-import { sendTransactionalEmail } from "./email";
 import { hashPassword } from "better-auth/crypto";
 
 const vercelUrl = process.env.VERCEL_URL ? `https://${process.env.VERCEL_URL}` : undefined;
@@ -29,13 +28,6 @@ export const auth = betterAuth({
         }
         return hashPassword(password);
       },
-    },
-    sendResetPassword: async ({ user, url }) => {
-      await sendTransactionalEmail({
-        to: user.email,
-        subject: "Redefina sua senha no DevReady",
-        text: `Olá, ${user.name}. Use este link para criar uma nova senha: ${url}`,
-      });
     },
   },
   user: {
