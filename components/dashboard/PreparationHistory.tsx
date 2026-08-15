@@ -3,7 +3,7 @@
 import { useEffect, useState } from "react";
 import Link from "next/link";
 import { ArrowRight, BriefcaseBusiness, Plus, Trash2 } from "lucide-react";
-import { MOCK_SESSION_KEY, readSessionList, removeSessionFromList, type MockSession } from "@/lib/mock-session";
+import { MOCK_SESSION_KEY, parseMockSession, readSessionList, removeSessionFromList, type MockSession } from "@/lib/mock-session";
 import { getSessionLimit } from "@/lib/job-training";
 import { getJourneyCompletion } from "@/lib/preparation-journey";
 import { deleteVagaTrainingData } from "@/lib/training/actions";
@@ -22,10 +22,14 @@ export function PreparationHistory() {
 
   async function remove(sessionId: string) {
     removeSessionFromList(sessionId);
-    setSessions((current) => current?.filter((item) => item.id !== sessionId) ?? current);
+    const active = parseMockSession(window.sessionStorage.getItem(MOCK_SESSION_KEY));
+    if (active.id === sessionId) {
+      window.sessionStorage.removeItem(MOCK_SESSION_KEY);
+    }
     try {
       await deleteVagaTrainingData(sessionId);
     } catch {}
+    window.location.reload();
   }
 
   const limit = getSessionLimit();

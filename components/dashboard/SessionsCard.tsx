@@ -2,24 +2,13 @@
 
 import { useEffect, useState } from "react";
 import { CalendarDays } from "lucide-react";
-import { SESSION_LIST_KEY } from "@/lib/job-training";
-import { parseMockSession, type MockSession } from "@/lib/mock-session";
-
-function readSessions(): MockSession[] {
-  try {
-    const stored = window.localStorage.getItem(SESSION_LIST_KEY);
-    const parsed: unknown = stored ? JSON.parse(stored) : [];
-    return Array.isArray(parsed) ? parsed.map((item) => parseMockSession(JSON.stringify(item))) : [];
-  } catch {
-    return [];
-  }
-}
+import { readSessionList, type MockSession } from "@/lib/mock-session";
 
 export function SessionsCard() {
   const [sessions, setSessions] = useState<MockSession[] | null>(null);
 
   useEffect(() => {
-    const timer = window.setTimeout(() => setSessions(readSessions()), 0);
+    const timer = window.setTimeout(() => setSessions(readSessionList()), 0);
     return () => window.clearTimeout(timer);
   }, []);
 
