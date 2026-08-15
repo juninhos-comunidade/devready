@@ -68,6 +68,7 @@ export default function NovaSessao() {
         analysis: payload.analysis,
         analysisNotice: payload.notice,
         progress: { trainingAttempts: [] },
+        createdAt: new Date().toISOString(),
       };
 
       persistMockSession(session);

@@ -11,33 +11,44 @@ export type CompetencyEvidence = {
   nextAction: string;
 };
 
+export type InterviewCriteria = {
+  content: number;
+  clarity: number;
+  evidence: number;
+  structure: number;
+};
+
 export type InterviewSnapshot = {
   score: number;
   strongest: string;
   priority: string;
   completedAt: string;
-};
-
-export type PreparationTask = {
-  id: string;
-  period: string;
-  action: string;
-  completed: boolean;
-};
-
-export type PreparationPlan = {
-  id: string;
-  priority: string;
-  sourceScore: number;
-  createdAt: string;
-  tasks: PreparationTask[];
+  track: string;
+  criteria: InterviewCriteria;
 };
 
 export type JourneyProgress = {
   trainingAttempts: TrainingAttempt[];
-  interview?: InterviewSnapshot;
-  plan?: PreparationPlan;
+  interviewHistory?: InterviewSnapshot[];
 };
+
+export function getLatestInterview(progress?: JourneyProgress): InterviewSnapshot | undefined {
+  return progress?.interviewHistory?.at(-1);
+}
+
+export type InterviewComparison = {
+  first: InterviewSnapshot;
+  latest: InterviewSnapshot;
+};
+
+export function getInterviewComparison(progress?: JourneyProgress): InterviewComparison | null {
+  const history = progress?.interviewHistory ?? [];
+  if (!history.length) return null;
+  const track = history.at(-1)!.track;
+  const sameTrack = history.filter((item) => item.track === track);
+  if (sameTrack.length < 2) return null;
+  return { first: sameTrack[0], latest: sameTrack.at(-1)! };
+}
 
 export type JourneyStage = "vaga" | "diagnostico" | "pratica" | "entrevista" | "plano";
 
@@ -50,7 +61,7 @@ export const journeyStages: Array<{
   { id: "diagnostico", label: "Diagnóstico", href: "/dashboard/resultado" },
   { id: "pratica", label: "Prática", href: "/dashboard/treino-vaga" },
   { id: "entrevista", label: "Entrevista", href: "/dashboard/agente" },
-  { id: "plano", label: "Plano", href: "/dashboard/trilha" },
+  { id: "plano", label: "Trilha", href: "/dashboard/trilha" },
 ];
 
 function statusFromScore(score: number | null): EvidenceStatus {
@@ -75,11 +86,12 @@ export function buildEvidenceMatrix(
   progress?: JourneyProgress,
 ): CompetencyEvidence[] {
   const quizScore = averageScore((progress?.trainingAttempts ?? []).filter((attempt) => attempt.mode === "quiz"));
+  const latestInterview = getLatestInterview(progress);
   const technologies = analysis.technologies.filter((item) => item.required);
   const technical = technologies.map((item) => {
     const practiceScore = quizScore;
-    const interviewScore = progress?.interview && [progress.interview.strongest, progress.interview.priority].includes(item.name)
-      ? progress.interview.score
+    const interviewScore = latestInterview && [latestInterview.strongest, latestInterview.priority].includes(item.name)
+      ? latestInterview.score
       : null;
     const bestScore = Math.max(item.profileScore ?? 0, practiceScore ?? 0, interviewScore ?? 0) || null;
     const status = bestScore === null && item.evidence?.length ? "developing" : statusFromScore(bestScore);
@@ -104,12 +116,12 @@ export function buildEvidenceMatrix(
 
   const starScore = averageScore((progress?.trainingAttempts ?? []).filter((attempt) => attempt.mode === "comportamental"));
   const behavioral = analysis.softSkills.slice(0, 3).map((skill) => {
-    const interviewMatch = progress?.interview
-      ? [progress.interview.strongest, progress.interview.priority].find(
+    const interviewMatch = latestInterview
+      ? [latestInterview.strongest, latestInterview.priority].find(
           (name) => firstWord(name) === firstWord(skill) || name.toLocaleLowerCase("pt-BR").includes(skill.toLocaleLowerCase("pt-BR")),
         )
       : undefined;
-    const interviewScore = interviewMatch ? progress!.interview!.score : null;
+    const interviewScore = interviewMatch ? latestInterview!.score : null;
     const bestScore = Math.max(starScore ?? 0, interviewScore ?? 0) || null;
     const status = statusFromScore(bestScore);
     const evidence = ["Competência citada na vaga"];
@@ -136,8 +148,7 @@ export function getJourneyCompletion(progress?: JourneyProgress, trilhaComplete?
   if (!progress) return 20;
   let completed = 2;
   if (progress.trainingAttempts.length > 0) completed += 1;
-  if (progress.interview) completed += 1;
-  if (progress.plan?.tasks.some((task) => task.completed)) completed += 1;
+  if (getLatestInterview(progress)) completed += 1;
   if (trilhaComplete) completed += 1;
   return Math.min(100, completed * 20);
 }
@@ -151,7 +162,7 @@ export function getNextJourneyAction(progress?: JourneyProgress) {
       stage: "pratica" as JourneyStage,
     };
   }
-  if (!progress.interview) {
+  if (!getLatestInterview(progress)) {
     return {
       label: "Simular entrevista",
       description: "Transforme o conhecimento praticado em uma resposta convincente.",
@@ -160,7 +171,7 @@ export function getNextJourneyAction(progress?: JourneyProgress) {
     };
   }
   return {
-    label: "Executar plano de preparação",
+    label: "Seguir a trilha de preparação",
     description: "Consolide as lacunas encontradas e acompanhe a evolução.",
     href: "/dashboard/trilha",
     stage: "plano" as JourneyStage,

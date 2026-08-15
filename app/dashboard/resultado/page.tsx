@@ -129,7 +129,7 @@ export default function Resultado() {
                   <div className="mt-3 flex flex-wrap gap-2 text-sm font-bold">
                     <Link href="/dashboard/treino-vaga" className="rounded-full bg-[#f4f1fb] px-4 py-2 text-[#5d43c4]">Prática</Link>
                     <Link href="/dashboard/agente" className="rounded-full bg-[#f4f1fb] px-4 py-2 text-[#5d43c4]">Entrevista</Link>
-                    <Link href="/dashboard/trilha" className="rounded-full bg-[#f4f1fb] px-4 py-2 text-[#5d43c4]">Plano</Link>
+                    <Link href="/dashboard/trilha" className="rounded-full bg-[#f4f1fb] px-4 py-2 text-[#5d43c4]">Trilha</Link>
                   </div>
                 </details>
                 <div className="mt-5 flex items-start gap-2 rounded-xl bg-[#f4f1fb] p-4 text-xs leading-relaxed text-[#5b5674]"><CheckCircle2 className="mt-0.5 h-4 w-4 shrink-0 text-[#7755e8]" /> Diagnóstico orientativo para preparação; não representa uma avaliação de recrutamento.</div>

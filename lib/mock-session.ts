@@ -1,5 +1,6 @@
-import { analyzeJobLocally, demoCandidateProfile, getSessionLimit, SESSION_LIST_KEY, type JobAnalysis } from "@/lib/job-training";
-import type { JourneyProgress } from "@/lib/preparation-journey";
+import { analyzeJobLocally, demoCandidateProfile, getSessionLimit, SESSION_LIST_KEY, type JobAnalysis, type TrainingAttempt } from "@/lib/job-training";
+import { demoModeEnabled } from "@/lib/demo-mode";
+import type { InterviewSnapshot, JourneyProgress } from "@/lib/preparation-journey";
 
 export const MOCK_SESSION_KEY = "devready:mock-session";
 
@@ -12,19 +13,49 @@ export type MockSession = {
   analysis: JobAnalysis;
   analysisNotice?: string;
   progress: JourneyProgress;
+  createdAt: string;
 };
 
 const defaultDescription =
-  "Vaga para pessoa desenvolvedora frontend com React, TypeScript, testes automatizados, consumo de APIs e noções de SQL. Valorizamos comunicação, colaboração e vontade de aprender.";
+  "Vaga para pessoa desenvolvedora frontend com React, TypeScript, testes automatizados e consumo de APIs REST. Valorizamos comunicação, colaboração e vontade de aprender.";
+
+const demoInterviewHistory: InterviewSnapshot[] = [
+  {
+    score: 58,
+    strongest: "React",
+    priority: "Testes",
+    completedAt: "2026-08-13T14:00:00.000Z",
+    track: "mista",
+    criteria: { content: 55, clarity: 60, evidence: 50, structure: 65 },
+  },
+  {
+    score: 78,
+    strongest: "React",
+    priority: "Testes",
+    completedAt: "2026-08-14T16:30:00.000Z",
+    track: "mista",
+    criteria: { content: 75, clarity: 80, evidence: 72, structure: 82 },
+  },
+];
+
+const demoTrainingAttempts: TrainingAttempt[] = [
+  { id: "demo-attempt-1", sessionId: "demo-frontend-junior", sessionName: "Frontend Júnior", mode: "quiz", score: 100, difficulty: "iniciante", createdAt: "2026-08-12T10:00:00.000Z" },
+  { id: "demo-attempt-2", sessionId: "demo-frontend-junior", sessionName: "Frontend Júnior", mode: "quiz", score: 80, difficulty: "intermediaria", createdAt: "2026-08-13T09:00:00.000Z" },
+  { id: "demo-attempt-3", sessionId: "demo-frontend-junior", sessionName: "Frontend Júnior", mode: "comportamental", score: 75, difficulty: "iniciante", createdAt: "2026-08-13T11:00:00.000Z" },
+];
 
 export const defaultMockSession: MockSession = {
   id: "demo-frontend-junior",
   name: "Frontend Júnior",
-  company: "Fintech Aurora",
+  company: "Aurora Tech",
   description: defaultDescription,
   source: "text",
-  analysis: analyzeJobLocally(defaultDescription, "Fintech Aurora", demoCandidateProfile),
-  progress: { trainingAttempts: [] },
+  analysis: analyzeJobLocally(defaultDescription, "Aurora Tech", demoCandidateProfile),
+  progress: {
+    trainingAttempts: demoModeEnabled ? demoTrainingAttempts : [],
+    interviewHistory: demoModeEnabled ? demoInterviewHistory : [],
+  },
+  createdAt: "2026-08-12T09:00:00.000Z",
 };
 
 export function parseMockSession(value: string | null): MockSession {
@@ -46,6 +77,7 @@ export function parseMockSession(value: string | null): MockSession {
       progress: parsed.progress && Array.isArray(parsed.progress.trainingAttempts)
         ? parsed.progress
         : { trainingAttempts: [] },
+      createdAt: parsed.createdAt || new Date().toISOString(),
     };
   } catch {
     return defaultMockSession;
@@ -71,9 +103,11 @@ export function readSessionList(): MockSession[] {
   try {
     const stored = window.localStorage.getItem(SESSION_LIST_KEY);
     const parsed: unknown = stored ? JSON.parse(stored) : [];
-    return Array.isArray(parsed) ? parsed.map((item) => parseMockSession(JSON.stringify(item))) : [];
+    const list = Array.isArray(parsed) ? parsed.map((item) => parseMockSession(JSON.stringify(item))) : [];
+    if (list.length === 0 && demoModeEnabled) return [defaultMockSession];
+    return list;
   } catch {
-    return [];
+    return demoModeEnabled ? [defaultMockSession] : [];
   }
 }
 
