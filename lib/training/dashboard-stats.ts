@@ -1,6 +1,7 @@
 "use server";
 
 import { prisma } from "@/lib/prisma";
+import { demoModeEnabled } from "@/lib/demo-mode";
 import { withDbRetry } from "./with-retry";
 
 export type TechnologyScore = {
@@ -50,6 +51,8 @@ export async function getDashboardTrainingStats(userId: string): Promise<{
   technologies: TechnologyScore[];
   history: TechnologyHistory[];
 }> {
+  if (demoModeEnabled) return { technologies: [], history: [] };
+
   const answers = await withDbRetry(() =>
     prisma.trainingAnswer.findMany({
       where: { userId },
