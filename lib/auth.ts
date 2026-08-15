@@ -18,7 +18,6 @@ export const auth = betterAuth({
   }),
   emailAndPassword: {
     enabled: true,
-    requireEmailVerification: false,
     minPasswordLength: 8,
     password: {
       hash: async (password) => {
@@ -37,16 +36,6 @@ export const auth = betterAuth({
         to: user.email,
         subject: "Redefina sua senha no DevReady",
         text: `Olá, ${user.name}. Use este link para criar uma nova senha: ${url}`,
-      });
-    },
-  },
-  emailVerification: {
-    sendOnSignUp: false,
-    sendVerificationEmail: async ({ user, url }) => {
-      await sendTransactionalEmail({
-        to: user.email,
-        subject: "Confirme seu e-mail no DevReady",
-        text: `Olá, ${user.name}. Confirme seu e-mail para liberar o DevReady: ${url}`,
       });
     },
   },
