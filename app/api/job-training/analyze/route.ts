@@ -9,7 +9,7 @@ import { headers } from "next/headers";
 export const runtime = "nodejs";
 export const maxDuration = 60;
 
-const MAX_IMAGE_BYTES = 5 * 1024 * 1024;
+const MAX_IMAGE_BYTES = 4 * 1024 * 1024;
 const acceptedImageTypes = new Set(["image/png", "image/jpeg"]);
 
 async function getCandidateProfile() {
@@ -47,7 +47,7 @@ export async function POST(request: Request) {
     return Response.json({ error: "Informe a descrição ou uma imagem da vaga." }, { status: 400 });
   }
   if (image instanceof File && image.size > 0 && (!acceptedImageTypes.has(image.type) || image.size > MAX_IMAGE_BYTES)) {
-    return Response.json({ error: "A imagem deve ser PNG ou JPG e ter no máximo 5 MB." }, { status: 400 });
+    return Response.json({ error: "A imagem deve ser PNG ou JPG e ter no máximo 4 MB." }, { status: 400 });
   }
 
   let imageDataUrl: string | undefined;

@@ -3,7 +3,7 @@
 import { useRef, useState } from "react";
 import { ImagePlus, X } from "lucide-react";
 
-const MAX_IMAGE_SIZE = 5 * 1024 * 1024;
+const MAX_IMAGE_SIZE = 4 * 1024 * 1024;
 
 export function ImageDropzone({
   onFileChange,
@@ -19,7 +19,7 @@ export function ImageDropzone({
     if (!file) return;
 
     if (!["image/png", "image/jpeg"].includes(file.type) || file.size > MAX_IMAGE_SIZE) {
-      setErrorMessage("Envie uma imagem PNG ou JPG com no máximo 5 MB.");
+      setErrorMessage("Envie uma imagem PNG ou JPG com no máximo 4 MB.");
       event.target.value = "";
       return;
     }
@@ -65,7 +65,7 @@ export function ImageDropzone({
           <p className="mt-2 text-sm font-extrabold text-[#1d1b33]">
             {fileName ?? "Arraste um print ou clique para selecionar"}
           </p>
-          <p className="mt-1 text-xs text-[#8b8593]">PNG ou JPG · até 5 MB</p>
+          <p className="mt-1 text-xs text-[#8b8593]">PNG ou JPG · até 4 MB</p>
         </div>
       </div>
       {errorMessage && <p role="alert" className="text-xs font-bold text-[#c23b3b]">{errorMessage}</p>}

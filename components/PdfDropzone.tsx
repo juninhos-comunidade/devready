@@ -4,7 +4,7 @@ import { useRef, useState } from "react";
 import { X } from "lucide-react";
 import { RequirementItem } from "./RequirementItem";
 
-const MAX_PDF_SIZE = 3 * 1024 * 1024;
+const MAX_PDF_SIZE = 2.5 * 1024 * 1024;
 
 export function PdfDropzone({
   required = false,
@@ -23,7 +23,6 @@ export function PdfDropzone({
     const file = e.target.files?.[0];
     if (!file) return;
 
-    // The MIME check remains necessary because the operating-system filter can be bypassed.
     if (file.type !== "application/pdf" || file.size > MAX_PDF_SIZE) {
       setFileError(true);
       e.target.value = "";
@@ -76,11 +75,11 @@ export function PdfDropzone({
         <strong className={`block mb-1 ${fileError ? "text-[#c23b3b]" : "text-[#1d1b33]"}`}>
           {fileName ?? "Arraste o PDF ou clique para selecionar"}
         </strong>
-        <span className="text-sm">Máximo: 3 MB</span>
+        <span className="text-sm">Máximo: 2,5 MB</span>
       </div>
       {fileError && (
         <ul className="mt-0.5 grid gap-1 text-xs font-semibold">
-          <RequirementItem met={false} label="Envie um PDF com no máximo 3 MB" />
+          <RequirementItem met={false} label="Envie um PDF com no máximo 2,5 MB" />
         </ul>
       )}
     </div>

@@ -8,7 +8,7 @@ import { extractCurriculumData } from "@/lib/extraction";
 export const runtime = "nodejs";
 export const maxDuration = 60;
 
-const MAX_PDF_BYTES = 3 * 1024 * 1024;
+const MAX_PDF_BYTES = 2.5 * 1024 * 1024;
 
 export async function POST(request: Request) {
   const session = await auth.api.getSession({ headers: await headers() });
@@ -24,7 +24,7 @@ export async function POST(request: Request) {
   }
 
   if (Buffer.byteLength(pdfBase64, "base64") > MAX_PDF_BYTES) {
-    return NextResponse.json({ error: "O currículo deve ter no máximo 3 MB." }, { status: 413 });
+    return NextResponse.json({ error: "O currículo deve ter no máximo 2,5 MB." }, { status: 413 });
   }
 
   const curriculum = await prisma.curriculum.upsert({

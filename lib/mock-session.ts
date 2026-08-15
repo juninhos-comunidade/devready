@@ -93,9 +93,7 @@ export function persistMockSession(session: MockSession) {
     const previous = Array.isArray(parsed) ? parsed as MockSession[] : [];
     const sessions = [session, ...previous.filter((item) => item.id !== session.id)].slice(0, getSessionLimit());
     window.localStorage.setItem(SESSION_LIST_KEY, JSON.stringify(sessions));
-  } catch {
-    // A preparação ativa continua disponível se o histórico local estiver bloqueado.
-  }
+  } catch {}
 }
 
 export function readSessionList(): MockSession[] {

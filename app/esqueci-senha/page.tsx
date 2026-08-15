@@ -38,7 +38,6 @@ export default function EsqueciSenha() {
         return;
       }
 
-      // A mensagem é sempre igual, exista ou não o e-mail, para evitar enumeração.
       setSent(true);
     } catch {
       setErrorMessage("Não foi possível processar a solicitação agora. Tente novamente.");

@@ -5,7 +5,7 @@ import { prisma } from "@/lib/prisma";
 
 export const runtime = "nodejs";
 
-const MAX_PDF_BYTES = 3 * 1024 * 1024;
+const MAX_PDF_BYTES = 2.5 * 1024 * 1024;
 
 function isForeignKeyViolation(error: unknown): boolean {
   return Boolean(error && typeof error === "object" && "code" in error && (error as { code?: unknown }).code === "P2003");
@@ -60,7 +60,7 @@ export async function POST(request: Request) {
   }
 
   if (Buffer.byteLength(pdfBase64, "base64") > MAX_PDF_BYTES) {
-    return NextResponse.json({ error: "O currículo deve ter no máximo 3 MB." }, { status: 413 });
+    return NextResponse.json({ error: "O currículo deve ter no máximo 2,5 MB." }, { status: 413 });
   }
 
   const githubUrl = typeof github === "string" && github.trim() ? github.trim() : null;
