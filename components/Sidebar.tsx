@@ -7,8 +7,6 @@ import { CircleUser, LayoutDashboard, LogOut, Route } from "lucide-react";
 import { Logo } from "./Logo";
 import { Mascot } from "./Mascot";
 import { authClient } from "@/lib/auth-client";
-import { demoModeEnabled } from "@/lib/demo-mode";
-import { MOCK_SESSION_KEY } from "@/lib/mock-session";
 
 const navItems = [
   { href: "/dashboard", label: "Início", shortLabel: "Início", icon: LayoutDashboard, routes: ["/dashboard"] },
@@ -41,11 +39,7 @@ export function Sidebar() {
 
   async function handleSignOut() {
     setIsSigningOut(true);
-    if (demoModeEnabled) {
-      window.sessionStorage.removeItem(MOCK_SESSION_KEY);
-    } else {
-      await authClient.signOut().catch(() => undefined);
-    }
+    await authClient.signOut().catch(() => undefined);
     router.replace("/login");
     router.refresh();
     setIsSigningOut(false);

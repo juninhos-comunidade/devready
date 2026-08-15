@@ -8,7 +8,6 @@ import { EvidenceMatrix } from "@/components/EvidenceMatrix";
 import { MOCK_SESSION_KEY, parseMockSession, type MockSession } from "@/lib/mock-session";
 import { buildEvidenceMatrix, getInterviewComparison, getLatestInterview, getNextJourneyAction } from "@/lib/preparation-journey";
 import { materialsFor } from "@/lib/study-materials";
-import { demoModeEnabled } from "@/lib/demo-mode";
 
 const criteriaLabels = { content: "Conteúdo", clarity: "Clareza", evidence: "Evidências", structure: "Estrutura" } as const;
 
@@ -90,7 +89,7 @@ export default function RelatorioFinal() {
           </section>
 
           <div className="mt-6">
-            <EvidenceMatrix items={evidenceMatrix} demo={Boolean(session.analysis.profileIsDemo)} />
+            <EvidenceMatrix items={evidenceMatrix} />
           </div>
 
           <section className="mt-6 rounded-3xl border border-[#e7e3ee] bg-white p-6 sm:p-8">
@@ -178,7 +177,7 @@ export default function RelatorioFinal() {
           </section>
 
           <p className="mt-6 rounded-2xl border border-dashed border-[#d9d3e3] bg-[#faf9fc] p-4 text-center text-xs font-semibold leading-relaxed text-[#6d698a]">
-            Este resultado é orientativo, baseado nas suas tentativas de treino e entrevista simulada{demoModeEnabled ? " e usa dados fictícios de demonstração" : ""}. Ele não substitui uma avaliação real de recrutamento.
+            Este resultado é orientativo, baseado nas suas tentativas de treino e entrevista simulada. Ele não substitui uma avaliação real de recrutamento.
           </p>
         </div>
       </main>

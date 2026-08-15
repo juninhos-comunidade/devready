@@ -1,7 +1,7 @@
 "use client";
 
 import { useMemo, useState } from "react";
-import type { TechnologyHistory } from "@/lib/dashboard-data";
+import type { TechnologyHistory } from "@/lib/training/dashboard-stats";
 
 const chart = {
   width: 640,

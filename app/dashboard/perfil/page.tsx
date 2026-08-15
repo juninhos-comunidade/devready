@@ -11,18 +11,9 @@ import { ConfirmDialog } from "@/components/ConfirmDialog";
 import { BrandLoading } from "@/components/BrandLoading";
 import { Check } from "lucide-react";
 import { authClient } from "@/lib/auth-client";
-import { demoModeEnabled, demoProfile } from "@/lib/demo-mode";
 import { areaInterestOptions, experienceLevelOptions } from "@/lib/profile-options";
 
 export default function Perfil() {
-  if (demoModeEnabled) {
-    return <PerfilEditor user={demoProfile} demoMode />;
-  }
-
-  return <AuthenticatedPerfil />;
-}
-
-function AuthenticatedPerfil() {
   const router = useRouter();
   const { data: session, isPending: sessionPending } = authClient.useSession();
 
@@ -50,13 +41,7 @@ type ProfileUser = {
   privacyConsent?: boolean;
 };
 
-function PerfilEditor({
-  user,
-  demoMode = false,
-}: {
-  user: ProfileUser;
-  demoMode?: boolean;
-}) {
+function PerfilEditor({ user }: { user: ProfileUser }) {
   const router = useRouter();
   const [name, setName] = useState(user.name ?? "");
   const [github, setGithub] = useState(user.githubUrl ?? "");
@@ -67,15 +52,12 @@ function PerfilEditor({
   const [isSaving, setIsSaving] = useState(false);
   const [confirmingDelete, setConfirmingDelete] = useState(false);
   const [isDeleting, setIsDeleting] = useState(false);
-  const [deleteDemoCompleted, setDeleteDemoCompleted] = useState(false);
-  const [hasCurriculum, setHasCurriculum] = useState(demoMode);
-  const [curriculumError, setCurriculumError] = useState(false);
+  const [hasCurriculum, setHasCurriculum] = useState(false);
   const [curriculumStatus, setCurriculumStatus] = useState<string | null>(null);
   const [curriculumFile, setCurriculumFile] = useState<File | null>(null);
   const [isUploadingCurriculum, setIsUploadingCurriculum] = useState(false);
 
   useEffect(() => {
-    if (demoMode) return;
     fetch("/api/curriculum/status")
       .then((response) => (response.ok ? response.json() : null))
       .then((data: { status?: string } | null) => {
@@ -85,7 +67,7 @@ function PerfilEditor({
         }
       })
       .catch(() => {});
-  }, [demoMode]);
+  }, []);
 
   function toBase64(file: File): Promise<string> {
     return new Promise((resolve, reject) => {
@@ -103,11 +85,6 @@ function PerfilEditor({
     e.preventDefault();
     setSaved(false);
     setErrorMessage("");
-    if (demoMode && !hasCurriculum) {
-      setCurriculumError(true);
-      return;
-    }
-    setCurriculumError(false);
 
     if (!areaInterest || !experienceLevel) {
       setErrorMessage("Selecione sua área de interesse e seu nível de experiência.");
@@ -116,11 +93,6 @@ function PerfilEditor({
 
     if (github && !isValidGithubUrl) {
       setErrorMessage("Corrija o link do GitHub ou deixe o campo vazio.");
-      return;
-    }
-
-    if (demoMode) {
-      setSaved(true);
       return;
     }
 
@@ -178,12 +150,6 @@ function PerfilEditor({
 
   async function handleDeleteAccount() {
     setErrorMessage("");
-    if (demoMode) {
-      setConfirmingDelete(false);
-      setDeleteDemoCompleted(true);
-      return;
-    }
-
     setIsDeleting(true);
     try {
       const response = await fetch("/api/account/delete", { method: "POST" });
@@ -304,39 +270,17 @@ function PerfilEditor({
                 <label className="text-sm font-extrabold text-[#1d1b33]">
                   Currículo em PDF <span className="text-[#e8641d]">*</span>
                 </label>
-                {demoMode ? (
-                  <>
-                    <PdfDropzone
-                      initialFileName="curriculo-exemplo.pdf"
-                      onFileChange={(file) => {
-                        setHasCurriculum(file !== null);
-                        if (file) setCurriculumError(false);
-                      }}
-                    />
-                    <p className="text-xs font-semibold leading-relaxed text-[#8b8593]">
-                      Processamento local: nenhum arquivo é enviado.
-                    </p>
-                    {curriculumError && (
-                      <ul className="mt-0.5 grid gap-1 text-xs font-semibold">
-                        <RequirementItem met={false} label="Adicione um currículo antes de salvar" />
-                      </ul>
-                    )}
-                  </>
-                ) : (
-                  <>
-                    <PdfDropzone
-                      initialFileName={hasCurriculum && !curriculumFile ? "Currículo já enviado" : undefined}
-                      onFileChange={setCurriculumFile}
-                    />
-                    <p className="text-xs font-semibold leading-relaxed text-[#8b8593]">
-                      {curriculumFile
-                        ? "Um novo currículo será enviado ao salvar."
-                        : hasCurriculum
-                          ? `Status atual: ${curriculumStatus === "COMPLETED" ? "processado" : curriculumStatus === "FAILED" ? "falhou, envie novamente" : "em processamento"}.`
-                          : "Nenhum currículo enviado ainda."}
-                    </p>
-                  </>
-                )}
+                <PdfDropzone
+                  initialFileName={hasCurriculum && !curriculumFile ? "Currículo já enviado" : undefined}
+                  onFileChange={setCurriculumFile}
+                />
+                <p className="text-xs font-semibold leading-relaxed text-[#8b8593]">
+                  {curriculumFile
+                    ? "Um novo currículo será enviado ao salvar."
+                    : hasCurriculum
+                      ? `Status atual: ${curriculumStatus === "COMPLETED" ? "processado" : curriculumStatus === "FAILED" ? "falhou, envie novamente" : "em processamento"}.`
+                      : "Nenhum currículo enviado ainda."}
+                </p>
               </div>
             </div>
           </div>
@@ -388,7 +332,7 @@ function PerfilEditor({
             {saved && (
               <span className="flex items-center gap-1.5 text-sm font-bold text-[#1f9d55]">
                 <Check className="h-4 w-4" strokeWidth={3} />
-                {demoMode ? "Alterações salvas nesta sessão" : "Alterações salvas"}
+                Alterações salvas
               </span>
             )}
           </div>
@@ -403,33 +347,20 @@ function PerfilEditor({
             Excluir sua conta remove permanentemente seu currículo, suas
             análises e todas as suas sessões de treino.
           </p>
-          {demoMode && (
-            <p className="mt-3 text-xs font-semibold leading-relaxed text-[#8b8593]">
-              Neste ambiente, a exclusão não altera dados reais.
-            </p>
-          )}
           <button
             type="button"
-            onClick={() => {
-              setDeleteDemoCompleted(false);
-              setConfirmingDelete(true);
-            }}
+            onClick={() => setConfirmingDelete(true)}
             className="mt-4 rounded-full border-[1.5px] border-[#c23b3b] px-5 py-2.5 text-sm font-extrabold text-[#c23b3b] transition hover:bg-[#fdf2f2]"
           >
-            {demoMode ? "Simular exclusão de conta" : "Excluir minha conta"}
+            Excluir minha conta
           </button>
-          {deleteDemoCompleted && (
-            <p role="status" className="mt-4 rounded-xl bg-[#eef8f1] px-4 py-3 text-sm font-bold text-[#247544]">
-              Simulação concluída: em produção, a conta e os dados relacionados seriam removidos.
-            </p>
-          )}
         </div>
 
         <ConfirmDialog
           open={confirmingDelete}
-          title={demoMode ? "Simular exclusão?" : "Excluir sua conta?"}
-          description={demoMode ? "Este ambiente conclui o fluxo sem remover dados reais." : "Essa ação não pode ser desfeita. Seu currículo, suas análises e todas as suas sessões de treino serão apagados permanentemente."}
-          confirmLabel={demoMode ? "Sim, simular" : "Sim, excluir conta"}
+          title="Excluir sua conta?"
+          description="Essa ação não pode ser desfeita. Seu currículo, suas análises e todas as suas sessões de treino serão apagados permanentemente."
+          confirmLabel="Sim, excluir conta"
           pending={isDeleting}
           onConfirm={handleDeleteAccount}
           onCancel={() => setConfirmingDelete(false)}

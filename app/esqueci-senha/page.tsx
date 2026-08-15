@@ -6,7 +6,6 @@ import { Logo } from "@/components/Logo";
 import { BrandLoading } from "@/components/BrandLoading";
 import { Mascot } from "@/components/Mascot";
 import { authClient } from "@/lib/auth-client";
-import { demoModeEnabled } from "@/lib/demo-mode";
 
 export default function EsqueciSenha() {
   const [sent, setSent] = useState(false);
@@ -19,13 +18,6 @@ export default function EsqueciSenha() {
     setIsSubmitting(true);
     const formData = new FormData(e.currentTarget);
     const email = String(formData.get("email") ?? "");
-
-    if (demoModeEnabled) {
-      await new Promise((resolve) => window.setTimeout(resolve, 500));
-      setSent(true);
-      setIsSubmitting(false);
-      return;
-    }
 
     try {
       const { error } = await authClient.requestPasswordReset({

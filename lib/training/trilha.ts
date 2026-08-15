@@ -1,7 +1,6 @@
 "use server";
 
 import { prisma } from "@/lib/prisma";
-import { demoModeEnabled } from "@/lib/demo-mode";
 import { withDbRetry } from "./with-retry";
 
 export type TrilhaStatus = "ausente" | "parcial" | "dominado";
@@ -29,8 +28,6 @@ function wasGoodAnswer(answer: { wasCorrect: boolean | null; score: number | nul
 }
 
 export async function getTrilhaForVaga(jobSessionId: string): Promise<TrilhaItem[]> {
-  if (demoModeEnabled) return [];
-
   const sessions = await withDbRetry(() =>
     prisma.trainingSession.findMany({ where: { jobSessionId }, select: { id: true } }),
   );

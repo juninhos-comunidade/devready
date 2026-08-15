@@ -11,7 +11,6 @@ import { RequirementItem } from "@/components/RequirementItem";
 import { FormSelect } from "@/components/FormSelect";
 import { PdfDropzone } from "@/components/PdfDropzone";
 import { PrivacyPolicyModal } from "@/components/PrivacyPolicyModal";
-import { demoModeEnabled } from "@/lib/demo-mode";
 import { areaInterestOptions, experienceLevelOptions } from "@/lib/profile-options";
 
 function StepDots({ step }: { step: 1 | 2 }) {
@@ -80,7 +79,7 @@ export default function Cadastro() {
       return;
     }
 
-    if (!demoModeEnabled && !curriculumFile) {
+    if (!curriculumFile) {
       setErrorMessage("Adicione seu currículo em PDF para concluir o cadastro.");
       return;
     }
@@ -96,12 +95,6 @@ export default function Cadastro() {
     setIsSubmitting(true);
 
     try {
-      if (demoModeEnabled) {
-        await new Promise((resolve) => window.setTimeout(resolve, 500));
-        router.replace("/dashboard");
-        return;
-      }
-
       if (!curriculumFile) return;
       const pdfBase64 = await toBase64(curriculumFile);
 
@@ -354,14 +347,9 @@ export default function Cadastro() {
 
                   <div className="grid gap-1.5">
                     <label className="text-sm font-extrabold text-[#1d1b33]">
-                      Currículo em PDF {!demoModeEnabled && <span className="text-[#e8641d]">*</span>}
+                      Currículo em PDF <span className="text-[#e8641d]">*</span>
                     </label>
-                     <PdfDropzone required={!demoModeEnabled} onFileChange={setCurriculumFile} />
-                    {demoModeEnabled && (
-                      <p className="text-xs font-semibold leading-relaxed text-[#8b8593]">
-                        Opcional na demonstração. Se você selecionar um PDF fictício, ele permanece somente neste navegador.
-                      </p>
-                    )}
+                     <PdfDropzone required onFileChange={setCurriculumFile} />
                   </div>
 
                   <div className="grid gap-1.5">

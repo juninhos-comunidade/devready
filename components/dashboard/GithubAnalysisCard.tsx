@@ -2,7 +2,7 @@
 
 import { useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
-import { GitBranch, ShieldCheck, Star } from "lucide-react";
+import { GitBranch, Star } from "lucide-react";
 import type { Prisma } from "@/app/generated/prisma/client";
 
 type CurriculumWithGithub = Prisma.CurriculumGetPayload<{
@@ -11,10 +11,9 @@ type CurriculumWithGithub = Prisma.CurriculumGetPayload<{
 
 type GithubAnalysisCardProps = {
   curriculum: CurriculumWithGithub | null;
-  demoMode?: boolean;
 };
 
-export function GithubAnalysisCard({ curriculum, demoMode = false }: GithubAnalysisCardProps) {
+export function GithubAnalysisCard({ curriculum }: GithubAnalysisCardProps) {
   const router = useRouter();
   const [isAnalyzing, setIsAnalyzing] = useState(false);
   const [errorMessage, setErrorMessage] = useState("");
@@ -59,42 +58,6 @@ export function GithubAnalysisCard({ curriculum, demoMode = false }: GithubAnaly
     }
   }
 
-  if (demoMode) {
-    return (
-      <section className="overflow-hidden rounded-3xl border border-[#e7e3ee] bg-white shadow-[0_18px_55px_-42px_rgba(29,27,51,0.45)]">
-        <div className="bg-[#1d1b33] p-5 text-white sm:p-6">
-          <div className="flex items-start justify-between gap-4">
-            <div>
-              <span className="inline-flex items-center gap-2 text-[11px] font-extrabold uppercase tracking-[0.18em] text-[#aaa6d6]">
-                <GitBranch className="h-4 w-4" /> Análise do GitHub
-              </span>
-              <p className="mt-3 font-[family-name:var(--font-display)] text-2xl font-extrabold">@devready-demo</p>
-              <p className="mt-1 text-xs font-semibold text-[#aaa6d6]">Perfil fictício para apresentação segura.</p>
-            </div>
-            <span className="inline-flex items-center gap-1.5 rounded-full border border-white/15 bg-white/10 px-3 py-1.5 text-[10px] font-extrabold uppercase tracking-wide text-[#dcd8ff]">
-              <ShieldCheck className="h-3.5 w-3.5" /> Exemplo
-            </span>
-          </div>
-          <div className="mt-5 grid grid-cols-2 gap-3">
-            <div className="rounded-xl border border-white/10 bg-white/[0.06] px-3 py-2"><p className="text-lg font-extrabold">12</p><p className="text-[11px] font-semibold text-[#aaa6d6]">Repositórios públicos</p></div>
-            <div className="rounded-xl border border-white/10 bg-white/[0.06] px-3 py-2"><p className="text-lg font-extrabold">184</p><p className="text-[11px] font-semibold text-[#aaa6d6]">Contribuições no ano</p></div>
-          </div>
-        </div>
-        <div className="p-5 sm:p-6">
-          <p className="text-xs font-extrabold uppercase tracking-wider text-[#8b8593]">Principais linguagens</p>
-          <ul className="mt-3 flex flex-wrap gap-2">
-            {["TypeScript", "JavaScript", "SQL"].map((language) => <li key={language} className="rounded-full bg-[#ece8f8] px-3 py-1 text-xs font-extrabold text-[#654bc9]">{language}</li>)}
-          </ul>
-          <div className="mt-5 rounded-2xl border border-[#ece9f1] p-4">
-            <div className="flex items-center justify-between gap-3"><p className="font-extrabold text-[#1d1b33]">portfolio-dev-junior</p><span className="inline-flex items-center gap-1 text-xs font-extrabold text-[#8b8593]"><Star className="h-3.5 w-3.5" /> 8</span></div>
-            <p className="mt-1 text-xs font-semibold text-[#8b8593]">Projeto fictício analisado sem consultar dados reais.</p>
-          </div>
-        </div>
-      </section>
-    );
-  }
-
-  // Estado (a): sem GitHub cadastrado no perfil.
   if (!curriculum?.githubUrl) {
     return (
       <section className="overflow-hidden rounded-3xl border border-[#e7e3ee] bg-white shadow-[0_18px_55px_-42px_rgba(29,27,51,0.45)]">
@@ -112,7 +75,6 @@ export function GithubAnalysisCard({ curriculum, demoMode = false }: GithubAnaly
     );
   }
 
-  // Estado (b): GitHub cadastrado, ainda sem análise (ou última análise falhou).
   if (!githubProfile || githubProfile.status === "FAILED") {
     return (
       <section className="overflow-hidden rounded-3xl border border-[#e7e3ee] bg-white shadow-[0_18px_55px_-42px_rgba(29,27,51,0.45)]">
@@ -148,7 +110,6 @@ export function GithubAnalysisCard({ curriculum, demoMode = false }: GithubAnaly
     );
   }
 
-  // Estado (c): análise disponível.
   return (
     <section className="overflow-hidden rounded-3xl border border-[#e7e3ee] bg-white shadow-[0_18px_55px_-42px_rgba(29,27,51,0.45)]">
       <div className="bg-[#1d1b33] p-5 text-white sm:p-6">

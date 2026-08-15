@@ -8,14 +8,13 @@ import { BrandLoading } from "@/components/BrandLoading";
 import { Mascot } from "@/components/Mascot";
 import { Eye, EyeOff } from "lucide-react";
 import { authClient } from "@/lib/auth-client";
-import { demoCredentials, demoModeEnabled } from "@/lib/demo-mode";
 
 export default function Login() {
   const [showPassword, setShowPassword] = useState(false);
   const [errorMessage, setErrorMessage] = useState("");
   const [isSubmitting, setIsSubmitting] = useState(false);
-  const [email, setEmail] = useState(demoModeEnabled ? demoCredentials.email : "");
-  const [password, setPassword] = useState(demoModeEnabled ? demoCredentials.password : "");
+  const [email, setEmail] = useState("");
+  const [password, setPassword] = useState("");
   const router = useRouter();
 
   async function handleSubmit(e: React.SubmitEvent<HTMLFormElement>) {
@@ -25,18 +24,6 @@ export default function Login() {
 
     const formData = new FormData(e.currentTarget);
     const rememberMe = formData.get("rememberMe") === "on";
-
-    if (demoModeEnabled) {
-      await new Promise((resolve) => window.setTimeout(resolve, 450));
-      if (email !== demoCredentials.email || password !== demoCredentials.password) {
-        setErrorMessage("Use as credenciais de acesso fornecidas.");
-        setIsSubmitting(false);
-        return;
-      }
-      router.replace("/dashboard");
-      setIsSubmitting(false);
-      return;
-    }
 
     try {
       const { error } = await authClient.signIn.email({
@@ -170,10 +157,6 @@ export default function Login() {
               >
                 {isSubmitting ? "Entrando..." : "Entrar"}
               </button>
-
-              {demoModeEnabled && (
-                <p className="text-center text-xs leading-relaxed text-[#8b8593]">Nenhuma informação real é usada ou armazenada.</p>
-              )}
             </div>
 
             <div className="mt-4 flex flex-col gap-2 text-sm text-[#59567a] sm:flex-row sm:justify-between">

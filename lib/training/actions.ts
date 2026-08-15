@@ -3,7 +3,6 @@
 import { headers } from "next/headers";
 import { auth } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
-import { demoModeEnabled } from "@/lib/demo-mode";
 import { resolveCompetency } from "./competency";
 import { withDbRetry } from "./with-retry";
 
@@ -17,8 +16,6 @@ async function getCurrentUserId(): Promise<string | null> {
 }
 
 export async function startTrainingSession(params: { jobTitle?: string; jobSessionId?: string }): Promise<string> {
-  if (demoModeEnabled) return "demo-session";
-
   const userId = await getCurrentUserId();
   const session = await withDbRetry(() =>
     prisma.trainingSession.create({
@@ -39,8 +36,6 @@ export async function recordQuizAnswer(params: {
   selectedIndex: number;
 }): Promise<{ wasCorrect: boolean }> {
   const wasCorrect = params.selectedIndex === params.correctIndex;
-  if (demoModeEnabled) return { wasCorrect };
-
   const { key, label } = resolveCompetency(params.topic);
   const userId = await getCurrentUserId();
 
@@ -84,8 +79,6 @@ export async function recordOpenAnswer(params: {
   score: number;
   criteria?: Record<string, number>;
 }): Promise<void> {
-  if (demoModeEnabled) return;
-
   const { key, label } = resolveCompetency(params.competencyText);
   const userId = await getCurrentUserId();
 
@@ -118,8 +111,6 @@ export async function recordOpenAnswer(params: {
 }
 
 export async function getTrilhaCompletionSignal(jobSessionId: string): Promise<boolean> {
-  if (demoModeEnabled) return false;
-
   const sessions = await withDbRetry(() =>
     prisma.trainingSession.findMany({ where: { jobSessionId }, select: { id: true } }),
   );
@@ -148,8 +139,6 @@ export async function getTrilhaCompletionSignal(jobSessionId: string): Promise<b
 }
 
 export async function deleteVagaTrainingData(jobSessionId: string): Promise<void> {
-  if (demoModeEnabled) return;
-
   const userId = await getCurrentUserId();
   await withDbRetry(() =>
     prisma.trainingSession.deleteMany({

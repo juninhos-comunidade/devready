@@ -14,7 +14,7 @@ import {
   persistMockSession,
   type MockSession,
 } from "@/lib/mock-session";
-import { analyzeJobLocally, demoCandidateProfile } from "@/lib/job-training";
+import { analyzeJobLocally } from "@/lib/job-training";
 import { buildEvidenceMatrix, getNextJourneyAction } from "@/lib/preparation-journey";
 
 const defaultSessionSerialized = JSON.stringify(defaultMockSession);
@@ -39,7 +39,7 @@ export default function Resultado() {
   const analysis = useMemo(
     () => description === session.description
       ? session.analysis
-      : analyzeJobLocally(description, session.company, session.analysis.profileIsDemo ? demoCandidateProfile : undefined),
+      : analyzeJobLocally(description, session.company),
     [description, session.analysis, session.company, session.description],
   );
   const evidenceMatrix = useMemo(
@@ -53,7 +53,7 @@ export default function Resultado() {
     const updated = {
       ...session,
       description,
-      analysis: analyzeJobLocally(description, session.company, session.analysis.profileIsDemo ? demoCandidateProfile : undefined),
+      analysis: analyzeJobLocally(description, session.company),
       analysisNotice: "Análise recalculada localmente após a edição.",
     };
     setSessionOverride(updated);
@@ -110,7 +110,7 @@ export default function Resultado() {
 
           {!isEditing && (
             <div className="mt-6 grid gap-6">
-              <EvidenceMatrix items={evidenceMatrix} demo={Boolean(analysis.profileIsDemo)} />
+              <EvidenceMatrix items={evidenceMatrix} />
 
               <section className="rounded-3xl border border-[#e7e3ee] bg-white p-5 sm:p-6">
                 <div className="flex items-start justify-between gap-4">
