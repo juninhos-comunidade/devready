@@ -20,7 +20,7 @@ export function parseMockSession(value: string | null): MockSession | null {
 
   try {
     const parsed = JSON.parse(value) as Partial<MockSession>;
-    if (parsed.analysis?.profileIsDemo) return null;
+    if (parsed.id === "demo-frontend-junior") return null;
     const description = parsed.description?.trim();
     if (!description) return null;
     const company = parsed.company?.trim() || "Empresa não informada";

@@ -4,13 +4,16 @@ import { useEffect, useState } from "react";
 import { CalendarDays } from "lucide-react";
 import { readSessionList, type MockSession } from "@/lib/mock-session";
 
-export function SessionsCard() {
+export function SessionsCard({ demoSessions = [] }: { demoSessions?: MockSession[] }) {
   const [sessions, setSessions] = useState<MockSession[] | null>(null);
 
   useEffect(() => {
-    const timer = window.setTimeout(() => setSessions(readSessionList()), 0);
+    const timer = window.setTimeout(() => {
+      const stored = readSessionList();
+      setSessions(stored.length ? stored : demoSessions);
+    }, 0);
     return () => window.clearTimeout(timer);
-  }, []);
+  }, [demoSessions]);
 
   const jobsCount = sessions ? new Set(sessions.map((session) => session.company)).size : null;
 
