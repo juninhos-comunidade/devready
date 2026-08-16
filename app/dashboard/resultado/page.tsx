@@ -65,17 +65,19 @@ export default function Resultado() {
 
   async function saveAndReanalyze(event: React.SubmitEvent<HTMLFormElement>) {
     event.preventDefault();
+    if (!session) return;
+    const activeSession = session;
     setErrorMessage("");
     setIsReanalyzing(true);
     try {
       const form = new FormData();
       form.set("description", description.trim());
-      form.set("company", session.company);
+      form.set("company", activeSession.company);
       const response = await fetch("/api/job-training/analyze", { method: "POST", body: form });
       const payload = await response.json() as { analysis?: JobAnalysis; notice?: string; error?: string };
       if (!response.ok || !payload.analysis) throw new Error(payload.error || "Não foi possível reanalisar a vaga.");
       const updated: MockSession = {
-        ...session,
+        ...activeSession,
         description: description.trim(),
         analysis: payload.analysis,
         analysisNotice: payload.notice,
