@@ -1,6 +1,5 @@
-import { analyzeJobLocally, demoCandidateProfile, getSessionLimit, SESSION_LIST_KEY, type JobAnalysis, type TrainingAttempt } from "@/lib/job-training";
+import { analyzeJobLocally, getSessionLimit, SESSION_LIST_KEY, type JobAnalysis } from "@/lib/job-training";
 import type { JourneyProgress } from "@/lib/preparation-journey";
-import { demoModeEnabled } from "@/lib/demo-mode";
 
 export const MOCK_SESSION_KEY = "devready:mock-session";
 
@@ -16,33 +15,14 @@ export type MockSession = {
   createdAt: string;
 };
 
-const defaultDescription =
-  "Vaga para pessoa desenvolvedora frontend com React, TypeScript, testes automatizados e consumo de APIs REST. Valorizamos comunicação, colaboração e vontade de aprender.";
-
-export const defaultMockSession: MockSession = {
-  id: "demo-frontend-junior",
-  name: "Frontend Júnior",
-  company: "Aurora Tech",
-  description: defaultDescription,
-  source: "text",
-  analysis: analyzeJobLocally(defaultDescription, "Aurora Tech", demoCandidateProfile),
-  progress: {
-    trainingAttempts: (demoModeEnabled ? [
-      { id: "demo-1", sessionId: "demo-frontend-junior", sessionName: "Frontend Júnior", mode: "quiz", score: 80, difficulty: "intermediaria", createdAt: "2026-08-13T09:00:00.000Z" },
-      { id: "demo-2", sessionId: "demo-frontend-junior", sessionName: "Frontend Júnior", mode: "comportamental", score: 75, difficulty: "iniciante", createdAt: "2026-08-13T11:00:00.000Z" },
-    ] satisfies TrainingAttempt[] : []),
-  },
-  createdAt: "2026-08-12T09:00:00.000Z",
-};
-
 export function parseMockSession(value: string | null): MockSession | null {
-  if (!value) return demoModeEnabled ? defaultMockSession : null;
+  if (!value) return null;
 
   try {
     const parsed = JSON.parse(value) as Partial<MockSession>;
-    if (!demoModeEnabled && parsed.id === defaultMockSession.id) return null;
+    if (parsed.analysis?.profileIsDemo) return null;
     const description = parsed.description?.trim();
-    if (!description) return demoModeEnabled ? defaultMockSession : null;
+    if (!description) return null;
     const company = parsed.company?.trim() || "Empresa não informada";
 
     return {
@@ -59,7 +39,7 @@ export function parseMockSession(value: string | null): MockSession | null {
       createdAt: parsed.createdAt || new Date().toISOString(),
     };
   } catch {
-    return demoModeEnabled ? defaultMockSession : null;
+    return null;
   }
 }
 
@@ -83,9 +63,9 @@ export function readSessionList(): MockSession[] {
     const sessions = Array.isArray(parsed)
       ? parsed.map((item) => parseMockSession(JSON.stringify(item))).filter((item): item is MockSession => item !== null)
       : [];
-    return sessions.length === 0 && demoModeEnabled ? [defaultMockSession] : sessions;
+    return sessions;
   } catch {
-    return demoModeEnabled ? [defaultMockSession] : [];
+    return [];
   }
 }
 

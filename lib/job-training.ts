@@ -38,22 +38,6 @@ export type CandidateProfileSnapshot = {
   skillEvidence?: Record<string, string[]>;
 };
 
-export const demoCandidateProfile: CandidateProfileSnapshot = {
-  label: "Perfil fictício de demonstração",
-  isDemo: true,
-  skillScores: { React: 86, TypeScript: 78, JavaScript: 81, Testes: 61, SQL: 54, "Node.js": 68, "APIs REST": 70, Docker: 45 },
-  skillEvidence: {
-    React: ["Currículo fictício", "GitHub fictício"],
-    TypeScript: ["Currículo fictício", "GitHub fictício"],
-    JavaScript: ["Currículo fictício"],
-    Testes: ["Currículo fictício"],
-    SQL: ["Currículo fictício"],
-    "Node.js": ["GitHub fictício"],
-    "APIs REST": ["GitHub fictício"],
-    Docker: ["Currículo fictício"],
-  },
-};
-
 export type QuizQuestion = {
   id: string;
   topic: string;

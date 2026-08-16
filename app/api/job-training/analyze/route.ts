@@ -1,10 +1,8 @@
-import { analyzeJobLocally, demoCandidateProfile } from "@/lib/job-training";
 import { analyzeJobWithGroq, groqIsConfigured } from "@/lib/groq-job-training";
 import { buildCandidateProfileSnapshot } from "@/lib/candidate-profile";
 import { auth } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 import { headers } from "next/headers";
-import { demoModeEnabled } from "@/lib/demo-mode";
 
 export const runtime = "nodejs";
 export const maxDuration = 60;
@@ -13,7 +11,6 @@ const MAX_IMAGE_BYTES = 4 * 1024 * 1024;
 const acceptedImageTypes = new Set(["image/png", "image/jpeg"]);
 
 async function getCandidateProfile() {
-  if (demoModeEnabled) return demoCandidateProfile;
   try {
     const session = await auth.api.getSession({ headers: await headers() });
     if (!session) return undefined;
@@ -64,24 +61,9 @@ export async function POST(request: Request) {
     }
   }
 
-  if (!demoModeEnabled) {
-    return Response.json({
-      error: groqIsConfigured()
-        ? "O serviço de análise está temporariamente indisponível. Tente novamente em instantes."
-        : "O serviço de análise ainda não foi configurado neste ambiente.",
-    }, { status: 503 });
-  }
-
-  if (!description) {
-    return Response.json({
-      error: "A leitura automática da imagem está indisponível neste ambiente. Cole também a descrição da vaga para continuar.",
-      aiAvailable: false,
-    }, { status: 503 });
-  }
   return Response.json({
-    analysis: analyzeJobLocally(description, company, candidateProfile),
-    extractedDescription: description,
-    aiAvailable: false,
-    notice: "Diagnóstico demonstrativo gerado localmente.",
-  });
+    error: groqIsConfigured()
+      ? "O serviço de análise está temporariamente indisponível. Tente novamente em instantes."
+      : "O serviço de análise ainda não foi configurado neste ambiente.",
+  }, { status: 503 });
 }
