@@ -21,6 +21,7 @@ import { ActivePreparationCard } from "@/components/dashboard/ActivePreparationC
 import { PreparationHistory } from "@/components/dashboard/PreparationHistory";
 import { SessionsCard } from "@/components/dashboard/SessionsCard";
 import { TechnologyRow } from "@/components/dashboard/TechnologyRow";
+import { DemoAccountBootstrap } from "@/components/dashboard/DemoAccountBootstrap";
 import { getDashboardTrainingStats } from "@/lib/training/dashboard-stats";
 import { dashboardData } from "@/lib/dashboard-data";
 import { demoDashboardSessions, demoModeEnabled, isDemoAccountEmail } from "@/lib/demo-mode";
@@ -74,6 +75,7 @@ export default async function Dashboard() {
 
   return (
     <div className="flex min-h-screen bg-[#f4f3f8]">
+      {showDemoData && <DemoAccountBootstrap sessions={dashboardSessions} />}
       <Sidebar />
 
       <main className="min-w-0 flex-1 px-4 pb-28 pt-6 sm:px-6 lg:px-8 lg:py-8 xl:px-10">
