@@ -71,7 +71,7 @@ O progresso do ciclo permanece disponível após a atualização da página. Com
 
 ## Demonstração
 
-O modo demonstrativo vem ativo por padrão. Com `NEXT_PUBLIC_DEMO_MODE=true`, todos os fluxos utilizam informações fictícias e podem ser apresentados sem banco, integrações externas ou dados pessoais.
+O modo demonstrativo fica desativado por padrão. Use `NEXT_PUBLIC_DEMO_MODE=true` apenas em um ambiente isolado destinado à apresentação com informações fictícias.
 
 ```text
 E-mail: demo@devready.app
@@ -199,13 +199,13 @@ Antes de aceitar currículos reais em produção, o projeto precisa utilizar arm
 
 ## Deploy na Vercel
 
-O projeto possui `vercel-build` e `postinstall` para gerar o Prisma Client antes do build. Para a apresentação do hackathon, recomenda-se publicar com `NEXT_PUBLIC_DEMO_MODE=true`, garantindo um fluxo completo com dados fictícios mesmo quando serviços externos estiverem indisponíveis.
+O projeto possui `vercel-build` e `postinstall` para gerar o Prisma Client antes do build. A produção pública deve utilizar contas reais com PostgreSQL e `NEXT_PUBLIC_DEMO_MODE=false`.
 
 1. importe o repositório na Vercel;
 2. selecione Node.js 20 ou superior;
-3. para o hackathon, cadastre somente `NEXT_PUBLIC_DEMO_MODE=true` e `NEXT_PUBLIC_SESSION_LIMIT=5`;
+3. configure `DATABASE_URL`, `BETTER_AUTH_URL`, `BETTER_AUTH_SECRET`, `NEXT_PUBLIC_DEMO_MODE=false` e `NEXT_PUBLIC_SESSION_LIMIT=5`;
 4. publique e valide `/api/health`, `/login`, `/dashboard`, `/dashboard/nova-sessao` e `/dashboard/treino-vaga`;
-5. para habilitar contas reais depois, configure as demais variáveis de `.env.example` e execute `npm run db:migrate` antes de definir `NEXT_PUBLIC_DEMO_MODE=false`.
+5. execute `npm run db:migrate` antes do primeiro acesso e valide o cadastro com uma conta nova e sem dados prévios.
 
 Groq e GitHub são opcionais no modo demonstração. No modo autenticado, as respectivas credenciais liberam análise externa e consulta do perfil público.
 
