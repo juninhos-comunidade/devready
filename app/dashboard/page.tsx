@@ -16,6 +16,7 @@ import { redirect } from "next/navigation";
 import { prisma } from "@/lib/prisma";
 import { CurriculumProcessingTrigger } from "@/components/dashboard/CurriculumProcessingTrigger";
 import { GithubAnalysisCard } from "@/components/dashboard/GithubAnalysisCard";
+import { CurriculumAnalysisCard } from "@/components/dashboard/CurriculumAnalysisCard";
 import { ActivePreparationCard } from "@/components/dashboard/ActivePreparationCard";
 import { PreparationHistory } from "@/components/dashboard/PreparationHistory";
 import { SessionsCard } from "@/components/dashboard/SessionsCard";
@@ -260,7 +261,8 @@ export default async function Dashboard() {
             </div>
           )}
 
-          <div className="mt-6">
+          <div className="mt-6 grid gap-6 xl:grid-cols-2">
+            <CurriculumAnalysisCard curriculum={curriculum} />
             <GithubAnalysisCard curriculum={curriculum} demoMode={demoModeEnabled} />
           </div>
         </div>
