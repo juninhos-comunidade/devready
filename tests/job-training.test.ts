@@ -7,6 +7,7 @@ import {
   nextDifficulty,
 } from "../lib/job-training";
 import { defaultMockSession, parseMockSession } from "../lib/mock-session";
+import { buildCandidateProfileSnapshot } from "../lib/candidate-profile";
 
 test("identifica requisitos e senioridade na descrição da vaga", () => {
   const analysis = analyzeJobLocally(
@@ -62,7 +63,31 @@ test("normaliza sessões antigas sem quebrar o fluxo", () => {
     source: "text",
   }));
 
+  assert.ok(legacy);
   assert.equal(legacy.id, "legacy-session");
   assert.equal(legacy.name, "Sessão antiga");
   assert.ok(legacy.analysis.requirements.includes("React"));
+});
+
+test("não carrega a sessão demonstrativa fora do modo de demonstração", () => {
+  if (process.env.NEXT_PUBLIC_DEMO_MODE === "true") return;
+  assert.equal(parseMockSession(null), null);
+  assert.equal(parseMockSession(JSON.stringify(defaultMockSession)), null);
+});
+
+test("cruza evidências reais do currículo e do GitHub", () => {
+  const profile = buildCandidateProfileSnapshot({
+    curriculumData: {
+      skills: ["React", "PostgreSQL"],
+      experiences: [{ empresa: "Empresa Exemplo", cargo: "Desenvolvedora", tecnologias: ["TypeScript"] }],
+    },
+    githubProfile: {
+      topLanguages: { JavaScript: 1200 },
+      repos: [{ name: "api", description: "API REST", languages: { TypeScript: 800 } }],
+    },
+  });
+
+  assert.ok(profile);
+  assert.ok(profile.skillEvidence?.React?.some((item) => item.startsWith("Currículo:")));
+  assert.ok(profile.skillEvidence?.TypeScript?.some((item) => item.startsWith("GitHub:")));
 });

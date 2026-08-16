@@ -22,15 +22,12 @@ async function getCandidateProfile() {
       include: { githubProfile: { include: { repos: true } } },
     });
     if (!curriculum) return undefined;
-    const curriculumText = [curriculum.bruteData, curriculum.extractedData ? JSON.stringify(curriculum.extractedData) : ""].filter(Boolean).join(" ");
-    const githubText = curriculum.githubProfile
-      ? [
-        curriculum.githubProfile.bio,
-        JSON.stringify(curriculum.githubProfile.topLanguages ?? {}),
-        ...curriculum.githubProfile.repos.flatMap((repo) => [repo.name, repo.description, JSON.stringify(repo.languages ?? {})]),
-      ].filter(Boolean).join(" ")
-      : "";
-    return buildCandidateProfileSnapshot({ curriculumText, githubText });
+    return buildCandidateProfileSnapshot({
+      curriculumData: curriculum.status === "COMPLETED" ? curriculum.extractedData : undefined,
+      githubProfile: curriculum.githubProfile?.status === "COMPLETED"
+        ? { topLanguages: curriculum.githubProfile.topLanguages, repos: curriculum.githubProfile.repos }
+        : undefined,
+    });
   } catch (error) {
     console.error("Não foi possível reunir as evidências do perfil para a análise.", error);
     return undefined;

@@ -63,10 +63,13 @@ test("a próxima ação acompanha o progresso da jornada", () => {
 
 test("o perfil real registra somente a origem da evidência encontrada", () => {
   const profile = buildCandidateProfileSnapshot({
-    curriculumText: "Experiência acadêmica com TypeScript e PostgreSQL.",
-    githubText: "Projeto de API REST em Node.js com Docker.",
+    curriculumData: { skills: ["TypeScript", "PostgreSQL"] },
+    githubProfile: {
+      topLanguages: { TypeScript: 1000 },
+      repos: [{ name: "api", description: "API REST com Docker", languages: { JavaScript: 500 } }],
+    },
   });
   assert.deepEqual(profile?.skillScores, {});
-  assert.deepEqual(profile?.skillEvidence?.TypeScript, ["Currículo processado"]);
-  assert.deepEqual(profile?.skillEvidence?.Docker, ["GitHub público"]);
+  assert.ok(profile?.skillEvidence?.TypeScript?.some((item) => item.startsWith("Currículo:")));
+  assert.deepEqual(profile?.skillEvidence?.Docker, ["GitHub: descrição do repositório api"]);
 });

@@ -8,6 +8,7 @@ import {
   type TrainingDifficulty,
   type TrainingEvaluation,
 } from "@/lib/job-training";
+import { canonicalCandidateSkill } from "@/lib/candidate-profile";
 
 const GROQ_URL = "https://api.groq.com/openai/v1/chat/completions";
 const DEFAULT_TEXT_MODEL = "openai/gpt-oss-20b";
@@ -126,7 +127,9 @@ export async function analyzeJobWithGroq({
   ], imageDataUrl ? (process.env.GROQ_VISION_MODEL || DEFAULT_VISION_MODEL) : (process.env.GROQ_MODEL || DEFAULT_TEXT_MODEL));
   const analysis = parseAnalysis(raw);
   const findProfileEntry = <T,>(entries: Record<string, T> | undefined, name: string) =>
-    Object.entries(entries ?? {}).find(([skill]) => skill.toLocaleLowerCase("pt-BR") === name.toLocaleLowerCase("pt-BR"))?.[1];
+    Object.entries(entries ?? {}).find(([skill]) =>
+      canonicalCandidateSkill(skill).toLocaleLowerCase("pt-BR") === canonicalCandidateSkill(name).toLocaleLowerCase("pt-BR")
+    )?.[1];
   const technologies = analysis.technologies.map((technology) => ({
     ...technology,
     profileScore: findProfileEntry(profile?.skillScores, technology.name) ?? null,

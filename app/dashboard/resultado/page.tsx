@@ -1,70 +1,102 @@
 "use client";
 
-import { useMemo, useState, useSyncExternalStore } from "react";
+import { useEffect, useMemo, useState, useSyncExternalStore } from "react";
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 import { ArrowRight, BriefcaseBusiness, CheckCircle2, Pencil, Sparkles } from "lucide-react";
 import { Sidebar } from "@/components/Sidebar";
+import { BrandLoading } from "@/components/BrandLoading";
 import { Mascot } from "@/components/Mascot";
 import { EvidenceMatrix } from "@/components/EvidenceMatrix";
 import { PreparationJourney } from "@/components/PreparationJourney";
 import {
-  defaultMockSession,
   MOCK_SESSION_KEY,
   parseMockSession,
   persistMockSession,
   type MockSession,
 } from "@/lib/mock-session";
-import { analyzeJobLocally } from "@/lib/job-training";
+import type { JobAnalysis } from "@/lib/job-training";
 import { buildEvidenceMatrix, getNextJourneyAction } from "@/lib/preparation-journey";
 
-const defaultSessionSerialized = JSON.stringify(defaultMockSession);
 const subscribeToStoredSession = () => () => undefined;
-const getStoredSession = () => window.sessionStorage.getItem(MOCK_SESSION_KEY) ?? defaultSessionSerialized;
-const getServerSession = () => defaultSessionSerialized;
+const getStoredSession = () => window.sessionStorage.getItem(MOCK_SESSION_KEY) ?? "";
+const getServerSession = () => "";
 
-function parseStoredSession(value: string): MockSession {
+function parseStoredSession(value: string): MockSession | null {
   return parseMockSession(value);
 }
 
 export default function Resultado() {
+  const router = useRouter();
   const storedSessionValue = useSyncExternalStore(subscribeToStoredSession, getStoredSession, getServerSession);
   const storedSession = useMemo(() => parseStoredSession(storedSessionValue), [storedSessionValue]);
   const [sessionOverride, setSessionOverride] = useState<MockSession | null>(null);
   const [descriptionOverride, setDescriptionOverride] = useState<string | null>(null);
   const [isEditing, setIsEditing] = useState(false);
+  const [isReanalyzing, setIsReanalyzing] = useState(false);
+  const [errorMessage, setErrorMessage] = useState("");
   const [reanalyzed, setReanalyzed] = useState(false);
   const session = sessionOverride ?? storedSession;
-  const description = descriptionOverride ?? session.description;
+  const description = descriptionOverride ?? session?.description ?? "";
 
-  const analysis = useMemo(
-    () => description === session.description
-      ? session.analysis
-      : analyzeJobLocally(description, session.company),
-    [description, session.analysis, session.company, session.description],
-  );
+  const analysis = session?.analysis ?? null;
   const evidenceMatrix = useMemo(
-    () => buildEvidenceMatrix(analysis, analysis.profileLabel ?? "Perfil sem evidências processadas", session.progress),
-    [analysis, session.progress],
+    () => session && analysis
+      ? buildEvidenceMatrix(analysis, analysis.profileLabel ?? "Perfil sem evidências processadas", session.progress)
+      : [],
+    [analysis, session],
   );
-  const nextAction = getNextJourneyAction(session.progress);
+  const nextAction = session ? getNextJourneyAction(session.progress) : null;
 
-  function saveAndReanalyze(event: React.SubmitEvent<HTMLFormElement>) {
+  useEffect(() => {
+    if (!session) router.replace("/dashboard/nova-sessao");
+  }, [router, session]);
+
+  if (!session || !analysis || !nextAction) {
+    return (
+      <div className="flex min-h-screen bg-[#f4f3f8]">
+        <Sidebar />
+        <main className="flex-1 px-4 pt-6 sm:px-6 lg:px-10 lg:py-8">
+          <div className="mx-auto h-64 max-w-6xl animate-pulse rounded-3xl bg-[#e9e6ef]" aria-hidden="true" />
+        </main>
+      </div>
+    );
+  }
+
+  async function saveAndReanalyze(event: React.SubmitEvent<HTMLFormElement>) {
     event.preventDefault();
-    const updated = {
-      ...session,
-      description,
-      analysis: analyzeJobLocally(description, session.company),
-      analysisNotice: "Análise recalculada localmente após a edição.",
-    };
-    setSessionOverride(updated);
-    setDescriptionOverride(null);
-    persistMockSession(updated);
-    setIsEditing(false);
-    setReanalyzed(true);
+    if (!session) return;
+    const activeSession = session;
+    setErrorMessage("");
+    setIsReanalyzing(true);
+    try {
+      const form = new FormData();
+      form.set("description", description.trim());
+      form.set("company", activeSession.company);
+      const response = await fetch("/api/job-training/analyze", { method: "POST", body: form });
+      const payload = await response.json() as { analysis?: JobAnalysis; notice?: string; error?: string };
+      if (!response.ok || !payload.analysis) throw new Error(payload.error || "Não foi possível reanalisar a vaga.");
+      const updated: MockSession = {
+        ...activeSession,
+        description: description.trim(),
+        analysis: payload.analysis,
+        analysisNotice: payload.notice,
+      };
+      setSessionOverride(updated);
+      setDescriptionOverride(null);
+      persistMockSession(updated);
+      setIsEditing(false);
+      setReanalyzed(true);
+    } catch (error) {
+      setErrorMessage(error instanceof Error ? error.message : "Não foi possível reanalisar a vaga.");
+    } finally {
+      setIsReanalyzing(false);
+    }
   }
 
   return (
     <div className="flex min-h-screen bg-[#f4f3f8]">
+      {isReanalyzing && <BrandLoading overlay label="Reavaliando vaga, currículo e GitHub..." />}
       <Sidebar />
       <main className="min-w-0 flex-1 px-4 pb-28 pt-6 sm:px-6 lg:px-10 lg:py-8">
         <div className="mx-auto max-w-6xl">
@@ -83,9 +115,10 @@ export default function Resultado() {
               <label htmlFor="job-description" className="text-sm font-extrabold text-[#1d1b33]">Descrição da vaga</label>
               <textarea id="job-description" required rows={7} value={description} onChange={(event) => setDescriptionOverride(event.target.value)} className="mt-2 w-full resize-y rounded-xl border-[1.5px] border-[#e4dfd3] px-4 py-3 leading-relaxed focus:border-[#7755e8] focus:outline-none focus:ring-2 focus:ring-[#7755e8]/25" />
               <p className="mt-2 text-xs font-semibold text-[#8b8593]">A análise será recalculada ao salvar.</p>
+              {errorMessage && <p role="alert" className="mt-3 rounded-xl bg-[#fdf2f2] px-4 py-3 text-sm font-bold text-[#a83030]">{errorMessage}</p>}
               <div className="mt-5 flex flex-col-reverse gap-3 sm:flex-row">
                 <button type="button" onClick={() => { setDescriptionOverride(null); setIsEditing(false); }} className="min-h-11 rounded-full border border-[#dcd7e6] px-5 font-extrabold text-[#1d1b33]">Cancelar</button>
-                <button type="submit" className="min-h-11 rounded-full bg-gradient-to-r from-[#7755e8] to-[#e8641d] px-6 font-extrabold text-white">Salvar e reanalisar</button>
+                <button type="submit" disabled={isReanalyzing} className="min-h-11 rounded-full bg-gradient-to-r from-[#7755e8] to-[#e8641d] px-6 font-extrabold text-white disabled:opacity-60">Salvar e reanalisar</button>
               </div>
             </form>
           ) : (

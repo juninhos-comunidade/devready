@@ -23,7 +23,7 @@ export function PreparationHistory() {
   async function remove(sessionId: string) {
     removeSessionFromList(sessionId);
     const active = parseMockSession(window.sessionStorage.getItem(MOCK_SESSION_KEY));
-    if (active.id === sessionId) {
+    if (active?.id === sessionId) {
       window.sessionStorage.removeItem(MOCK_SESSION_KEY);
     }
     try {
