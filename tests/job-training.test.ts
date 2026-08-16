@@ -6,7 +6,7 @@ import {
   evaluateAnswerLocally,
   nextDifficulty,
 } from "../lib/job-training";
-import { defaultMockSession, parseMockSession } from "../lib/mock-session";
+import { parseMockSession } from "../lib/mock-session";
 import { buildCandidateProfileSnapshot } from "../lib/candidate-profile";
 
 test("identifica requisitos e senioridade na descrição da vaga", () => {
@@ -24,7 +24,8 @@ test("identifica requisitos e senioridade na descrição da vaga", () => {
 });
 
 test("gera quinze perguntas válidas para o treino local", () => {
-  const content = buildLocalTraining(defaultMockSession.analysis);
+  const analysis = analyzeJobLocally("Vaga com React, TypeScript e testes.", "Empresa");
+  const content = buildLocalTraining(analysis);
 
   assert.equal(content.questions.length, 15);
   assert.equal(new Set(content.questions.map((question) => question.id)).size, 15);
@@ -69,10 +70,9 @@ test("normaliza sessões antigas sem quebrar o fluxo", () => {
   assert.ok(legacy.analysis.requirements.includes("React"));
 });
 
-test("não carrega a sessão demonstrativa fora do modo de demonstração", () => {
-  if (process.env.NEXT_PUBLIC_DEMO_MODE === "true") return;
+test("não cria sessão quando não existem dados da vaga", () => {
   assert.equal(parseMockSession(null), null);
-  assert.equal(parseMockSession(JSON.stringify(defaultMockSession)), null);
+  assert.equal(parseMockSession("{}"), null);
 });
 
 test("cruza evidências reais do currículo e do GitHub", () => {
