@@ -7,6 +7,8 @@ import { CircleUser, LayoutDashboard, LogOut, Route } from "lucide-react";
 import { Logo } from "./Logo";
 import { Mascot } from "./Mascot";
 import { authClient } from "@/lib/auth-client";
+import { demoModeEnabled } from "@/lib/demo-mode";
+import { BrandLoading } from "./BrandLoading";
 
 const navItems = [
   { href: "/dashboard", label: "Início", shortLabel: "Início", icon: LayoutDashboard, routes: ["/dashboard"] },
@@ -39,7 +41,8 @@ export function Sidebar() {
 
   async function handleSignOut() {
     setIsSigningOut(true);
-    await authClient.signOut().catch(() => undefined);
+    if (!demoModeEnabled) await authClient.signOut().catch(() => undefined);
+    await new Promise((resolve) => window.setTimeout(resolve, 300));
     router.replace("/login");
     router.refresh();
     setIsSigningOut(false);
@@ -47,6 +50,7 @@ export function Sidebar() {
 
   return (
     <>
+      {isSigningOut && <BrandLoading overlay label="Encerrando sua sessão..." />}
       <aside className="sticky top-0 hidden h-screen w-64 shrink-0 flex-col bg-[#151632] px-5 py-8 lg:flex">
         <div className="px-2">
           <Logo />

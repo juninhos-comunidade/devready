@@ -3,10 +3,11 @@ import { APIError } from "better-auth/api";
 import { prismaAdapter } from "better-auth/adapters/prisma";
 import { prisma } from "./prisma";
 import { hashPassword } from "better-auth/crypto";
+import { demoModeEnabled } from "./demo-mode";
 
 const vercelUrl = process.env.VERCEL_URL ? `https://${process.env.VERCEL_URL}` : undefined;
-const baseURL = process.env.BETTER_AUTH_URL ?? vercelUrl;
-const secret = process.env.BETTER_AUTH_SECRET;
+const baseURL = process.env.BETTER_AUTH_URL ?? vercelUrl ?? (demoModeEnabled ? "http://localhost:3000" : undefined);
+const secret = process.env.BETTER_AUTH_SECRET ?? (demoModeEnabled ? "devready-demo-only-not-for-real-accounts" : undefined);
 
 export const auth = betterAuth({
   baseURL,

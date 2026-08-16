@@ -2,6 +2,8 @@
 
 import { prisma } from "@/lib/prisma";
 import { withDbRetry } from "./with-retry";
+import { dashboardData } from "@/lib/dashboard-data";
+import { demoModeEnabled } from "@/lib/demo-mode";
 
 export type TechnologyScore = {
   name: string;
@@ -50,6 +52,7 @@ export async function getDashboardTrainingStats(userId: string): Promise<{
   technologies: TechnologyScore[];
   history: TechnologyHistory[];
 }> {
+  if (demoModeEnabled) return { technologies: dashboardData.technologies, history: dashboardData.history };
   const answers = await withDbRetry(() =>
     prisma.trainingAnswer.findMany({
       where: { userId },

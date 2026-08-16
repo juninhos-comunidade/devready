@@ -1,5 +1,6 @@
-import { analyzeJobLocally, getSessionLimit, SESSION_LIST_KEY, type JobAnalysis } from "@/lib/job-training";
+import { analyzeJobLocally, demoCandidateProfile, getSessionLimit, SESSION_LIST_KEY, type JobAnalysis, type TrainingAttempt } from "@/lib/job-training";
 import type { JourneyProgress } from "@/lib/preparation-journey";
+import { demoModeEnabled } from "@/lib/demo-mode";
 
 export const MOCK_SESSION_KEY = "devready:mock-session";
 
@@ -19,14 +20,19 @@ const defaultDescription =
   "Vaga para pessoa desenvolvedora frontend com React, TypeScript, testes automatizados e consumo de APIs REST. Valorizamos comunicação, colaboração e vontade de aprender.";
 
 export const defaultMockSession: MockSession = {
-  id: "legacy-session",
-  name: "Treino personalizado",
-  company: "Empresa não informada",
+  id: "demo-frontend-junior",
+  name: "Frontend Júnior",
+  company: "Aurora Tech",
   description: defaultDescription,
   source: "text",
-  analysis: analyzeJobLocally(defaultDescription, "Empresa não informada"),
-  progress: { trainingAttempts: [] },
-  createdAt: new Date(0).toISOString(),
+  analysis: analyzeJobLocally(defaultDescription, "Aurora Tech", demoCandidateProfile),
+  progress: {
+    trainingAttempts: (demoModeEnabled ? [
+      { id: "demo-1", sessionId: "demo-frontend-junior", sessionName: "Frontend Júnior", mode: "quiz", score: 80, difficulty: "intermediaria", createdAt: "2026-08-13T09:00:00.000Z" },
+      { id: "demo-2", sessionId: "demo-frontend-junior", sessionName: "Frontend Júnior", mode: "comportamental", score: 75, difficulty: "iniciante", createdAt: "2026-08-13T11:00:00.000Z" },
+    ] satisfies TrainingAttempt[] : []),
+  },
+  createdAt: "2026-08-12T09:00:00.000Z",
 };
 
 export function parseMockSession(value: string | null): MockSession {
@@ -72,9 +78,10 @@ export function readSessionList(): MockSession[] {
   try {
     const stored = window.localStorage.getItem(SESSION_LIST_KEY);
     const parsed: unknown = stored ? JSON.parse(stored) : [];
-    return Array.isArray(parsed) ? parsed.map((item) => parseMockSession(JSON.stringify(item))) : [];
+    const sessions = Array.isArray(parsed) ? parsed.map((item) => parseMockSession(JSON.stringify(item))) : [];
+    return sessions.length === 0 && demoModeEnabled ? [defaultMockSession] : sessions;
   } catch {
-    return [];
+    return demoModeEnabled ? [defaultMockSession] : [];
   }
 }
 
