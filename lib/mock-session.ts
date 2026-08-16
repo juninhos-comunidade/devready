@@ -1,4 +1,4 @@
-import { analyzeJobLocally, demoCandidateProfile, getSessionLimit, SESSION_LIST_KEY, type JobAnalysis } from "@/lib/job-training";
+import { analyzeJobLocally, getSessionLimit, SESSION_LIST_KEY, type JobAnalysis } from "@/lib/job-training";
 import type { JourneyProgress } from "@/lib/preparation-journey";
 
 export const MOCK_SESSION_KEY = "devready:mock-session";
@@ -12,19 +12,21 @@ export type MockSession = {
   analysis: JobAnalysis;
   analysisNotice?: string;
   progress: JourneyProgress;
+  createdAt: string;
 };
 
 const defaultDescription =
-  "Vaga para pessoa desenvolvedora frontend com React, TypeScript, testes automatizados, consumo de APIs e noções de SQL. Valorizamos comunicação, colaboração e vontade de aprender.";
+  "Vaga para pessoa desenvolvedora frontend com React, TypeScript, testes automatizados e consumo de APIs REST. Valorizamos comunicação, colaboração e vontade de aprender.";
 
 export const defaultMockSession: MockSession = {
-  id: "demo-frontend-junior",
-  name: "Frontend Júnior",
-  company: "Fintech Aurora",
+  id: "legacy-session",
+  name: "Treino personalizado",
+  company: "Empresa não informada",
   description: defaultDescription,
   source: "text",
-  analysis: analyzeJobLocally(defaultDescription, "Fintech Aurora", demoCandidateProfile),
+  analysis: analyzeJobLocally(defaultDescription, "Empresa não informada"),
   progress: { trainingAttempts: [] },
+  createdAt: new Date(0).toISOString(),
 };
 
 export function parseMockSession(value: string | null): MockSession {
@@ -46,6 +48,7 @@ export function parseMockSession(value: string | null): MockSession {
       progress: parsed.progress && Array.isArray(parsed.progress.trainingAttempts)
         ? parsed.progress
         : { trainingAttempts: [] },
+      createdAt: parsed.createdAt || new Date().toISOString(),
     };
   } catch {
     return defaultMockSession;
@@ -61,9 +64,7 @@ export function persistMockSession(session: MockSession) {
     const previous = Array.isArray(parsed) ? parsed as MockSession[] : [];
     const sessions = [session, ...previous.filter((item) => item.id !== session.id)].slice(0, getSessionLimit());
     window.localStorage.setItem(SESSION_LIST_KEY, JSON.stringify(sessions));
-  } catch {
-    // A preparação ativa continua disponível se o histórico local estiver bloqueado.
-  }
+  } catch {}
 }
 
 export function readSessionList(): MockSession[] {

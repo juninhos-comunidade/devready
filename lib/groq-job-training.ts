@@ -145,7 +145,6 @@ export async function analyzeJobWithGroq({
     strongest: ranked[0]?.name ?? analysis.strongest,
     priority: ranked.at(-1)?.name ?? analysis.priority,
     profileLabel: profile?.label ?? "Perfil sem evidências processadas",
-    profileIsDemo: profile?.isDemo ?? false,
   };
 }
 

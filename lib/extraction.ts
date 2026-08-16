@@ -29,8 +29,8 @@ export interface CurriculumExperience {
 export interface CurriculumFormacao {
   instituicao: string;
   curso: string;
-  inicio: string;
-  fim: string;
+  inicio: string | null;
+  fim: string | null;
   status: "cursando" | "concluido";
 }
 
@@ -121,12 +121,16 @@ const extractCurriculumTool: Groq.Chat.ChatCompletionTool = {
                 description: "Nome do curso, exatamente como escrito no texto.",
               },
               inicio: {
-                type: "string",
-                description: "Data ou período de início, em formato livre, como escrito no texto.",
+                type: ["string", "null"],
+                description:
+                  "Data ou período de início, em formato livre, como escrito no texto. Use null se o " +
+                  "texto não informar uma data de início explícita. Não infira.",
               },
               fim: {
-                type: "string",
-                description: "Data ou período de término/previsão, como escrito no texto.",
+                type: ["string", "null"],
+                description:
+                  "Data ou período de término/previsão, como escrito no texto. Use null se o texto não " +
+                  "informar uma data de término/previsão explícita. Não infira.",
               },
               status: {
                 type: "string",

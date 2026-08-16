@@ -7,7 +7,7 @@ const statusConfig: Record<EvidenceStatus, { label: string; className: string; i
   "not-evidenced": { label: "Não evidenciado", className: "bg-[#f0eef4] text-[#686274]", icon: CircleDashed },
 };
 
-export function EvidenceMatrix({ items, demo = true }: { items: CompetencyEvidence[]; demo?: boolean }) {
+export function EvidenceMatrix({ items }: { items: CompetencyEvidence[] }) {
   return (
     <section className="rounded-3xl border border-[#e7e3ee] bg-white p-5 sm:p-6" aria-labelledby="evidence-title">
       <div className="flex flex-wrap items-start justify-between gap-3">
@@ -16,7 +16,6 @@ export function EvidenceMatrix({ items, demo = true }: { items: CompetencyEviden
           <h2 id="evidence-title" className="mt-1 text-xl font-extrabold text-[#1d1b33]">O que você já consegue demonstrar</h2>
           <p className="mt-2 max-w-2xl text-sm leading-relaxed text-[#6d698a]">Cada conclusão mostra a evidência utilizada e uma ação prática. Ausência de evidência não significa ausência de conhecimento.</p>
         </div>
-        {demo && <span className="rounded-full bg-[#ece8f8] px-3 py-1 text-[10px] font-extrabold uppercase tracking-wide text-[#654bc9]">Perfil fictício</span>}
       </div>
 
       <div className="mt-5 overflow-hidden rounded-2xl border border-[#ece9f1]">

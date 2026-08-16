@@ -11,18 +11,9 @@ import { ConfirmDialog } from "@/components/ConfirmDialog";
 import { BrandLoading } from "@/components/BrandLoading";
 import { Check } from "lucide-react";
 import { authClient } from "@/lib/auth-client";
-import { demoModeEnabled, demoProfile } from "@/lib/demo-mode";
 import { areaInterestOptions, experienceLevelOptions } from "@/lib/profile-options";
 
 export default function Perfil() {
-  if (demoModeEnabled) {
-    return <PerfilEditor user={demoProfile} demoMode />;
-  }
-
-  return <AuthenticatedPerfil />;
-}
-
-function AuthenticatedPerfil() {
   const router = useRouter();
   const { data: session, isPending: sessionPending } = authClient.useSession();
 
@@ -50,13 +41,7 @@ type ProfileUser = {
   privacyConsent?: boolean;
 };
 
-function PerfilEditor({
-  user,
-  demoMode = false,
-}: {
-  user: ProfileUser;
-  demoMode?: boolean;
-}) {
+function PerfilEditor({ user }: { user: ProfileUser }) {
   const router = useRouter();
   const [name, setName] = useState(user.name ?? "");
   const [github, setGithub] = useState(user.githubUrl ?? "");
@@ -67,9 +52,31 @@ function PerfilEditor({
   const [isSaving, setIsSaving] = useState(false);
   const [confirmingDelete, setConfirmingDelete] = useState(false);
   const [isDeleting, setIsDeleting] = useState(false);
-  const [deleteDemoCompleted, setDeleteDemoCompleted] = useState(false);
-  const [hasCurriculum, setHasCurriculum] = useState(demoMode);
-  const [curriculumError, setCurriculumError] = useState(false);
+  const [hasCurriculum, setHasCurriculum] = useState(false);
+  const [curriculumStatus, setCurriculumStatus] = useState<string | null>(null);
+  const [curriculumFile, setCurriculumFile] = useState<File | null>(null);
+  const [isUploadingCurriculum, setIsUploadingCurriculum] = useState(false);
+
+  useEffect(() => {
+    fetch("/api/curriculum/status")
+      .then((response) => (response.ok ? response.json() : null))
+      .then((data: { status?: string } | null) => {
+        if (data?.status) {
+          setHasCurriculum(true);
+          setCurriculumStatus(data.status);
+        }
+      })
+      .catch(() => {});
+  }, []);
+
+  function toBase64(file: File): Promise<string> {
+    return new Promise((resolve, reject) => {
+      const reader = new FileReader();
+      reader.readAsDataURL(file);
+      reader.onload = () => resolve((reader.result as string).split(",")[1]);
+      reader.onerror = (error) => reject(error);
+    });
+  }
 
   const githubTouched = github.length > 0;
   const isValidGithubUrl = /^https?:\/\/(www\.)?github\.com\/[\w-]+\/?$/i.test(github);
@@ -78,19 +85,14 @@ function PerfilEditor({
     e.preventDefault();
     setSaved(false);
     setErrorMessage("");
-    if (demoMode && !hasCurriculum) {
-      setCurriculumError(true);
+
+    if (!areaInterest || !experienceLevel) {
+      setErrorMessage("Selecione sua área de interesse e seu nível de experiência.");
       return;
     }
-    setCurriculumError(false);
 
     if (github && !isValidGithubUrl) {
       setErrorMessage("Corrija o link do GitHub ou deixe o campo vazio.");
-      return;
-    }
-
-    if (demoMode) {
-      setSaved(true);
       return;
     }
 
@@ -107,28 +109,54 @@ function PerfilEditor({
         return;
       }
 
+      const githubResponse = await fetch("/api/curriculum/github-url", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ githubUrl: github || null }),
+      });
+      if (!githubResponse.ok) {
+        const githubData = await githubResponse.json().catch(() => null);
+        setErrorMessage(githubData?.error || "Não foi possível salvar o link do GitHub. Tente novamente.");
+        return;
+      }
+
+      if (curriculumFile) {
+        setIsUploadingCurriculum(true);
+        const pdfBase64 = await toBase64(curriculumFile);
+        const response = await fetch("/api/curriculum/upload", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ pdfBase64 }),
+        });
+        const data = await response.json().catch(() => null);
+        setIsUploadingCurriculum(false);
+        if (!response.ok) {
+          setErrorMessage(data?.error || "Não foi possível enviar o currículo. Tente novamente.");
+          return;
+        }
+        setHasCurriculum(true);
+        setCurriculumStatus(data?.status ?? "COMPLETED");
+        setCurriculumFile(null);
+      }
+
       setSaved(true);
     } catch {
       setErrorMessage("Não foi possível conectar ao serviço. Tente novamente.");
     } finally {
       setIsSaving(false);
+      setIsUploadingCurriculum(false);
     }
   }
 
   async function handleDeleteAccount() {
     setErrorMessage("");
-    if (demoMode) {
-      setConfirmingDelete(false);
-      setDeleteDemoCompleted(true);
-      return;
-    }
-
     setIsDeleting(true);
     try {
-      const { error } = await authClient.deleteUser();
-      if (error) {
+      const response = await fetch("/api/account/delete", { method: "POST" });
+      if (!response.ok) {
+        const data = await response.json().catch(() => null);
         setConfirmingDelete(false);
-        setErrorMessage("Por segurança, entre novamente na conta antes de confirmar a exclusão.");
+        setErrorMessage(data?.error || "Não foi possível excluir a conta agora. Tente novamente.");
         return;
       }
 
@@ -242,32 +270,17 @@ function PerfilEditor({
                 <label className="text-sm font-extrabold text-[#1d1b33]">
                   Currículo em PDF <span className="text-[#e8641d]">*</span>
                 </label>
-                {demoMode ? (
-                  <>
-                    <PdfDropzone
-                      initialFileName="curriculo-exemplo.pdf"
-                      onFileChange={(file) => {
-                        setHasCurriculum(file !== null);
-                        if (file) setCurriculumError(false);
-                      }}
-                    />
-                    <p className="text-xs font-semibold leading-relaxed text-[#8b8593]">
-                      Processamento local: nenhum arquivo é enviado.
-                    </p>
-                    {curriculumError && (
-                      <ul className="mt-0.5 grid gap-1 text-xs font-semibold">
-                        <RequirementItem met={false} label="Adicione um currículo antes de salvar" />
-                      </ul>
-                    )}
-                  </>
-                ) : (
-                  <div className="rounded-xl border-[1.5px] border-dashed border-[#c8c0b0] bg-[#fbf9f4] p-4">
-                    <p className="font-bold text-[#1d1b33]">Integração do currículo pendente</p>
-                    <p className="mt-1 text-xs leading-relaxed text-[#8b8593]">
-                      O envio será liberado quando o armazenamento privado de PDFs for integrado.
-                    </p>
-                  </div>
-                )}
+                <PdfDropzone
+                  initialFileName={hasCurriculum && !curriculumFile ? "Currículo já enviado" : undefined}
+                  onFileChange={setCurriculumFile}
+                />
+                <p className="text-xs font-semibold leading-relaxed text-[#8b8593]">
+                  {curriculumFile
+                    ? "Um novo currículo será enviado ao salvar."
+                    : hasCurriculum
+                      ? `Status atual: ${curriculumStatus === "COMPLETED" ? "processado" : curriculumStatus === "FAILED" ? "falhou, envie novamente" : "em processamento"}.`
+                      : "Nenhum currículo enviado ainda."}
+                </p>
               </div>
             </div>
           </div>
@@ -288,7 +301,7 @@ function PerfilEditor({
                   placeholder="Selecione sua área..."
                   options={[...areaInterestOptions]}
                   value={areaInterest}
-                  onChange={(event) => setAreaInterest(event.target.value)}
+                  onChange={setAreaInterest}
                 />
               </div>
 
@@ -302,7 +315,7 @@ function PerfilEditor({
                   placeholder="Onde você está hoje?"
                   options={[...experienceLevelOptions]}
                   value={experienceLevel}
-                  onChange={(event) => setExperienceLevel(event.target.value)}
+                  onChange={setExperienceLevel}
                 />
               </div>
             </div>
@@ -314,12 +327,12 @@ function PerfilEditor({
               disabled={isSaving}
               className="flex min-h-[44px] items-center justify-center gap-2 rounded-full bg-[#7755e8] px-6 font-extrabold text-white shadow-[0_14px_32px_-16px_rgba(119,85,232,0.75)] transition hover:-translate-y-0.5 hover:bg-[#6647d1] disabled:cursor-wait disabled:opacity-60"
             >
-              {isSaving ? "Salvando..." : "Salvar alterações"}
+              {isUploadingCurriculum ? "Enviando currículo..." : isSaving ? "Salvando..." : "Salvar alterações"}
             </button>
             {saved && (
               <span className="flex items-center gap-1.5 text-sm font-bold text-[#1f9d55]">
                 <Check className="h-4 w-4" strokeWidth={3} />
-                {demoMode ? "Alterações salvas nesta sessão" : "Alterações salvas"}
+                Alterações salvas
               </span>
             )}
           </div>
@@ -334,33 +347,20 @@ function PerfilEditor({
             Excluir sua conta remove permanentemente seu currículo, suas
             análises e todas as suas sessões de treino.
           </p>
-          {demoMode && (
-            <p className="mt-3 text-xs font-semibold leading-relaxed text-[#8b8593]">
-              Neste ambiente, a exclusão não altera dados reais.
-            </p>
-          )}
           <button
             type="button"
-            onClick={() => {
-              setDeleteDemoCompleted(false);
-              setConfirmingDelete(true);
-            }}
+            onClick={() => setConfirmingDelete(true)}
             className="mt-4 rounded-full border-[1.5px] border-[#c23b3b] px-5 py-2.5 text-sm font-extrabold text-[#c23b3b] transition hover:bg-[#fdf2f2]"
           >
-            {demoMode ? "Simular exclusão de conta" : "Excluir minha conta"}
+            Excluir minha conta
           </button>
-          {deleteDemoCompleted && (
-            <p role="status" className="mt-4 rounded-xl bg-[#eef8f1] px-4 py-3 text-sm font-bold text-[#247544]">
-              Simulação concluída: em produção, a conta e os dados relacionados seriam removidos.
-            </p>
-          )}
         </div>
 
         <ConfirmDialog
           open={confirmingDelete}
-          title={demoMode ? "Simular exclusão?" : "Excluir sua conta?"}
-          description={demoMode ? "Este ambiente conclui o fluxo sem remover dados reais." : "Essa ação não pode ser desfeita. Seu currículo, suas análises e todas as suas sessões de treino serão apagados permanentemente."}
-          confirmLabel={demoMode ? "Sim, simular" : "Sim, excluir conta"}
+          title="Excluir sua conta?"
+          description="Essa ação não pode ser desfeita. Seu currículo, suas análises e todas as suas sessões de treino serão apagados permanentemente."
+          confirmLabel="Sim, excluir conta"
           pending={isDeleting}
           onConfirm={handleDeleteAccount}
           onCancel={() => setConfirmingDelete(false)}

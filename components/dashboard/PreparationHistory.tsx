@@ -3,7 +3,7 @@
 import { useEffect, useState } from "react";
 import Link from "next/link";
 import { ArrowRight, BriefcaseBusiness, Plus, Trash2 } from "lucide-react";
-import { MOCK_SESSION_KEY, readSessionList, removeSessionFromList, type MockSession } from "@/lib/mock-session";
+import { MOCK_SESSION_KEY, parseMockSession, readSessionList, removeSessionFromList, type MockSession } from "@/lib/mock-session";
 import { getSessionLimit } from "@/lib/job-training";
 import { getJourneyCompletion } from "@/lib/preparation-journey";
 import { deleteVagaTrainingData } from "@/lib/training/actions";
@@ -22,10 +22,14 @@ export function PreparationHistory() {
 
   async function remove(sessionId: string) {
     removeSessionFromList(sessionId);
-    setSessions((current) => current?.filter((item) => item.id !== sessionId) ?? current);
+    const active = parseMockSession(window.sessionStorage.getItem(MOCK_SESSION_KEY));
+    if (active.id === sessionId) {
+      window.sessionStorage.removeItem(MOCK_SESSION_KEY);
+    }
     try {
       await deleteVagaTrainingData(sessionId);
     } catch {}
+    window.location.reload();
   }
 
   const limit = getSessionLimit();
@@ -34,7 +38,7 @@ export function PreparationHistory() {
   return (
     <section className="mt-6 rounded-3xl border border-[#e7e3ee] bg-white p-5 shadow-[0_18px_55px_-42px_rgba(29,27,51,0.45)] sm:p-6">
       <div className="flex flex-wrap items-end justify-between gap-3">
-        <div><p className="text-[11px] font-extrabold uppercase tracking-[0.18em] text-[#8b8593]">Histórico real desta demonstração</p><h2 className="mt-1 font-[family-name:var(--font-display)] text-2xl font-bold text-[#1d1b33]">Preparações por vaga</h2></div>
+        <div><p className="text-[11px] font-extrabold uppercase tracking-[0.18em] text-[#8b8593]">Histórico salvo neste navegador</p><h2 className="mt-1 font-[family-name:var(--font-display)] text-2xl font-bold text-[#1d1b33]">Preparações por vaga</h2></div>
         <Link href="/dashboard/nova-sessao" className="inline-flex items-center gap-2 text-sm font-extrabold text-[#5d43c4] hover:underline"><Plus className="h-4 w-4" /> Nova preparação</Link>
       </div>
 

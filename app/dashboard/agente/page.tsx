@@ -4,7 +4,6 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import Link from "next/link";
 import {
   ArrowRight,
-  BookOpen,
   Bot,
   CheckCircle2,
   Gauge,
@@ -19,9 +18,8 @@ import {
 import { Sidebar } from "@/components/Sidebar";
 import { Mascot } from "@/components/Mascot";
 import { PreparationJourney } from "@/components/PreparationJourney";
-import { PreparationCycle } from "@/components/interview/PreparationCycle";
 import { MOCK_SESSION_KEY, parseMockSession, persistMockSession, type MockSession } from "@/lib/mock-session";
-import type { PreparationPlan } from "@/lib/preparation-journey";
+import type { InterviewCriteria } from "@/lib/preparation-journey";
 import {
   buildInterviewSummary,
   detectInterviewArea,
@@ -45,8 +43,6 @@ type InterviewTurn = {
   evaluation: InterviewEvaluation;
 };
 
-type SavedPreparationPlan = PreparationPlan;
-
 const difficultyLabels: Record<InterviewDifficulty, string> = {
   iniciante: "Iniciante",
   intermediaria: "Intermediária",
@@ -57,6 +53,13 @@ const trackLabels: Record<InterviewTrack, string> = {
   tecnica: "Técnica",
   comportamental: "Comportamental",
   mista: "Entrevista mista",
+};
+
+const criteriaLabels: Record<keyof InterviewCriteria, string> = {
+  content: "Conteúdo",
+  clarity: "Clareza",
+  evidence: "Evidências",
+  structure: "Estrutura",
 };
 
 const sessionSizeOptions = [
@@ -79,7 +82,6 @@ export default function AgenteEntrevista() {
   const [replayIds, setReplayIds] = useState<string[] | null>(null);
   const [focusKeywords, setFocusKeywords] = useState<string[]>([]);
   const [previousScore, setPreviousScore] = useState<number | null>(null);
-  const [savedPlan, setSavedPlan] = useState<SavedPreparationPlan | null>(null);
   const [configurationError, setConfigurationError] = useState("");
   const [activeSession, setActiveSession] = useState<MockSession | null>(null);
   const dbSessionRef = useRef<Promise<string | null> | null>(null);
@@ -101,44 +103,28 @@ export default function AgenteEntrevista() {
   const summary = useMemo(() => buildInterviewSummary(turns), [turns]);
 
   useEffect(() => {
-    const loadSavedPlan = window.setTimeout(() => {
+    const loadSession = window.setTimeout(() => {
       try {
         const preparation = parseMockSession(window.sessionStorage.getItem(MOCK_SESSION_KEY));
         setActiveSession(preparation);
         setJobDescription((current) => current || preparation.description);
         setAreaChoice("auto");
-        if (preparation.progress.plan) {
-          setSavedPlan(preparation.progress.plan);
-        }
       } catch {}
     }, 0);
-    return () => window.clearTimeout(loadSavedPlan);
+    return () => window.clearTimeout(loadSession);
   }, []);
 
-  function persistJourney(plan: PreparationPlan, interview?: MockSession["progress"]["interview"]) {
+  function persistJourney(interview: NonNullable<MockSession["progress"]["interviewHistory"]>[number]) {
     const current = parseMockSession(window.sessionStorage.getItem(MOCK_SESSION_KEY));
     const updated: MockSession = {
       ...current,
       progress: {
         ...current.progress,
-        plan,
-        interview: interview ?? current.progress.interview,
+        interviewHistory: [...(current.progress.interviewHistory ?? []), interview],
       },
     };
     setActiveSession(updated);
     persistMockSession(updated);
-  }
-
-  function togglePreparationTask(taskId: string) {
-    setSavedPlan((current) => {
-      if (!current) return current;
-      const updated = {
-        ...current,
-        tasks: current.tasks.map((task) => task.id === taskId ? { ...task, completed: !task.completed } : task),
-      };
-      persistJourney(updated);
-      return updated;
-    });
   }
 
   function submitAnswer(event: React.SubmitEvent<HTMLFormElement>) {
@@ -176,25 +162,13 @@ export default function AgenteEntrevista() {
     if (nextTurns.length >= questionLimit) {
       const finalSummary = buildInterviewSummary(nextTurns);
       const finalScore = Math.round(nextTurns.reduce((total, turn) => total + turn.evaluation.score, 0) / nextTurns.length);
-      const planId = nextTurns.map((turn) => `${turn.question.id}:${turn.evaluation.score}`).join("|");
-      const plan: PreparationPlan = {
-        id: planId,
-        priority: finalSummary.priority.name,
-        sourceScore: finalScore,
-        createdAt: new Date().toISOString(),
-        tasks: finalSummary.plan.map((item, index) => ({
-          id: `${planId}:${index}`,
-          period: item.period,
-          action: item.action,
-          completed: false,
-        })),
-      };
-      setSavedPlan(plan);
-      persistJourney(plan, {
+      persistJourney({
         score: finalScore,
         strongest: finalSummary.strongest.name,
         priority: finalSummary.priority.name,
         completedAt: new Date().toISOString(),
+        track,
+        criteria: finalSummary.criteria,
       });
     }
     setDifficulty(currentEvaluation.nextDifficulty);
@@ -266,12 +240,6 @@ export default function AgenteEntrevista() {
             </span>
           </header>
           <PreparationJourney current="entrevista" sessionName={activeSession ? `${activeSession.name} · ${activeSession.company}` : undefined} />
-
-          {!started && savedPlan && (
-            <div className="mt-7">
-              <PreparationCycle plan={savedPlan} onToggleTask={togglePreparationTask} />
-            </div>
-          )}
 
           {!started ? (
             <section className="mt-7 grid overflow-hidden rounded-3xl border border-[#e7e3ee] bg-white shadow-[0_24px_70px_-48px_rgba(29,27,51,0.55)] lg:grid-cols-[1fr_320px]">
@@ -368,19 +336,49 @@ export default function AgenteEntrevista() {
                 ))}
               </div>
               <div className="mx-auto mt-6 max-w-3xl">
-                {savedPlan ? (
-                  <PreparationCycle plan={savedPlan} onToggleTask={togglePreparationTask} />
-                ) : (
-                  <div className="rounded-2xl border border-[#e7e3ee] p-5 text-left">
-                    <p className="flex items-center gap-2 font-extrabold text-[#1d1b33]"><BookOpen className="h-4 w-4 text-[#7755e8]" /> Preparando seu ciclo de 7 dias...</p>
-                  </div>
-                )}
+                {(() => {
+                  const sameTrackHistory = (activeSession?.progress.interviewHistory ?? []).filter((item) => item.track === track);
+                  if (sameTrackHistory.length < 2) {
+                    return (
+                      <div className="rounded-2xl border border-dashed border-[#d9d3e3] bg-[#faf9fc] p-5 text-left text-sm font-semibold text-[#6d698a]">
+                        Refaça essa mesma modalidade de entrevista pra ver a comparação entre a primeira e a última tentativa.
+                      </div>
+                    );
+                  }
+                  const first = sameTrackHistory[0];
+                  const latest = sameTrackHistory.at(-1)!;
+                  return (
+                    <div className="rounded-2xl border border-[#e7e3ee] p-5 text-left">
+                      <p className="flex items-center gap-2 font-extrabold text-[#1d1b33]"><TrendingUp className="h-4 w-4 text-[#7755e8]" /> Antes e depois</p>
+                      <p className="mt-1 text-xs text-[#6d698a]">Primeira tentativa: {first.score}/100 · Última tentativa: {latest.score}/100</p>
+                      <div className="mt-4 grid gap-3 sm:grid-cols-2">
+                        {(Object.keys(criteriaLabels) as (keyof InterviewCriteria)[]).map((key) => {
+                          const delta = latest.criteria[key] - first.criteria[key];
+                          return (
+                            <div key={key} className="rounded-xl border border-[#ece9f1] p-3">
+                              <p className="text-xs font-bold text-[#8b8593]">{criteriaLabels[key]}</p>
+                              <p className="mt-1 text-sm font-extrabold text-[#1d1b33]">
+                                {first.criteria[key]} → {latest.criteria[key]}{" "}
+                                <span className={delta >= 0 ? "text-[#1f9d73]" : "text-[#c23b3b]"}>({delta >= 0 ? "+" : ""}{delta})</span>
+                              </p>
+                            </div>
+                          );
+                        })}
+                      </div>
+                    </div>
+                  );
+                })()}
               </div>
-              <div className="mt-7 flex flex-col justify-center gap-3 sm:flex-row">
-                <button type="button" onClick={trainPriorityCompetencies} className="inline-flex min-h-11 items-center justify-center gap-2 rounded-full bg-gradient-to-r from-[#7755e8] to-[#e8641d] px-6 font-extrabold text-white"><Target className="h-4 w-4" /> Treinar pontos prioritários</button>
-                <button type="button" onClick={replayInterview} className="inline-flex min-h-11 items-center justify-center gap-2 rounded-full border border-[#dcd7e6] px-5 font-extrabold text-[#1d1b33]"><RotateCcw className="h-4 w-4" /> Refazer mesmas perguntas</button>
-                <button type="button" onClick={() => setStarted(false)} className="inline-flex min-h-11 items-center justify-center rounded-full px-5 font-extrabold text-[#5d43c4]">Nova configuração</button>
-                <Link href="/dashboard" className="inline-flex min-h-11 items-center justify-center rounded-full px-5 font-extrabold text-[#5d43c4]">Voltar ao dashboard</Link>
+              <div className="mt-7 flex flex-col items-center gap-4">
+                <div className="flex flex-col justify-center gap-3 sm:flex-row">
+                  <button type="button" onClick={trainPriorityCompetencies} className="inline-flex min-h-11 items-center justify-center gap-2 rounded-full bg-gradient-to-r from-[#7755e8] to-[#e8641d] px-6 font-extrabold text-white"><Target className="h-4 w-4" /> Treinar pontos prioritários</button>
+                  <button type="button" onClick={replayInterview} className="inline-flex min-h-11 items-center justify-center gap-2 rounded-full border border-[#dcd7e6] px-5 font-extrabold text-[#1d1b33]"><RotateCcw className="h-4 w-4" /> Refazer mesmas perguntas</button>
+                </div>
+                <div className="flex flex-wrap items-center justify-center gap-x-6 gap-y-2">
+                  <button type="button" onClick={() => setStarted(false)} className="text-sm font-extrabold text-[#5d43c4] underline decoration-[#e8641d] decoration-2 underline-offset-4">Nova configuração</button>
+                  <Link href="/dashboard/relatorio" className="text-sm font-extrabold text-[#5d43c4] underline decoration-[#e8641d] decoration-2 underline-offset-4">Ver relatório final</Link>
+                  <Link href="/dashboard" className="text-sm font-extrabold text-[#5d43c4] underline decoration-[#e8641d] decoration-2 underline-offset-4">Voltar ao dashboard</Link>
+                </div>
               </div>
             </section>
           ) : question ? (

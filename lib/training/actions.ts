@@ -35,8 +35,8 @@ export async function recordQuizAnswer(params: {
   explanation: string;
   selectedIndex: number;
 }): Promise<{ wasCorrect: boolean }> {
-  const { key, label } = resolveCompetency(params.topic);
   const wasCorrect = params.selectedIndex === params.correctIndex;
+  const { key, label } = resolveCompetency(params.topic);
   const userId = await getCurrentUserId();
 
   const question = await withDbRetry(() =>

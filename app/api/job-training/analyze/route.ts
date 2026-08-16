@@ -1,6 +1,5 @@
-import { analyzeJobLocally, demoCandidateProfile } from "@/lib/job-training";
+import { analyzeJobLocally } from "@/lib/job-training";
 import { analyzeJobWithGroq, groqIsConfigured } from "@/lib/groq-job-training";
-import { demoModeEnabled } from "@/lib/demo-mode";
 import { buildCandidateProfileSnapshot } from "@/lib/candidate-profile";
 import { auth } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
@@ -9,11 +8,10 @@ import { headers } from "next/headers";
 export const runtime = "nodejs";
 export const maxDuration = 60;
 
-const MAX_IMAGE_BYTES = 5 * 1024 * 1024;
+const MAX_IMAGE_BYTES = 4 * 1024 * 1024;
 const acceptedImageTypes = new Set(["image/png", "image/jpeg"]);
 
 async function getCandidateProfile() {
-  if (demoModeEnabled) return demoCandidateProfile;
   try {
     const session = await auth.api.getSession({ headers: await headers() });
     if (!session) return undefined;
@@ -47,7 +45,7 @@ export async function POST(request: Request) {
     return Response.json({ error: "Informe a descrição ou uma imagem da vaga." }, { status: 400 });
   }
   if (image instanceof File && image.size > 0 && (!acceptedImageTypes.has(image.type) || image.size > MAX_IMAGE_BYTES)) {
-    return Response.json({ error: "A imagem deve ser PNG ou JPG e ter no máximo 5 MB." }, { status: 400 });
+    return Response.json({ error: "A imagem deve ser PNG ou JPG e ter no máximo 4 MB." }, { status: 400 });
   }
 
   let imageDataUrl: string | undefined;
@@ -79,6 +77,6 @@ export async function POST(request: Request) {
     aiAvailable: false,
     notice: groqIsConfigured()
       ? "O serviço inteligente ficou indisponível; ativamos a análise local sem interromper sua sessão."
-      : "Modo demonstração: diagnóstico gerado com dados locais.",
+      : "Análise local: chave de IA não configurada, diagnóstico gerado com dados locais.",
   });
 }

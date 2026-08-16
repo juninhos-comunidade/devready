@@ -35,7 +35,6 @@ export function buildCandidateProfileSnapshot({
 
   return {
     label: "Perfil técnico processado",
-    isDemo: false,
     skillScores: {},
     skillEvidence,
   };

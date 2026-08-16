@@ -343,12 +343,6 @@ export function buildInterviewSummary(
       evidence: averageCriterion("evidence"),
       structure: averageCriterion("structure"),
     },
-    plan: [
-      { period: "Dias 1–2", action: `Revisar ${priority.name} e registrar três conceitos essenciais.` },
-      { period: "Dias 3–4", action: `Responder três perguntas de ${priority.name} usando exemplos concretos.` },
-      { period: "Dias 5–6", action: "Praticar respostas em voz alta com contexto, decisão e impacto." },
-      { period: "Dia 7", action: "Refazer a entrevista focando as competências prioritárias." },
-    ],
   };
 }
 

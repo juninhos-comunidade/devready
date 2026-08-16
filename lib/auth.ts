@@ -2,17 +2,11 @@ import { betterAuth } from "better-auth";
 import { APIError } from "better-auth/api";
 import { prismaAdapter } from "better-auth/adapters/prisma";
 import { prisma } from "./prisma";
-import { sendTransactionalEmail } from "./email";
 import { hashPassword } from "better-auth/crypto";
-import { demoModeEnabled } from "./demo-mode";
 
 const vercelUrl = process.env.VERCEL_URL ? `https://${process.env.VERCEL_URL}` : undefined;
-const baseURL = process.env.BETTER_AUTH_URL ?? vercelUrl ?? (demoModeEnabled ? "http://localhost:3000" : undefined);
-const secret = process.env.BETTER_AUTH_SECRET ?? (demoModeEnabled ? "devready-demo-only-secret-never-used-for-real-auth" : undefined);
-
-function reportEmailError(error: unknown) {
-  console.error("Não foi possível enviar o e-mail do Better Auth.", error);
-}
+const baseURL = process.env.BETTER_AUTH_URL ?? vercelUrl;
+const secret = process.env.BETTER_AUTH_SECRET;
 
 export const auth = betterAuth({
   baseURL,
@@ -22,7 +16,6 @@ export const auth = betterAuth({
   }),
   emailAndPassword: {
     enabled: true,
-    requireEmailVerification: true,
     minPasswordLength: 8,
     password: {
       hash: async (password) => {
@@ -35,23 +28,6 @@ export const auth = betterAuth({
         }
         return hashPassword(password);
       },
-    },
-    sendResetPassword: async ({ user, url }) => {
-      void sendTransactionalEmail({
-        to: user.email,
-        subject: "Redefina sua senha no DevReady",
-        text: `Olá, ${user.name}. Use este link para criar uma nova senha: ${url}`,
-      }).catch(reportEmailError);
-    },
-  },
-  emailVerification: {
-    sendOnSignUp: true,
-    sendVerificationEmail: async ({ user, url }) => {
-      void sendTransactionalEmail({
-        to: user.email,
-        subject: "Confirme seu e-mail no DevReady",
-        text: `Olá, ${user.name}. Confirme seu e-mail para liberar o DevReady: ${url}`,
-      }).catch(reportEmailError);
     },
   },
   user: {

@@ -3,24 +3,32 @@
 import { useEffect, useState } from "react";
 import Link from "next/link";
 import { ArrowRight, BriefcaseBusiness, Target } from "lucide-react";
-import { MOCK_SESSION_KEY, parseMockSession, type MockSession } from "@/lib/mock-session";
+import { MOCK_SESSION_KEY, parseMockSession, readSessionList, type MockSession } from "@/lib/mock-session";
 import { getJourneyCompletion, getNextJourneyAction } from "@/lib/preparation-journey";
 import { getTrilhaCompletionSignal } from "@/lib/training/actions";
 
 export function ActivePreparationCard() {
   const [session, setSession] = useState<MockSession | null>(null);
+  const [loaded, setLoaded] = useState(false);
   const [trilhaComplete, setTrilhaComplete] = useState<boolean | undefined>(undefined);
 
   useEffect(() => {
     const timer = window.setTimeout(() => {
       const current = parseMockSession(window.sessionStorage.getItem(MOCK_SESSION_KEY));
-      setSession(current);
-      getTrilhaCompletionSignal(current.id).then(setTrilhaComplete).catch(() => setTrilhaComplete(false));
+      const persisted = readSessionList();
+      const active = persisted.some((item) => item.id === current.id) ? current : null;
+      setSession(active);
+      setLoaded(true);
+      if (active) {
+        getTrilhaCompletionSignal(active.id).then(setTrilhaComplete).catch(() => setTrilhaComplete(false));
+      }
     }, 0);
     return () => window.clearTimeout(timer);
   }, []);
 
-  if (!session) return <div className="mt-7 h-44 animate-pulse rounded-[28px] bg-[#e9e6ef]" aria-hidden="true" />;
+  if (!loaded) return <div className="mt-7 h-44 animate-pulse rounded-[28px] bg-[#e9e6ef]" aria-hidden="true" />;
+
+  if (!session) return null;
 
   const nextAction = getNextJourneyAction(session.progress);
   const completion = getJourneyCompletion(session.progress, trilhaComplete);

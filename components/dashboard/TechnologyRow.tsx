@@ -5,7 +5,7 @@ import Link from "next/link";
 import { CircleDotDashed } from "lucide-react";
 import { MOCK_SESSION_KEY, parseMockSession, type MockSession } from "@/lib/mock-session";
 import { SESSION_LIST_KEY } from "@/lib/job-training";
-import type { TechnologyScore } from "@/lib/dashboard-data";
+import type { TechnologyScore } from "@/lib/training/dashboard-stats";
 
 function findSession(jobSessionId: string): MockSession | null {
   try {
