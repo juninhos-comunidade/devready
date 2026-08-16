@@ -106,6 +106,7 @@ export default function AgenteEntrevista() {
     const loadSession = window.setTimeout(() => {
       try {
         const preparation = parseMockSession(window.sessionStorage.getItem(MOCK_SESSION_KEY));
+        if (!preparation) return;
         setActiveSession(preparation);
         setJobDescription((current) => current || preparation.description);
         setAreaChoice("auto");
@@ -116,6 +117,7 @@ export default function AgenteEntrevista() {
 
   function persistJourney(interview: NonNullable<MockSession["progress"]["interviewHistory"]>[number]) {
     const current = parseMockSession(window.sessionStorage.getItem(MOCK_SESSION_KEY));
+    if (!current) return;
     const updated: MockSession = {
       ...current,
       progress: {

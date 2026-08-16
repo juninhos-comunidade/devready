@@ -2,6 +2,7 @@
 
 import { useEffect, useMemo, useRef, useState } from "react";
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 import {
   ArrowLeft,
   CheckCircle2,
@@ -57,6 +58,7 @@ function readAttempts() {
 }
 
 export default function TreinoVaga() {
+  const router = useRouter();
   const [session, setSession] = useState<MockSession | null>(null);
   const [content, setContent] = useState<TrainingContent | null>(null);
   const [mode, setMode] = useState<Mode>("quiz");
@@ -70,6 +72,11 @@ export default function TreinoVaga() {
     let cancelled = false;
     const loadTimer = window.setTimeout(() => {
       const current = readSession();
+      if (!current) {
+        setLoading(false);
+        router.replace("/dashboard/nova-sessao");
+        return;
+      }
       setSession(current);
       setAttempts(readAttempts());
       dbSessionRef.current = startTrainingSession({
@@ -112,7 +119,7 @@ export default function TreinoVaga() {
       cancelled = true;
       window.clearTimeout(loadTimer);
     };
-  }, []);
+  }, [router]);
 
   async function recordQuizQuestion(question: QuizQuestion, selectedIndex: number) {
     const dbSessionId = await dbSessionRef.current;

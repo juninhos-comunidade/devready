@@ -16,7 +16,7 @@ export function ActivePreparationCard() {
     const timer = window.setTimeout(() => {
       const current = parseMockSession(window.sessionStorage.getItem(MOCK_SESSION_KEY));
       const persisted = readSessionList();
-      const active = persisted.some((item) => item.id === current.id) ? current : null;
+      const active = current && persisted.some((item) => item.id === current.id) ? current : null;
       setSession(active);
       setLoaded(true);
       if (active) {

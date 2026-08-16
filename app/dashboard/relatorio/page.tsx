@@ -2,6 +2,7 @@
 
 import { useEffect, useMemo, useState } from "react";
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 import { ArrowLeft, Printer, TrendingUp } from "lucide-react";
 import { Sidebar } from "@/components/Sidebar";
 import { EvidenceMatrix } from "@/components/EvidenceMatrix";
@@ -12,14 +13,20 @@ import { materialsFor } from "@/lib/study-materials";
 const criteriaLabels = { content: "Conteúdo", clarity: "Clareza", evidence: "Evidências", structure: "Estrutura" } as const;
 
 export default function RelatorioFinal() {
+  const router = useRouter();
   const [session, setSession] = useState<MockSession | null>(null);
 
   useEffect(() => {
     const timer = window.setTimeout(() => {
-      setSession(parseMockSession(window.sessionStorage.getItem(MOCK_SESSION_KEY)));
+      const current = parseMockSession(window.sessionStorage.getItem(MOCK_SESSION_KEY));
+      if (!current) {
+        router.replace("/dashboard/nova-sessao");
+        return;
+      }
+      setSession(current);
     }, 0);
     return () => window.clearTimeout(timer);
-  }, []);
+  }, [router]);
 
   const evidenceMatrix = useMemo(() => {
     if (!session) return [];

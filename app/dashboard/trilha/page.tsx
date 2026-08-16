@@ -2,6 +2,7 @@
 
 import { useEffect, useMemo, useState } from "react";
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 import { BookOpen, ExternalLink, PlayCircle, RotateCcw } from "lucide-react";
 import { Sidebar } from "@/components/Sidebar";
 import { PreparationJourney } from "@/components/PreparationJourney";
@@ -11,15 +12,20 @@ import { materialsFor } from "@/lib/study-materials";
 import { TrilhaContent } from "./TrilhaContent";
 
 export default function TrilhaDeEstudo() {
+  const router = useRouter();
   const [session, setSession] = useState<MockSession | null>(null);
 
   useEffect(() => {
     const timer = window.setTimeout(() => {
       const current = parseMockSession(window.sessionStorage.getItem(MOCK_SESSION_KEY));
+      if (!current) {
+        router.replace("/dashboard/nova-sessao");
+        return;
+      }
       setSession(current);
     }, 0);
     return () => window.clearTimeout(timer);
-  }, []);
+  }, [router]);
 
   const competencies = useMemo(() => {
     if (!session) return [];
