@@ -9,6 +9,7 @@ const nextConfig: NextConfig = {
     "/api/curriculum/*": [
       "./node_modules/@napi-rs/canvas/**/*",
       "./node_modules/@napi-rs/canvas-linux-x64-gnu/**/*",
+      "./node_modules/pdfjs-dist/**/*",
     ],
   },
 };
