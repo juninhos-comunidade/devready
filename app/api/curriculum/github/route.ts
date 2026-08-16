@@ -9,13 +9,6 @@ export const runtime = "nodejs";
 export const maxDuration = 60;
 
 export async function POST() {
-  if (!process.env.GITHUB_TOKEN?.trim()) {
-    return NextResponse.json(
-      { error: "A análise do GitHub ainda não foi configurada neste ambiente." },
-      { status: 503 },
-    );
-  }
-
   const session = await auth.api.getSession({ headers: await headers() });
 
   if (!session) {

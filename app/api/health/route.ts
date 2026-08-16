@@ -20,9 +20,9 @@ export async function GET() {
   const services = {
     database: databaseConnected ? "connected" : databaseConfigured ? "unavailable" : "missing",
     groq: process.env.GROQ_API_KEY?.trim() ? "configured" : "missing",
-    github: process.env.GITHUB_TOKEN?.trim() ? "configured" : "missing",
+    github: process.env.GITHUB_TOKEN?.trim() ? "configured" : "public",
   } as const;
-  const ready = databaseConnected && services.groq === "configured" && services.github === "configured";
+  const ready = databaseConnected && services.groq === "configured";
 
   return Response.json({
     status: ready ? "ok" : "degraded",
