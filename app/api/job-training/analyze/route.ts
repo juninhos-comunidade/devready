@@ -3,6 +3,7 @@ import { buildCandidateProfileSnapshot } from "@/lib/candidate-profile";
 import { auth } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 import { headers } from "next/headers";
+import { demoCandidateProfile, isDemoAccountEmail } from "@/lib/demo-mode";
 
 export const runtime = "nodejs";
 export const maxDuration = 60;
@@ -14,6 +15,7 @@ async function getCandidateProfile() {
   try {
     const session = await auth.api.getSession({ headers: await headers() });
     if (!session) return undefined;
+    if (isDemoAccountEmail(session.user.email)) return demoCandidateProfile;
     const curriculum = await prisma.curriculum.findUnique({
       where: { userId: session.user.id },
       include: { githubProfile: { include: { repos: true } } },

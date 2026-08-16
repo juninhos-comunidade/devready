@@ -12,7 +12,7 @@ import { BrandLoading } from "@/components/BrandLoading";
 import { Check } from "lucide-react";
 import { authClient } from "@/lib/auth-client";
 import { areaInterestOptions, experienceLevelOptions } from "@/lib/profile-options";
-import { demoModeEnabled, demoProfile } from "@/lib/demo-mode";
+import { demoModeEnabled, demoProfile, isDemoAccountEmail } from "@/lib/demo-mode";
 
 export default function Perfil() {
   if (demoModeEnabled) return <PerfilEditor user={demoProfile} demoMode />;
@@ -32,6 +32,10 @@ function AuthenticatedPerfil() {
 
   if (sessionPending || !session) {
     return <BrandLoading label="Carregando seu perfil..." />;
+  }
+
+  if (isDemoAccountEmail(session.user.email)) {
+    return <PerfilEditor key={session.user.id} user={demoProfile} demoMode />;
   }
 
   return <PerfilEditor key={session.user.id} user={session.user} />;
