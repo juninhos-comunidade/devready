@@ -54,6 +54,7 @@ export async function recordQuizAnswer(params: {
         options: params.options,
         correctIndex: params.correctIndex,
         explanation: params.explanation,
+        source: "generated",
       },
     }),
   );
@@ -96,6 +97,7 @@ export async function recordOpenAnswer(params: {
         difficulty: params.difficulty,
         prompt: params.prompt,
         explanation: "",
+        source: "generated",
       },
     }),
   );

@@ -63,8 +63,16 @@ export async function POST(request: Request) {
       const analysis = await analyzeJobWithGroq({ description, company, imageDataUrl, profile: candidateProfile });
       return Response.json({ analysis, extractedDescription: description || analysis.summary, aiAvailable: true });
     } catch (error) {
-      console.error("Falha na análise Groq; usando contingência local.", error);
+      console.error("Falha na análise Groq.", error);
     }
+  }
+
+  if (!demoModeEnabled) {
+    return Response.json({
+      error: groqIsConfigured()
+        ? "O serviço de análise está temporariamente indisponível. Tente novamente em instantes."
+        : "O serviço de análise ainda não foi configurado neste ambiente.",
+    }, { status: 503 });
   }
 
   if (!description) {
@@ -77,8 +85,6 @@ export async function POST(request: Request) {
     analysis: analyzeJobLocally(description, company, candidateProfile),
     extractedDescription: description,
     aiAvailable: false,
-    notice: groqIsConfigured()
-      ? "O serviço inteligente ficou indisponível; ativamos a análise local sem interromper sua sessão."
-      : "Análise local: chave de IA não configurada, diagnóstico gerado com dados locais.",
+    notice: "Diagnóstico demonstrativo gerado localmente.",
   });
 }

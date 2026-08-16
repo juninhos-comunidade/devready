@@ -171,10 +171,10 @@ Essas credenciais pertencem exclusivamente ao modo demonstrativo e não concedem
 | `DATABASE_URL` | Conexão PostgreSQL utilizada pelo Prisma |
 | `BETTER_AUTH_URL` | URL pública da aplicação |
 | `BETTER_AUTH_SECRET` | Segredo da autenticação; deve ser longo e privado |
-| `GROQ_API_KEY` | Geração e avaliação por IA; o treino usa contingência local quando ausente |
+| `GROQ_API_KEY` | Obrigatória em produção para gerar e avaliar os treinos personalizados |
 | `GROQ_MODEL` | Modelo de texto utilizado pela integração Groq |
 | `GROQ_VISION_MODEL` | Modelo usado para interpretar imagens de vagas |
-| `GITHUB_TOKEN` | Consulta do perfil público do GitHub no modo autenticado |
+| `GITHUB_TOKEN` | Opcional; aumenta o limite de consultas e habilita o histórico de contribuições |
 | `NEXT_PUBLIC_SESSION_LIMIT` | Limite demonstrativo de sessões simultâneas, entre 3 e 5 |
 
 Nunca publique o arquivo `.env` nem utilize os valores ilustrativos de `.env.example` em produção.

@@ -9,6 +9,7 @@ import {
   generateTrainingWithGroq,
   groqIsConfigured,
 } from "@/lib/groq-job-training";
+import { demoModeEnabled } from "@/lib/demo-mode";
 
 export const runtime = "nodejs";
 export const maxDuration = 60;
@@ -46,15 +47,20 @@ export async function POST(request: Request) {
       try {
         return Response.json({ content: await generateTrainingWithGroq(body.analysis, body.description), aiAvailable: true });
       } catch (error) {
-        console.error("Falha ao gerar treino com Groq; usando contingência local.", error);
+        console.error("Falha ao gerar treino com Groq.", error);
       }
+    }
+    if (!demoModeEnabled) {
+      return Response.json({
+        error: groqIsConfigured()
+          ? "O serviço de geração está temporariamente indisponível. Tente novamente em instantes."
+          : "O serviço de geração ainda não foi configurado neste ambiente.",
+      }, { status: 503 });
     }
     return Response.json({
       content: buildLocalTraining(body.analysis),
       aiAvailable: false,
-      notice: groqIsConfigured()
-        ? "O serviço inteligente ficou indisponível; ativamos a contingência local sem interromper seu treino."
-        : "Análise local: chave de IA não configurada, treino preparado com o banco local.",
+      notice: "Conteúdo demonstrativo gerado localmente.",
     });
   }
 
@@ -76,15 +82,20 @@ export async function POST(request: Request) {
           aiAvailable: true,
         });
       } catch (error) {
-        console.error("Falha ao avaliar com Groq; usando contingência local.", error);
+        console.error("Falha ao avaliar com Groq.", error);
       }
+    }
+    if (!demoModeEnabled) {
+      return Response.json({
+        error: groqIsConfigured()
+          ? "O serviço de avaliação está temporariamente indisponível. Tente novamente em instantes."
+          : "O serviço de avaliação ainda não foi configurado neste ambiente.",
+      }, { status: 503 });
     }
     return Response.json({
       evaluation: evaluateAnswerLocally(body.mode, answer, body.difficulty),
       aiAvailable: false,
-      notice: groqIsConfigured()
-        ? "O serviço inteligente ficou indisponível; ativamos a avaliação local."
-        : "Análise local: chave de IA não configurada, feedback gerado localmente.",
+      notice: "Avaliação demonstrativa gerada localmente.",
     });
   }
 

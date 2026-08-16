@@ -94,7 +94,9 @@ export async function analyzeGithubProfile(githubUrl: string): Promise<GithubAna
     }
   }
 
-  const contributionData = await fetchContributionCalendar(username);
+  const contributionData = process.env.GITHUB_TOKEN?.trim()
+    ? await fetchContributionCalendar(username)
+    : null;
 
   const repos: GithubRepoData[] = repoList.map((repo, index) => ({
     name: repo.name,

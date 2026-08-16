@@ -145,7 +145,7 @@ model TrainingQuestion {
   options         Json?
   correctIndex    Int?
   explanation     String
-  source          String   @default("mock")
+  source          String   @default("generated")
   createdAt       DateTime @default(now())
 
   answers TrainingAnswer[]
