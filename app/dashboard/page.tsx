@@ -23,7 +23,7 @@ import { SessionsCard } from "@/components/dashboard/SessionsCard";
 import { TechnologyRow } from "@/components/dashboard/TechnologyRow";
 import { getDashboardTrainingStats } from "@/lib/training/dashboard-stats";
 import { dashboardData } from "@/lib/dashboard-data";
-import { demoModeEnabled } from "@/lib/demo-mode";
+import { demoModeEnabled, isDemoAccountEmail } from "@/lib/demo-mode";
 import type { Prisma } from "@/app/generated/prisma/client";
 
 type CurriculumWithGithub = Prisma.CurriculumGetPayload<{
@@ -33,10 +33,12 @@ type CurriculumWithGithub = Prisma.CurriculumGetPayload<{
 export default async function Dashboard() {
   let curriculum: CurriculumWithGithub | null = null;
   let trainingStats: Awaited<ReturnType<typeof getDashboardTrainingStats>> | null = null;
+  let demoAccount = false;
 
   if (!demoModeEnabled) {
     const session = await auth.api.getSession({ headers: await headers() });
     if (!session) redirect("/login");
+    demoAccount = isDemoAccountEmail(session.user.email);
     curriculum = await prisma.curriculum.findUnique({
       where: { userId: session.user.id },
       include: { githubProfile: { include: { repos: true } } },
@@ -44,10 +46,11 @@ export default async function Dashboard() {
     trainingStats = await getDashboardTrainingStats(session.user.id);
   }
 
+  const showDemoData = demoModeEnabled || demoAccount;
   const hasRealStats = Boolean(trainingStats?.technologies.length);
-  const emptyState = !demoModeEnabled && !hasRealStats;
-  const technologies = demoModeEnabled ? dashboardData.technologies : (trainingStats?.technologies ?? []);
-  const history = demoModeEnabled ? dashboardData.history : (trainingStats?.history ?? []);
+  const emptyState = !showDemoData && !hasRealStats;
+  const technologies = showDemoData ? dashboardData.technologies : (trainingStats?.technologies ?? []);
+  const history = showDemoData ? dashboardData.history : (trainingStats?.history ?? []);
 
   const scoredTechnologies = technologies.filter((technology) => technology.score !== null);
   const calculatedReadiness = scoredTechnologies.length
@@ -58,8 +61,8 @@ export default async function Dashboard() {
     ? Math.round(technologiesWithTrend.reduce((total, technology) => total + technology.previousScore!, 0) / technologiesWithTrend.length)
     : null;
 
-  const readiness = demoModeEnabled ? dashboardData.readiness : calculatedReadiness;
-  const previousReadiness = demoModeEnabled ? dashboardData.previousReadiness : calculatedPreviousReadiness;
+  const readiness = showDemoData ? dashboardData.readiness : calculatedReadiness;
+  const previousReadiness = showDemoData ? dashboardData.previousReadiness : calculatedPreviousReadiness;
   const readinessDelta = readiness === null || previousReadiness === null ? null : readiness - previousReadiness;
   const testedTechnologies = technologies.filter(
     (technology) => technology.score !== null,
@@ -87,7 +90,7 @@ export default async function Dashboard() {
               </p>
               {!emptyState && (
                 <span className="mt-3 inline-flex rounded-full bg-[#ece8f8] px-3 py-1 text-[10px] font-extrabold uppercase tracking-wide text-[#654bc9]">
-                  {demoModeEnabled ? "Dados fictícios de demonstração" : "Notas por tecnologia reais"}
+                  {showDemoData ? "Dados fictícios de demonstração" : "Notas por tecnologia reais"}
                 </span>
               )}
             </div>
@@ -135,13 +138,13 @@ export default async function Dashboard() {
                 <div className="max-w-2xl">
                   <span className="inline-flex items-center gap-2 rounded-full border border-white/15 bg-white/10 px-3 py-1.5 text-xs font-extrabold text-[#dcd8ff]">
                     <Sparkles className="h-3.5 w-3.5" />
-                    {demoModeEnabled ? "Exemplo de evolução" : "Sua evolução"}
+                    {showDemoData ? "Exemplo de evolução" : "Sua evolução"}
                   </span>
                   <h2 className="mt-4 font-[family-name:var(--font-display)] text-2xl font-bold sm:text-3xl">
                     Visualize como a prática muda sua prontidão.
                   </h2>
                   <p className="mt-2 max-w-xl text-sm leading-relaxed text-[#c2bfd7] sm:text-base">
-                    {demoModeEnabled
+                    {showDemoData
                       ? "Os indicadores são fictícios e mostram como sua evolução será apresentada após os treinos."
                       : "As notas por tecnologia abaixo vêm das suas tentativas de treino reais."}
                   </p>
@@ -173,7 +176,7 @@ export default async function Dashboard() {
                     ) : (
                       <p className="mt-1 text-sm font-extrabold text-[#c2bfd7]">primeira medição</p>
                     )}
-                    <p className="mt-1 text-xs text-[#6d698a]">{demoModeEnabled ? "exemplo demonstrativo" : "média das suas notas reais"}</p>
+                    <p className="mt-1 text-xs text-[#6d698a]">{showDemoData ? "exemplo demonstrativo" : "média das suas notas reais"}</p>
                   </div>
                 </div>
               </div>
@@ -262,8 +265,8 @@ export default async function Dashboard() {
           )}
 
           <div className="mt-6 grid gap-6 xl:grid-cols-2">
-            <CurriculumAnalysisCard curriculum={curriculum} />
-            <GithubAnalysisCard curriculum={curriculum} demoMode={demoModeEnabled} />
+            <CurriculumAnalysisCard curriculum={curriculum} demoMode={showDemoData} />
+            <GithubAnalysisCard curriculum={curriculum} demoMode={showDemoData} />
           </div>
         </div>
       </main>

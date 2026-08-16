@@ -93,14 +93,14 @@ O progresso do ciclo permanece disponível após a atualização da página. Pre
 
 ## Demonstração
 
-O modo demonstrativo fica desativado por padrão. Use `NEXT_PUBLIC_DEMO_MODE=true` apenas em um ambiente isolado destinado à apresentação com informações fictícias.
+A produção mantém o modo demonstrativo global desativado. A conta abaixo é autenticada normalmente e recebe um conjunto fictício isolado, sem afetar os dados das demais pessoas usuárias.
 
 ```text
 E-mail: demo@devready.app
 Senha: DevReady@2026!
 ```
 
-Essas credenciais pertencem exclusivamente ao modo demonstrativo e não concedem acesso a informações reais.
+Essas credenciais identificam somente a conta oficial de demonstração e não concedem acesso a informações reais. `NEXT_PUBLIC_DEMO_MODE=true` deve ser usado apenas em ambientes isolados que precisem dispensar autenticação.
 
 ## Tecnologias
 
@@ -207,7 +207,7 @@ O workflow em `.github/workflows/quality.yml` executa lint, validação de tipos
 
 ## Privacidade, segurança e limitações
 
-- dados fictícios são utilizados somente quando `NEXT_PUBLIC_DEMO_MODE=true`;
+- dados fictícios são utilizados somente no modo demonstrativo global ou na conta autenticada `demo@devready.app`;
 - novas sessões ficam no `sessionStorage` do navegador;
 - o histórico das preparações da demonstração fica no `localStorage` e pode ser retomado pelo dashboard;
 - respostas e progresso do agente ficam no armazenamento local do navegador;

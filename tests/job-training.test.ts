@@ -8,6 +8,14 @@ import {
 } from "../lib/job-training";
 import { parseMockSession } from "../lib/mock-session";
 import { buildCandidateProfileSnapshot } from "../lib/candidate-profile";
+import { demoCredentials, isDemoAccountEmail } from "../lib/demo-mode";
+
+test("reconhece somente o login oficial de demonstração", () => {
+  assert.equal(isDemoAccountEmail(demoCredentials.email), true);
+  assert.equal(isDemoAccountEmail(demoCredentials.email.toUpperCase()), true);
+  assert.equal(isDemoAccountEmail("usuario@exemplo.com"), false);
+  assert.equal(isDemoAccountEmail(undefined), false);
+});
 
 test("identifica requisitos e senioridade na descrição da vaga", () => {
   const analysis = analyzeJobLocally(
