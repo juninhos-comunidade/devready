@@ -8,13 +8,16 @@ import { getSessionLimit } from "@/lib/job-training";
 import { getJourneyCompletion } from "@/lib/preparation-journey";
 import { deleteVagaTrainingData } from "@/lib/training/actions";
 
-export function PreparationHistory() {
+export function PreparationHistory({ demoSessions = [] }: { demoSessions?: MockSession[] }) {
   const [sessions, setSessions] = useState<MockSession[] | null>(null);
 
   useEffect(() => {
-    const timer = window.setTimeout(() => setSessions(readSessionList()), 0);
+    const timer = window.setTimeout(() => {
+      const stored = readSessionList();
+      setSessions(stored.length ? stored : demoSessions);
+    }, 0);
     return () => window.clearTimeout(timer);
-  }, []);
+  }, [demoSessions]);
 
   function resume(session: MockSession) {
     window.sessionStorage.setItem(MOCK_SESSION_KEY, JSON.stringify(session));
@@ -62,14 +65,14 @@ export function PreparationHistory() {
             const completion = getJourneyCompletion(session.progress);
             return (
               <div key={session.id} className="group relative rounded-2xl border border-[#ece9f1] p-4 transition hover:border-[#7755e8] hover:bg-[#faf8ff]">
-                <button
+                {demoSessions.length === 0 && <button
                   type="button"
                   onClick={() => remove(session.id)}
                   aria-label={`Excluir preparação de ${session.name}`}
                   className="absolute right-3 top-3 grid h-8 w-8 place-items-center rounded-full text-[#a19cb5] opacity-0 transition hover:bg-[#fdf2f2] hover:text-[#a83030] focus-visible:opacity-100 group-hover:opacity-100"
                 >
                   <Trash2 className="h-4 w-4" />
-                </button>
+                </button>}
                 <Link href="/dashboard/resultado" onClick={() => resume(session)} className="block pr-8">
                   <p className="font-extrabold text-[#1d1b33]">{session.name}</p>
                   <p className="mt-0.5 text-xs font-semibold text-[#8b8593]">{session.company} · foco em {session.analysis.priority}</p>

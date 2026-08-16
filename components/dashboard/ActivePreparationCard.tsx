@@ -7,7 +7,7 @@ import { MOCK_SESSION_KEY, parseMockSession, readSessionList, type MockSession }
 import { getJourneyCompletion, getNextJourneyAction } from "@/lib/preparation-journey";
 import { getTrilhaCompletionSignal } from "@/lib/training/actions";
 
-export function ActivePreparationCard() {
+export function ActivePreparationCard({ demoSession = null }: { demoSession?: MockSession | null }) {
   const [session, setSession] = useState<MockSession | null>(null);
   const [loaded, setLoaded] = useState(false);
   const [trilhaComplete, setTrilhaComplete] = useState<boolean | undefined>(undefined);
@@ -16,7 +16,7 @@ export function ActivePreparationCard() {
     const timer = window.setTimeout(() => {
       const current = parseMockSession(window.sessionStorage.getItem(MOCK_SESSION_KEY));
       const persisted = readSessionList();
-      const active = current && persisted.some((item) => item.id === current.id) ? current : null;
+      const active = current && persisted.some((item) => item.id === current.id) ? current : demoSession;
       setSession(active);
       setLoaded(true);
       if (active) {
@@ -24,7 +24,7 @@ export function ActivePreparationCard() {
       }
     }, 0);
     return () => window.clearTimeout(timer);
-  }, []);
+  }, [demoSession]);
 
   if (!loaded) return <div className="mt-7 h-44 animate-pulse rounded-[28px] bg-[#e9e6ef]" aria-hidden="true" />;
 

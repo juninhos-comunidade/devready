@@ -23,7 +23,7 @@ import { SessionsCard } from "@/components/dashboard/SessionsCard";
 import { TechnologyRow } from "@/components/dashboard/TechnologyRow";
 import { getDashboardTrainingStats } from "@/lib/training/dashboard-stats";
 import { dashboardData } from "@/lib/dashboard-data";
-import { demoModeEnabled, isDemoAccountEmail } from "@/lib/demo-mode";
+import { demoDashboardSessions, demoModeEnabled, isDemoAccountEmail } from "@/lib/demo-mode";
 import type { Prisma } from "@/app/generated/prisma/client";
 
 type CurriculumWithGithub = Prisma.CurriculumGetPayload<{
@@ -47,6 +47,7 @@ export default async function Dashboard() {
   }
 
   const showDemoData = demoModeEnabled || demoAccount;
+  const dashboardSessions = showDemoData ? demoDashboardSessions : [];
   const hasRealStats = Boolean(trainingStats?.technologies.length);
   const emptyState = !showDemoData && !hasRealStats;
   const technologies = showDemoData ? dashboardData.technologies : (trainingStats?.technologies ?? []);
@@ -111,7 +112,7 @@ export default async function Dashboard() {
             </div>
           )}
 
-          <ActivePreparationCard />
+          <ActivePreparationCard demoSession={dashboardSessions[0]} />
 
           <section className="relative mt-6 overflow-hidden rounded-[28px] border border-[#e7e3ee] bg-white px-6 py-7 text-[#1d1b33] sm:px-8 sm:py-8">
             <div className="pointer-events-none absolute -right-20 -top-28 h-72 w-72 rounded-full bg-[#7755e8]/35 blur-2xl" />
@@ -184,7 +185,7 @@ export default async function Dashboard() {
           </section>
 
           <div className="mt-6 grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
-            <SessionsCard />
+            <SessionsCard demoSessions={dashboardSessions} />
 
             <article className="rounded-2xl border border-[#e7e3ee] bg-white p-5">
               <div className="flex items-center justify-between">
@@ -230,7 +231,7 @@ export default async function Dashboard() {
             </Link>
           </div>
 
-          <PreparationHistory />
+          <PreparationHistory demoSessions={dashboardSessions} />
 
           <section className="mt-6 rounded-3xl border border-[#e7e3ee] bg-white p-5 shadow-[0_18px_55px_-42px_rgba(29,27,51,0.45)] sm:p-6">
             <div className="flex flex-wrap items-end justify-between gap-3">

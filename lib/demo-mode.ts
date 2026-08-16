@@ -1,4 +1,5 @@
-import type { CandidateProfileSnapshot } from "@/lib/job-training";
+import { analyzeJobLocally, type CandidateProfileSnapshot } from "@/lib/job-training";
+import type { MockSession } from "@/lib/mock-session";
 
 export const demoModeEnabled = process.env.NEXT_PUBLIC_DEMO_MODE === "true";
 
@@ -45,3 +46,41 @@ export const demoCandidateProfile: CandidateProfileSnapshot = {
 export function isDemoAccountEmail(email: string | null | undefined) {
   return email?.trim().toLocaleLowerCase("pt-BR") === demoCredentials.email;
 }
+
+const frontendJobDescription = "Vaga júnior com React, TypeScript, testes automatizados, APIs REST, comunicação e colaboração.";
+const backendJobDescription = "Vaga júnior com Node.js, TypeScript, APIs REST, SQL, Docker, testes e trabalho em equipe.";
+
+export const demoDashboardSessions: MockSession[] = [
+  {
+    id: "demo-account-frontend",
+    name: "Frontend Júnior",
+    company: "Nexa Labs",
+    description: frontendJobDescription,
+    source: "text",
+    analysis: analyzeJobLocally(frontendJobDescription, "Nexa Labs", demoCandidateProfile),
+    progress: {
+      trainingAttempts: [
+        { id: "demo-account-quiz-1", sessionId: "demo-account-frontend", sessionName: "Frontend Júnior", mode: "quiz", score: 82, difficulty: "intermediaria", createdAt: "2026-08-10T14:00:00.000Z" },
+        { id: "demo-account-star-1", sessionId: "demo-account-frontend", sessionName: "Frontend Júnior", mode: "comportamental", score: 76, difficulty: "intermediaria", createdAt: "2026-08-10T14:20:00.000Z" },
+      ],
+      interviewHistory: [
+        { score: 78, strongest: "React", priority: "Testes", completedAt: "2026-08-10T15:00:00.000Z", track: "Frontend", criteria: { content: 82, clarity: 78, evidence: 72, structure: 80 } },
+      ],
+    },
+    createdAt: "2026-08-10T13:30:00.000Z",
+  },
+  {
+    id: "demo-account-backend",
+    name: "Backend Júnior",
+    company: "Orion Sistemas",
+    description: backendJobDescription,
+    source: "text",
+    analysis: analyzeJobLocally(backendJobDescription, "Orion Sistemas", demoCandidateProfile),
+    progress: {
+      trainingAttempts: [
+        { id: "demo-account-quiz-2", sessionId: "demo-account-backend", sessionName: "Backend Júnior", mode: "quiz", score: 69, difficulty: "intermediaria", createdAt: "2026-08-08T16:00:00.000Z" },
+      ],
+    },
+    createdAt: "2026-08-08T15:30:00.000Z",
+  },
+];

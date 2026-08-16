@@ -8,13 +8,19 @@ import {
 } from "../lib/job-training";
 import { parseMockSession } from "../lib/mock-session";
 import { buildCandidateProfileSnapshot } from "../lib/candidate-profile";
-import { demoCredentials, isDemoAccountEmail } from "../lib/demo-mode";
+import { demoCredentials, demoDashboardSessions, isDemoAccountEmail } from "../lib/demo-mode";
 
 test("reconhece somente o login oficial de demonstração", () => {
   assert.equal(isDemoAccountEmail(demoCredentials.email), true);
   assert.equal(isDemoAccountEmail(demoCredentials.email.toUpperCase()), true);
   assert.equal(isDemoAccountEmail("usuario@exemplo.com"), false);
   assert.equal(isDemoAccountEmail(undefined), false);
+});
+
+test("mantém as vagas fictícias restritas ao conjunto da conta demonstrativa", () => {
+  assert.equal(demoDashboardSessions.length, 2);
+  assert.ok(demoDashboardSessions.every((session) => session.analysis.profileIsDemo));
+  assert.ok(parseMockSession(JSON.stringify(demoDashboardSessions[0])));
 });
 
 test("identifica requisitos e senioridade na descrição da vaga", () => {
