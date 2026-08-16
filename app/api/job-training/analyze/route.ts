@@ -1,9 +1,10 @@
-import { analyzeJobLocally } from "@/lib/job-training";
+import { analyzeJobLocally, demoCandidateProfile } from "@/lib/job-training";
 import { analyzeJobWithGroq, groqIsConfigured } from "@/lib/groq-job-training";
 import { buildCandidateProfileSnapshot } from "@/lib/candidate-profile";
 import { auth } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 import { headers } from "next/headers";
+import { demoModeEnabled } from "@/lib/demo-mode";
 
 export const runtime = "nodejs";
 export const maxDuration = 60;
@@ -12,6 +13,7 @@ const MAX_IMAGE_BYTES = 4 * 1024 * 1024;
 const acceptedImageTypes = new Set(["image/png", "image/jpeg"]);
 
 async function getCandidateProfile() {
+  if (demoModeEnabled) return demoCandidateProfile;
   try {
     const session = await auth.api.getSession({ headers: await headers() });
     if (!session) return undefined;

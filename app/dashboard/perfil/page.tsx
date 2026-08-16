@@ -12,8 +12,14 @@ import { BrandLoading } from "@/components/BrandLoading";
 import { Check } from "lucide-react";
 import { authClient } from "@/lib/auth-client";
 import { areaInterestOptions, experienceLevelOptions } from "@/lib/profile-options";
+import { demoModeEnabled, demoProfile } from "@/lib/demo-mode";
 
 export default function Perfil() {
+  if (demoModeEnabled) return <PerfilEditor user={demoProfile} demoMode />;
+  return <AuthenticatedPerfil />;
+}
+
+function AuthenticatedPerfil() {
   const router = useRouter();
   const { data: session, isPending: sessionPending } = authClient.useSession();
 
@@ -41,7 +47,7 @@ type ProfileUser = {
   privacyConsent?: boolean;
 };
 
-function PerfilEditor({ user }: { user: ProfileUser }) {
+function PerfilEditor({ user, demoMode = false }: { user: ProfileUser; demoMode?: boolean }) {
   const router = useRouter();
   const [name, setName] = useState(user.name ?? "");
   const [github, setGithub] = useState(user.githubUrl ?? "");
@@ -58,6 +64,7 @@ function PerfilEditor({ user }: { user: ProfileUser }) {
   const [isUploadingCurriculum, setIsUploadingCurriculum] = useState(false);
 
   useEffect(() => {
+    if (demoMode) return;
     fetch("/api/curriculum/status")
       .then((response) => (response.ok ? response.json() : null))
       .then((data: { status?: string } | null) => {
@@ -67,7 +74,7 @@ function PerfilEditor({ user }: { user: ProfileUser }) {
         }
       })
       .catch(() => {});
-  }, []);
+  }, [demoMode]);
 
   function toBase64(file: File): Promise<string> {
     return new Promise((resolve, reject) => {
@@ -98,6 +105,14 @@ function PerfilEditor({ user }: { user: ProfileUser }) {
 
     setIsSaving(true);
     try {
+      if (demoMode) {
+        await new Promise((resolve) => window.setTimeout(resolve, 500));
+        setHasCurriculum(Boolean(curriculumFile) || hasCurriculum);
+        setCurriculumStatus(curriculumFile ? "COMPLETED" : curriculumStatus);
+        setCurriculumFile(null);
+        setSaved(true);
+        return;
+      }
       const { error } = await authClient.updateUser({
         name,
         areaInterest: areaInterest || null,
@@ -152,6 +167,12 @@ function PerfilEditor({ user }: { user: ProfileUser }) {
     setErrorMessage("");
     setIsDeleting(true);
     try {
+      if (demoMode) {
+        await new Promise((resolve) => window.setTimeout(resolve, 400));
+        setConfirmingDelete(false);
+        router.replace("/login");
+        return;
+      }
       const response = await fetch("/api/account/delete", { method: "POST" });
       if (!response.ok) {
         const data = await response.json().catch(() => null);
@@ -173,6 +194,9 @@ function PerfilEditor({ user }: { user: ProfileUser }) {
 
   return (
     <div className="flex min-h-screen bg-[#f4f3f8]">
+      {(isSaving || isUploadingCurriculum || isDeleting) && (
+        <BrandLoading overlay label={isDeleting ? "Encerrando sua conta..." : "Salvando seu perfil..."} />
+      )}
       <Sidebar />
 
       <main className="min-w-0 flex-1 px-4 pb-28 pt-6 sm:px-6 md:p-10">

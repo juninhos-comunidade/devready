@@ -8,13 +8,14 @@ import { BrandLoading } from "@/components/BrandLoading";
 import { Mascot } from "@/components/Mascot";
 import { Eye, EyeOff } from "lucide-react";
 import { authClient } from "@/lib/auth-client";
+import { demoCredentials, demoModeEnabled } from "@/lib/demo-mode";
 
 export default function Login() {
   const [showPassword, setShowPassword] = useState(false);
   const [errorMessage, setErrorMessage] = useState("");
   const [isSubmitting, setIsSubmitting] = useState(false);
-  const [email, setEmail] = useState("");
-  const [password, setPassword] = useState("");
+  const [email, setEmail] = useState(demoModeEnabled ? demoCredentials.email : "");
+  const [password, setPassword] = useState(demoModeEnabled ? demoCredentials.password : "");
   const router = useRouter();
 
   async function handleSubmit(e: React.SubmitEvent<HTMLFormElement>) {
@@ -26,6 +27,15 @@ export default function Login() {
     const rememberMe = formData.get("rememberMe") === "on";
 
     try {
+      if (demoModeEnabled) {
+        await new Promise((resolve) => window.setTimeout(resolve, 450));
+        if (email !== demoCredentials.email || password !== demoCredentials.password) {
+          setErrorMessage("Use as credenciais de demonstração exibidas no formulário.");
+          return;
+        }
+        router.replace("/dashboard");
+        return;
+      }
       const { error } = await authClient.signIn.email({
         email,
         password,
@@ -33,11 +43,7 @@ export default function Login() {
       });
 
       if (error) {
-        setErrorMessage(
-          error.status === 403
-            ? "Confirme seu e-mail antes de entrar. Enviamos um novo link de verificação."
-            : "E-mail ou senha inválidos. Confira os dados e tente novamente.",
-        );
+        setErrorMessage("E-mail ou senha inválidos. Confira os dados e tente novamente.");
         return;
       }
 
@@ -95,6 +101,12 @@ export default function Login() {
               <p className="mb-7 text-[#59567a] leading-relaxed">
                 Continue de onde parou nas suas sessões de treino.
               </p>
+
+            {demoModeEnabled && (
+              <p className="mb-5 rounded-xl border border-[#d9d0f2] bg-[#f3efff] px-4 py-3 text-sm font-bold text-[#5d43c4]">
+                Acesso demonstrativo preenchido. Todos os dados exibidos são fictícios.
+              </p>
+            )}
 
             <div className="grid gap-5 sm:gap-4">
               <div className="grid gap-1.5">

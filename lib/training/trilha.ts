@@ -2,6 +2,7 @@
 
 import { prisma } from "@/lib/prisma";
 import { withDbRetry } from "./with-retry";
+import { demoModeEnabled } from "@/lib/demo-mode";
 
 export type TrilhaStatus = "ausente" | "parcial" | "dominado";
 
@@ -28,6 +29,12 @@ function wasGoodAnswer(answer: { wasCorrect: boolean | null; score: number | nul
 }
 
 export async function getTrilhaForVaga(jobSessionId: string): Promise<TrilhaItem[]> {
+  if (demoModeEnabled) {
+    return [
+      { competency: "testes", competencyLabel: "Testes automatizados", status: "ausente", correct: 1, total: 4, accuracy: 0.25, materials: [{ title: "Testing Library: primeiros testes", url: "https://testing-library.com/docs/react-testing-library/intro/", contentType: "Artigo", level: "iniciante" }] },
+      { competency: "typescript", competencyLabel: "TypeScript", status: "parcial", correct: 3, total: 5, accuracy: 0.6, materials: [{ title: "TypeScript para quem já usa JavaScript", url: "https://www.typescriptlang.org/docs/handbook/typescript-in-5-minutes.html", contentType: "Artigo", level: "intermediário" }] },
+    ];
+  }
   const sessions = await withDbRetry(() =>
     prisma.trainingSession.findMany({ where: { jobSessionId }, select: { id: true } }),
   );

@@ -28,12 +28,30 @@ export type JobAnalysis = {
   summary: string;
   source: "groq" | "local";
   profileLabel?: string;
+  profileIsDemo?: boolean;
 };
 
 export type CandidateProfileSnapshot = {
   label: string;
+  isDemo?: boolean;
   skillScores: Record<string, number>;
   skillEvidence?: Record<string, string[]>;
+};
+
+export const demoCandidateProfile: CandidateProfileSnapshot = {
+  label: "Perfil fictício de demonstração",
+  isDemo: true,
+  skillScores: { React: 86, TypeScript: 78, JavaScript: 81, Testes: 61, SQL: 54, "Node.js": 68, "APIs REST": 70, Docker: 45 },
+  skillEvidence: {
+    React: ["Currículo fictício", "GitHub fictício"],
+    TypeScript: ["Currículo fictício", "GitHub fictício"],
+    JavaScript: ["Currículo fictício"],
+    Testes: ["Currículo fictício"],
+    SQL: ["Currículo fictício"],
+    "Node.js": ["GitHub fictício"],
+    "APIs REST": ["GitHub fictício"],
+    Docker: ["Currículo fictício"],
+  },
 };
 
 export type QuizQuestion = {
@@ -163,6 +181,7 @@ export function analyzeJobLocally(
     summary: `A vaga tem perfil ${seniority.toLocaleLowerCase("pt-BR")} e prioriza ${selected.slice(0, 4).map((item) => item.name).join(", ")}.`,
     source: "local",
     profileLabel: profile?.label ?? "Perfil sem evidências processadas",
+    profileIsDemo: profile?.isDemo ?? false,
   };
 }
 

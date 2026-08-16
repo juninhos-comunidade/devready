@@ -21,33 +21,44 @@ import { PreparationHistory } from "@/components/dashboard/PreparationHistory";
 import { SessionsCard } from "@/components/dashboard/SessionsCard";
 import { TechnologyRow } from "@/components/dashboard/TechnologyRow";
 import { getDashboardTrainingStats } from "@/lib/training/dashboard-stats";
+import { dashboardData } from "@/lib/dashboard-data";
+import { demoModeEnabled } from "@/lib/demo-mode";
+import type { Prisma } from "@/app/generated/prisma/client";
+
+type CurriculumWithGithub = Prisma.CurriculumGetPayload<{
+  include: { githubProfile: { include: { repos: true } } };
+}>;
 
 export default async function Dashboard() {
-  const session = await auth.api.getSession({ headers: await headers() });
-  if (!session) {
-    redirect("/login");
+  let curriculum: CurriculumWithGithub | null = null;
+  let trainingStats: Awaited<ReturnType<typeof getDashboardTrainingStats>> | null = null;
+
+  if (!demoModeEnabled) {
+    const session = await auth.api.getSession({ headers: await headers() });
+    if (!session) redirect("/login");
+    curriculum = await prisma.curriculum.findUnique({
+      where: { userId: session.user.id },
+      include: { githubProfile: { include: { repos: true } } },
+    });
+    trainingStats = await getDashboardTrainingStats(session.user.id);
   }
 
-  const curriculum = await prisma.curriculum.findUnique({
-    where: { userId: session.user.id },
-    include: { githubProfile: { include: { repos: true } } },
-  });
-  const trainingStats = await getDashboardTrainingStats(session.user.id);
-
-  const hasRealStats = trainingStats.technologies.length > 0;
-  const emptyState = !hasRealStats;
-  const technologies = trainingStats.technologies;
-  const history = trainingStats.history;
+  const hasRealStats = Boolean(trainingStats?.technologies.length);
+  const emptyState = !demoModeEnabled && !hasRealStats;
+  const technologies = demoModeEnabled ? dashboardData.technologies : (trainingStats?.technologies ?? []);
+  const history = demoModeEnabled ? dashboardData.history : (trainingStats?.history ?? []);
 
   const scoredTechnologies = technologies.filter((technology) => technology.score !== null);
-  const readiness = scoredTechnologies.length
+  const calculatedReadiness = scoredTechnologies.length
     ? Math.round(scoredTechnologies.reduce((total, technology) => total + technology.score!, 0) / scoredTechnologies.length)
     : null;
   const technologiesWithTrend = technologies.filter((technology) => technology.previousScore !== null);
-  const previousReadiness = technologiesWithTrend.length
+  const calculatedPreviousReadiness = technologiesWithTrend.length
     ? Math.round(technologiesWithTrend.reduce((total, technology) => total + technology.previousScore!, 0) / technologiesWithTrend.length)
     : null;
 
+  const readiness = demoModeEnabled ? dashboardData.readiness : calculatedReadiness;
+  const previousReadiness = demoModeEnabled ? dashboardData.previousReadiness : calculatedPreviousReadiness;
   const readinessDelta = readiness === null || previousReadiness === null ? null : readiness - previousReadiness;
   const testedTechnologies = technologies.filter(
     (technology) => technology.score !== null,
@@ -75,7 +86,7 @@ export default async function Dashboard() {
               </p>
               {!emptyState && (
                 <span className="mt-3 inline-flex rounded-full bg-[#ece8f8] px-3 py-1 text-[10px] font-extrabold uppercase tracking-wide text-[#654bc9]">
-                  Notas por tecnologia reais
+                  {demoModeEnabled ? "Dados fictícios de demonstração" : "Notas por tecnologia reais"}
                 </span>
               )}
             </div>
@@ -123,13 +134,15 @@ export default async function Dashboard() {
                 <div className="max-w-2xl">
                   <span className="inline-flex items-center gap-2 rounded-full border border-white/15 bg-white/10 px-3 py-1.5 text-xs font-extrabold text-[#dcd8ff]">
                     <Sparkles className="h-3.5 w-3.5" />
-                    Sua evolução
+                    {demoModeEnabled ? "Exemplo de evolução" : "Sua evolução"}
                   </span>
                   <h2 className="mt-4 font-[family-name:var(--font-display)] text-2xl font-bold sm:text-3xl">
                     Visualize como a prática muda sua prontidão.
                   </h2>
                   <p className="mt-2 max-w-xl text-sm leading-relaxed text-[#c2bfd7] sm:text-base">
-                    As notas por tecnologia abaixo vêm das suas tentativas de treino reais.
+                    {demoModeEnabled
+                      ? "Os indicadores são fictícios e mostram como sua evolução será apresentada após os treinos."
+                      : "As notas por tecnologia abaixo vêm das suas tentativas de treino reais."}
                   </p>
                   <Link href="/dashboard/resultado" className="mt-5 inline-flex items-center gap-2 text-sm font-extrabold text-[#5d43c4] underline decoration-[#e8641d] decoration-2 underline-offset-4">
                     Abrir preparação ativa <ArrowRight className="h-4 w-4" />
@@ -159,7 +172,7 @@ export default async function Dashboard() {
                     ) : (
                       <p className="mt-1 text-sm font-extrabold text-[#c2bfd7]">primeira medição</p>
                     )}
-                    <p className="mt-1 text-xs text-[#6d698a]">média das suas notas reais</p>
+                    <p className="mt-1 text-xs text-[#6d698a]">{demoModeEnabled ? "exemplo demonstrativo" : "média das suas notas reais"}</p>
                   </div>
                 </div>
               </div>
@@ -248,7 +261,7 @@ export default async function Dashboard() {
           )}
 
           <div className="mt-6">
-            <GithubAnalysisCard curriculum={curriculum} />
+            <GithubAnalysisCard curriculum={curriculum} demoMode={demoModeEnabled} />
           </div>
         </div>
       </main>

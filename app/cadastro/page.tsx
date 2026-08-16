@@ -12,6 +12,7 @@ import { FormSelect } from "@/components/FormSelect";
 import { PdfDropzone } from "@/components/PdfDropzone";
 import { PrivacyPolicyModal } from "@/components/PrivacyPolicyModal";
 import { areaInterestOptions, experienceLevelOptions } from "@/lib/profile-options";
+import { demoModeEnabled } from "@/lib/demo-mode";
 
 function StepDots({ step }: { step: 1 | 2 }) {
   return (
@@ -95,6 +96,11 @@ export default function Cadastro() {
     setIsSubmitting(true);
 
     try {
+      if (demoModeEnabled) {
+        await new Promise((resolve) => window.setTimeout(resolve, 650));
+        router.replace("/dashboard");
+        return;
+      }
       if (!curriculumFile) return;
       const pdfBase64 = await toBase64(curriculumFile);
 

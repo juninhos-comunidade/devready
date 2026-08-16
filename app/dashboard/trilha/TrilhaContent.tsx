@@ -4,6 +4,8 @@ import { useEffect, useState } from "react";
 import Link from "next/link";
 import { Code2, ExternalLink, FileText, GraduationCap, ListChecks, PlayCircle } from "lucide-react";
 import { getTrilhaForVaga, type TrilhaItem } from "@/lib/training/trilha";
+import { BrandLoading } from "@/components/BrandLoading";
+import { Mascot } from "@/components/Mascot";
 
 const statusConfig = {
   ausente: { label: "Recomendação principal", badgeClass: "bg-[#fff0e7] text-[#e8641d]" },
@@ -49,12 +51,13 @@ export function TrilhaContent({ vagaId }: { vagaId: string }) {
   }, [vagaId]);
 
   if (state === "loading") {
-    return <p className="mt-7 text-sm font-bold text-[#8b8593]">Carregando sua trilha...</p>;
+    return <BrandLoading label="Montando sua trilha personalizada..." />;
   }
 
   if (state === "empty") {
     return (
       <section className="mt-7 rounded-3xl border border-[#e7e3ee] bg-white p-7 text-center sm:p-10">
+        <Mascot pose="coach" motion="float" className="mx-auto h-28 w-28" />
         <span className="mx-auto grid h-16 w-16 place-items-center rounded-2xl bg-[#efeaff] text-[#7755e8]">
           <ListChecks className="h-8 w-8" />
         </span>

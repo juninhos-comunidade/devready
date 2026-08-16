@@ -4,6 +4,8 @@ import { useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
 import { GitBranch, Star } from "lucide-react";
 import type { Prisma } from "@/app/generated/prisma/client";
+import { BrandLoading } from "@/components/BrandLoading";
+import { Mascot } from "@/components/Mascot";
 
 type CurriculumWithGithub = Prisma.CurriculumGetPayload<{
   include: { githubProfile: { include: { repos: true } } };
@@ -11,9 +13,10 @@ type CurriculumWithGithub = Prisma.CurriculumGetPayload<{
 
 type GithubAnalysisCardProps = {
   curriculum: CurriculumWithGithub | null;
+  demoMode?: boolean;
 };
 
-export function GithubAnalysisCard({ curriculum }: GithubAnalysisCardProps) {
+export function GithubAnalysisCard({ curriculum, demoMode = false }: GithubAnalysisCardProps) {
   const router = useRouter();
   const [isAnalyzing, setIsAnalyzing] = useState(false);
   const [errorMessage, setErrorMessage] = useState("");
@@ -56,6 +59,26 @@ export function GithubAnalysisCard({ curriculum }: GithubAnalysisCardProps) {
     } finally {
       setIsAnalyzing(false);
     }
+  }
+
+  if (demoMode) {
+    return (
+      <section className="overflow-hidden rounded-3xl border border-[#e7e3ee] bg-white shadow-[0_18px_55px_-42px_rgba(29,27,51,0.45)]">
+        <div className="grid items-center gap-5 bg-[#1d1b33] p-5 text-white sm:grid-cols-[1fr_auto] sm:p-6">
+          <div>
+            <span className="inline-flex items-center gap-2 text-[11px] font-extrabold uppercase tracking-[0.18em] text-[#aaa6d6]"><GitBranch className="h-4 w-4" /> Análise do GitHub · demonstração</span>
+            <p className="mt-3 text-2xl font-extrabold">@marina-dev</p>
+            <p className="mt-1 text-sm text-[#c9c5dc]">Perfil e métricas fictícios para apresentar o fluxo com segurança.</p>
+          </div>
+          <Mascot pose="coach" className="mx-auto h-28 w-28" />
+        </div>
+        <div className="grid gap-3 p-5 sm:grid-cols-3 sm:p-6">
+          {[["24", "repositórios públicos"], ["387", "contribuições no ano"], ["React · TypeScript", "maior evidência técnica"]].map(([value, label]) => (
+            <div key={label} className="rounded-2xl border border-[#ece9f1] p-4"><p className="font-extrabold text-[#1d1b33]">{value}</p><p className="mt-1 text-xs font-semibold text-[#8b8593]">{label}</p></div>
+          ))}
+        </div>
+      </section>
+    );
   }
 
   if (!curriculum?.githubUrl) {
@@ -112,6 +135,7 @@ export function GithubAnalysisCard({ curriculum }: GithubAnalysisCardProps) {
 
   return (
     <section className="overflow-hidden rounded-3xl border border-[#e7e3ee] bg-white shadow-[0_18px_55px_-42px_rgba(29,27,51,0.45)]">
+      {isAnalyzing && <BrandLoading overlay label="Analisando seu GitHub..." />}
       <div className="bg-[#1d1b33] p-5 text-white sm:p-6">
         <div className="flex items-start justify-between gap-4">
           <div className="min-w-0">
