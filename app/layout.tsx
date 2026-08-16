@@ -1,24 +1,5 @@
 import type { Metadata, Viewport } from "next";
-import { Sora, Hanken_Grotesk, JetBrains_Mono } from "next/font/google";
 import "./globals.css";
-
-const sora = Sora({
-  subsets: ["latin"],
-  variable: "--font-display",
-  weight: ["600", "700", "800"],
-});
-
-const hankenGrotesk = Hanken_Grotesk({
-  subsets: ["latin"],
-  variable: "--font-body",
-  weight: ["400", "500", "600", "700", "800"],
-});
-
-const jetbrainsMono = JetBrains_Mono({
-  subsets: ["latin"],
-  variable: "--font-code",
-  weight: ["400", "500"],
-});
 
 export const metadata: Metadata = {
   title: {
@@ -52,9 +33,7 @@ export default function RootLayout({
 }) {
   return (
     <html lang="pt-BR">
-      <body className={`${sora.variable} ${hankenGrotesk.variable} ${jetbrainsMono.variable} antialiased`}>
-        {children}
-      </body>
+      <body className="antialiased">{children}</body>
     </html>
   );
 }

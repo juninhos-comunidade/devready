@@ -8,6 +8,9 @@
   --brand-navy: #151632;
   --muted: #6d698a;
   --border: #e7e3ee;
+  --font-display: "Trebuchet MS", "Segoe UI", sans-serif;
+  --font-body: "Segoe UI", Arial, Helvetica, sans-serif;
+  --font-code: Consolas, "Courier New", monospace;
 }
 
 @theme inline {
