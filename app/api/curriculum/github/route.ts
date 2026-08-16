@@ -40,51 +40,50 @@ export async function POST() {
   try {
     const { profile, repos } = await analyzeGithubProfile(curriculum.githubUrl);
 
-    await prisma.githubProfile.deleteMany({ where: { curriculumId: curriculum.id } });
-
-    const githubProfile = await prisma.githubProfile.create({
-      data: {
-        curriculumId: curriculum.id,
-        username: profile.username,
-        bio: profile.bio,
-        publicReposCount: profile.publicReposCount,
-        followers: profile.followers,
-        topLanguages: profile.topLanguages as unknown as Prisma.InputJsonValue,
-        contributionData: profile.contributionData as unknown as Prisma.InputJsonValue,
-        status: "COMPLETED",
-        repos: {
-          create: repos.map((repo) => ({
-            name: repo.name,
-            description: repo.description,
-            stars: repo.stars,
-            forks: repo.forks,
-            languages: repo.languages as unknown as Prisma.InputJsonValue,
-            url: repo.url,
-          })),
+    const githubProfile = await prisma.$transaction(async (tx) => {
+      await tx.githubProfile.deleteMany({ where: { curriculumId: curriculum.id } });
+      return tx.githubProfile.create({
+        data: {
+          curriculumId: curriculum.id,
+          username: profile.username,
+          bio: profile.bio,
+          publicReposCount: profile.publicReposCount,
+          followers: profile.followers,
+          topLanguages: profile.topLanguages as unknown as Prisma.InputJsonValue,
+          contributionData: profile.contributionData as unknown as Prisma.InputJsonValue,
+          status: "COMPLETED",
+          repos: {
+            create: repos.map((repo) => ({
+              name: repo.name,
+              description: repo.description,
+              stars: repo.stars,
+              forks: repo.forks,
+              languages: repo.languages as unknown as Prisma.InputJsonValue,
+              url: repo.url,
+            })),
+          },
         },
-      },
-      include: { repos: true },
+        include: { repos: true },
+      });
     });
 
     return NextResponse.json(githubProfile);
   } catch (error) {
     console.error(`Falha ao analisar GitHub do currículo ${curriculum.id}.`, error);
 
-    const fallbackUsername = safeExtractUsername(curriculum.githubUrl);
-
-    await prisma.githubProfile.deleteMany({ where: { curriculumId: curriculum.id } });
-    await prisma.githubProfile.create({
-      data: {
-        curriculumId: curriculum.id,
-        username: fallbackUsername,
-        bio: null,
-        publicReposCount: null,
-        followers: null,
-        topLanguages: undefined,
-        contributionData: undefined,
-        status: "FAILED",
-      },
+    const existingProfile = await prisma.githubProfile.findUnique({
+      where: { curriculumId: curriculum.id },
+      select: { id: true },
     });
+    if (!existingProfile) {
+      await prisma.githubProfile.create({
+        data: {
+          curriculumId: curriculum.id,
+          username: safeExtractUsername(curriculum.githubUrl),
+          status: "FAILED",
+        },
+      }).catch(() => undefined);
+    }
 
     return NextResponse.json(
       { error: "Não foi possível analisar o GitHub. Tente novamente." },
