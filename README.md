@@ -16,7 +16,7 @@ Profissionais juniores costumam encontrar descrições de vaga extensas, requisi
 
 ## Principais funcionalidades
 
-- autenticação, cadastro, verificação de e-mail e recuperação de senha;
+- autenticação e cadastro completos no modo conectado, com acesso imediato no modo demonstrativo;
 - dashboard com prontidão geral, evolução e notas por tecnologia;
 - perfil técnico com área de interesse e nível de experiência;
 - criação de sessão a partir de uma descrição de vaga ou imagem;
@@ -71,7 +71,7 @@ O progresso do ciclo permanece disponível após a atualização da página. Com
 
 ## Demonstração
 
-Com `NEXT_PUBLIC_DEMO_MODE=true`, todos os fluxos utilizam informações fictícias e podem ser apresentados sem conexão com dados pessoais.
+O modo demonstrativo vem ativo por padrão. Com `NEXT_PUBLIC_DEMO_MODE=true`, todos os fluxos utilizam informações fictícias e podem ser apresentados sem banco, integrações externas ou dados pessoais.
 
 ```text
 E-mail: demo@devready.app
@@ -149,8 +149,6 @@ Essas credenciais pertencem exclusivamente ao modo demonstrativo e não concedem
 | `DATABASE_URL` | Conexão PostgreSQL utilizada pelo Prisma |
 | `BETTER_AUTH_URL` | URL pública da aplicação |
 | `BETTER_AUTH_SECRET` | Segredo da autenticação; deve ser longo e privado |
-| `RESEND_API_KEY` | Chave do serviço de envio de e-mails |
-| `EMAIL_FROM` | Remetente das mensagens de autenticação |
 | `GROQ_API_KEY` | Geração e avaliação por IA; o treino usa contingência local quando ausente |
 | `GROQ_MODEL` | Modelo de texto utilizado pela integração Groq |
 | `GROQ_VISION_MODEL` | Modelo usado para interpretar imagens de vagas |
@@ -176,7 +174,6 @@ O workflow em `.github/workflows/quality.yml` executa lint, validação de tipos
 | --- | --- |
 | `/login` | Acesso à plataforma |
 | `/cadastro` | Criação de conta |
-| `/esqueci-senha` | Recuperação de acesso |
 | `/politica-de-privacidade` | Informações de privacidade e LGPD |
 | `/dashboard` | Visão geral de prontidão e evolução |
 | `/dashboard/perfil` | Dados pessoais e perfil técnico |
@@ -206,13 +203,11 @@ O projeto possui `vercel-build` e `postinstall` para gerar o Prisma Client antes
 
 1. importe o repositório na Vercel;
 2. selecione Node.js 20 ou superior;
-3. cadastre as variáveis de `.env.example` em **Settings → Environment Variables**;
-4. defina `BETTER_AUTH_URL` com a URL pública final;
-5. gere um `BETTER_AUTH_SECRET` forte e exclusivo;
-6. execute `npx prisma migrate deploy` no banco de produção antes de habilitar o modo autenticado;
-7. publique e valide `/login`, `/dashboard`, `/dashboard/nova-sessao` e `/dashboard/treino-vaga`.
+3. para o hackathon, cadastre somente `NEXT_PUBLIC_DEMO_MODE=true` e `NEXT_PUBLIC_SESSION_LIMIT=5`;
+4. publique e valide `/api/health`, `/login`, `/dashboard`, `/dashboard/nova-sessao` e `/dashboard/treino-vaga`;
+5. para habilitar contas reais depois, configure as demais variáveis de `.env.example` e execute `npm run db:migrate` antes de definir `NEXT_PUBLIC_DEMO_MODE=false`.
 
-Groq, Resend e GitHub são opcionais no modo demonstração. No modo autenticado, as respectivas credenciais devem ser configuradas para liberar análise externa, e-mails e consulta do perfil público.
+Groq e GitHub são opcionais no modo demonstração. No modo autenticado, as respectivas credenciais liberam análise externa e consulta do perfil público.
 
 ## Equipe e responsabilidades
 
