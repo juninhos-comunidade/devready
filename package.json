@@ -15,7 +15,7 @@
     "postinstall": "prisma generate"
   },
   "engines": {
-    "node": ">=20.9.0"
+    "node": "22.x"
   },
   "dependencies": {
     "@octokit/graphql": "^9.0.4",
