@@ -20,7 +20,12 @@ async function waitForUserVisible(userId: string, attempts = 6) {
   return false;
 }
 
-async function createCurriculumWithRetry(data: { userId: string; bruteData: string; githubUrl: string | null }, attempts = 4) {
+async function createCurriculumWithRetry(data: {
+  userId: string;
+  bruteData: string | null;
+  githubUrl: string | null;
+  status: "PENDING" | "COMPLETED";
+}, attempts = 4) {
   let lastError: unknown;
   for (let attempt = 1; attempt <= attempts; attempt++) {
     try {
@@ -55,11 +60,13 @@ export async function POST(request: Request) {
     return NextResponse.json({ error: "Revise os dados obrigatórios do cadastro." }, { status: 400 });
   }
 
-  if (typeof pdfBase64 !== "string" || !pdfBase64) {
-    return NextResponse.json({ error: "Adicione seu currículo em PDF para concluir o cadastro." }, { status: 400 });
+  if (pdfBase64 !== undefined && pdfBase64 !== null && typeof pdfBase64 !== "string") {
+    return NextResponse.json({ error: "O currículo enviado é inválido." }, { status: 400 });
   }
 
-  if (Buffer.byteLength(pdfBase64, "base64") > MAX_PDF_BYTES) {
+  const curriculumBase64 = typeof pdfBase64 === "string" && pdfBase64 ? pdfBase64 : null;
+
+  if (curriculumBase64 && Buffer.byteLength(curriculumBase64, "base64") > MAX_PDF_BYTES) {
     return NextResponse.json({ error: "O currículo deve ter no máximo 2,5 MB." }, { status: 413 });
   }
 
@@ -98,11 +105,18 @@ export async function POST(request: Request) {
   await waitForUserVisible(user.id);
 
   let curriculumSaved = true;
-  try {
-    await createCurriculumWithRetry({ userId: user.id, bruteData: pdfBase64, githubUrl });
-  } catch (error) {
-    curriculumSaved = false;
-    console.error("Falha ao salvar currículo no cadastro; a conta foi criada mesmo assim.", error);
+  if (curriculumBase64 || githubUrl) {
+    try {
+      await createCurriculumWithRetry({
+        userId: user.id,
+        bruteData: curriculumBase64,
+        githubUrl,
+        status: curriculumBase64 ? "PENDING" : "COMPLETED",
+      });
+    } catch (error) {
+      curriculumSaved = false;
+      console.error("Falha ao salvar dados profissionais no cadastro; a conta foi criada mesmo assim.", error);
+    }
   }
 
   const successResponse = NextResponse.json({ ok: true, curriculumSaved });

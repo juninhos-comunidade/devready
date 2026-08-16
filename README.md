@@ -2,7 +2,14 @@
 
 Plataforma de preparação para processos seletivos de tecnologia, desenvolvida para o **Hackathon Comunidade Juninhos & Nortjobs**.
 
-O DevReady ajuda pessoas em início de carreira a entender o que uma vaga exige, reunir evidências das próprias competências e praticar entrevistas com feedback objetivo. Nesta versão de demonstração, todos os dados são fictícios e o processamento do agente acontece localmente no navegador.
+O DevReady ajuda pessoas em início de carreira a entender o que uma vaga exige, reunir evidências das próprias competências e praticar entrevistas com feedback objetivo. A versão pública utiliza autenticação real e banco PostgreSQL; o modo demonstrativo permanece disponível apenas para ambientes isolados.
+
+## Aplicação em produção
+
+- **Site:** [devready.vercel.app](https://devready.vercel.app)
+- **Saúde da aplicação:** [devready.vercel.app/api/health](https://devready.vercel.app/api/health)
+- **Repositório oficial:** [github.com/juninhos-comunidade/devready](https://github.com/juninhos-comunidade/devready)
+- **Ambiente:** Vercel, Node.js 22 e PostgreSQL gerenciado
 
 ## O problema
 
@@ -16,11 +23,11 @@ Profissionais juniores costumam encontrar descrições de vaga extensas, requisi
 
 ## Principais funcionalidades
 
-- autenticação e cadastro completos no modo conectado, com acesso imediato no modo demonstrativo;
+- autenticação e cadastro persistentes, inclusive sem currículo;
 - dashboard com prontidão geral, evolução e notas por tecnologia;
 - perfil técnico com área de interesse e nível de experiência;
 - criação de sessão a partir de uma descrição de vaga ou imagem;
-- resultado demonstrativo com compatibilidade e modalidades de treino;
+- diagnóstico por vaga com compatibilidade e modalidades de treino;
 - matriz de evidências com status, confiança, origem e próxima ação por competência;
 - treino específico por vaga com quiz técnico, resposta STAR e desafio prático;
 - agente de entrevista técnica, comportamental ou mista;
@@ -33,6 +40,21 @@ Profissionais juniores costumam encontrar descrições de vaga extensas, requisi
 - identificação das competências mais fortes e prioritárias;
 - ciclo de preparação de 7 dias com progresso salvo no dispositivo.
 - histórico por vaga e recomendação de uma única próxima melhor ação.
+
+## Arquitetura
+
+```mermaid
+flowchart LR
+  U[Pessoa candidata] --> W[Next.js App Router]
+  W --> A[Better Auth]
+  W --> R[Route Handlers]
+  R --> P[Prisma ORM]
+  P --> D[(PostgreSQL)]
+  R --> L[Análise local e explicável]
+  R -. integrações opcionais .-> E[Groq e GitHub]
+```
+
+A interface combina Server Components e componentes clientes. As rotas de API concentram autenticação, autorização e validação; o Prisma isola a persistência; e as análises locais mantêm os fluxos essenciais disponíveis quando integrações opcionais não estão configuradas. Currículo e GitHub podem ser adicionados posteriormente em **Perfil**.
 
 ## Jornada orientada por evidências
 
@@ -54,7 +76,7 @@ O agente não encerra a experiência exibindo apenas uma nota. Depois da última
 - acompanhamento de progresso de 0% a 100%;
 - nova sessão focada na competência com menor desempenho.
 
-O progresso do ciclo permanece disponível após a atualização da página. Como esta é uma demonstração, ele fica armazenado somente no navegador e pode ser removido ao limpar os dados do site.
+O progresso do ciclo permanece disponível após a atualização da página. Preparações ativas e preferências de interface utilizam armazenamento do navegador; conta, perfil, currículo e resultados de treino utilizam persistência no PostgreSQL.
 
 ## Áreas disponíveis no agente
 
@@ -90,13 +112,13 @@ Essas credenciais pertencem exclusivamente ao modo demonstrativo e não concedem
 - Prisma ORM 7
 - Better Auth
 - Lucide React
-- Groq opcional, com contingência local para a demonstração
+- Groq opcional, com extração local quando a credencial não está configurada
 
 ## Como executar localmente
 
 ### Pré-requisitos
 
-- Node.js 20 ou superior
+- Node.js 22
 - npm
 - PostgreSQL, caso o modo autenticado seja utilizado
 
@@ -183,31 +205,34 @@ O workflow em `.github/workflows/quality.yml` executa lint, validação de tipos
 | `/dashboard/trilha` | Plano de 7 dias e materiais recomendados |
 | `/dashboard/treino-vaga` | Quiz, resposta STAR e desafio prático orientados pela vaga |
 
-## Dados fictícios, privacidade e limitações
+## Privacidade, segurança e limitações
 
-- dashboard, perfil, notas, GitHub, vagas e resultados utilizam dados fictícios no modo demo;
+- dados fictícios são utilizados somente quando `NEXT_PUBLIC_DEMO_MODE=true`;
 - novas sessões ficam no `sessionStorage` do navegador;
 - o histórico das preparações da demonstração fica no `localStorage` e pode ser retomado pelo dashboard;
 - respostas e progresso do agente ficam no armazenamento local do navegador;
 - o cadastro demonstrativo não envia currículo nem dados pessoais ao servidor;
 - a descrição da vaga usa análise local quando a Groq não está configurada;
-- o agente usa avaliação determinística e explicável no modo local e não envia respostas para uma IA externa;
+- o agente usa avaliação determinística e explicável no modo local;
 - o consentimento para currículo e GitHub é solicitado explicitamente no cadastro;
 - a exclusão de conta é simulada no modo demo e utiliza exclusão em cascata no modo autenticado.
+- senhas são tratadas pelo Better Auth e segredos permanecem em variáveis protegidas da plataforma;
+- todas as consultas de perfil, currículo e treino verificam a sessão antes de acessar dados do usuário;
+- o currículo é opcional e pode ser enviado, substituído ou processado posteriormente em **Perfil**.
 
-Antes de aceitar currículos reais em produção, o projeto precisa utilizar armazenamento privado e persistente. O sistema de arquivos temporário de plataformas serverless não deve ser usado para documentos pessoais.
+O PDF é mantido no banco apenas durante o processamento. Após sucesso ou falha de extração, o conteúdo bruto é descartado; permanecem somente dados estruturados autorizados ou o status necessário para uma nova tentativa.
 
 ## Deploy na Vercel
 
 O projeto possui `vercel-build` e `postinstall` para gerar o Prisma Client antes do build. A produção pública deve utilizar contas reais com PostgreSQL e `NEXT_PUBLIC_DEMO_MODE=false`.
 
 1. importe o repositório na Vercel;
-2. selecione Node.js 20 ou superior;
+2. selecione Node.js 22;
 3. configure `DATABASE_URL`, `BETTER_AUTH_URL`, `BETTER_AUTH_SECRET`, `NEXT_PUBLIC_DEMO_MODE=false` e `NEXT_PUBLIC_SESSION_LIMIT=5`;
 4. publique e valide `/api/health`, `/login`, `/dashboard`, `/dashboard/nova-sessao` e `/dashboard/treino-vaga`;
 5. execute `npm run db:migrate` antes do primeiro acesso e valide o cadastro com uma conta nova e sem dados prévios.
 
-Groq e GitHub são opcionais no modo demonstração. No modo autenticado, as respectivas credenciais liberam análise externa e consulta do perfil público.
+Groq e GitHub são opcionais. Sem essas credenciais, o sistema preserva os fluxos essenciais com análise local e permite adicionar as integrações posteriormente.
 
 ## Equipe e responsabilidades
 
@@ -234,8 +259,9 @@ Os temas do banco de entrevistas foram estruturados com apoio de documentação 
 ## Links da entrega
 
 - Repositório: [github.com/juninhos-comunidade/devready](https://github.com/juninhos-comunidade/devready)
-- Aplicação publicada: em publicação
-- Vídeo de apresentação: em produção
+- Aplicação publicada: [devready.vercel.app](https://devready.vercel.app)
+
+O pitch de 3 a 5 minutos deve ser enviado separadamente pelo formulário oficial, usando um link público do Google Drive.
 
 ---
 

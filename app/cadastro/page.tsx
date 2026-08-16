@@ -80,10 +80,6 @@ export default function Cadastro() {
       return;
     }
 
-    if (!curriculumFile) {
-      setErrorMessage("Adicione seu currículo em PDF para concluir o cadastro.");
-      return;
-    }
     if (!areaInterest || !experienceLevel) {
       setErrorMessage("Selecione sua área de interesse e seu nível de experiência.");
       return;
@@ -101,8 +97,7 @@ export default function Cadastro() {
         router.replace("/dashboard");
         return;
       }
-      if (!curriculumFile) return;
-      const pdfBase64 = await toBase64(curriculumFile);
+      const pdfBase64 = curriculumFile ? await toBase64(curriculumFile) : undefined;
 
       const payload = {
         name,
@@ -353,9 +348,13 @@ export default function Cadastro() {
 
                   <div className="grid gap-1.5">
                     <label className="text-sm font-extrabold text-[#1d1b33]">
-                      Currículo em PDF <span className="text-[#e8641d]">*</span>
+                      Currículo em PDF{" "}
+                      <span className="text-xs font-semibold text-[#59567a]">(opcional)</span>
                     </label>
-                     <PdfDropzone required onFileChange={setCurriculumFile} />
+                    <PdfDropzone onFileChange={setCurriculumFile} />
+                    <p className="text-xs font-semibold text-[#6d698a]">
+                      Você pode adicionar ou atualizar o currículo depois em Perfil.
+                    </p>
                   </div>
 
                   <div className="grid gap-1.5">

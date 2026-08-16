@@ -59,7 +59,7 @@ export async function POST(request: Request) {
       );
       await prisma.curriculum.update({
         where: { id: curriculumId },
-        data: { status: "FAILED" },
+        data: { status: "FAILED", bruteData: null },
       });
       return NextResponse.json(
         { error: "Currículo sem dados para processar." },
@@ -81,7 +81,7 @@ export async function POST(request: Request) {
       console.error(`Falha ao extrair dados do currículo ${curriculumId}.`, error);
       await prisma.curriculum.update({
         where: { id: curriculumId },
-        data: { status: "FAILED" },
+        data: { status: "FAILED", bruteData: null },
       });
     }
 
