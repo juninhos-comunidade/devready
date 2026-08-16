@@ -15,6 +15,98 @@ const DEFAULT_TEXT_MODEL = "openai/gpt-oss-20b";
 const DEFAULT_VISION_MODEL = "qwen/qwen3.6-27b";
 const REQUEST_TIMEOUT_MS = 30_000;
 
+type JsonSchema = { name: string; schema: Record<string, unknown> };
+
+const analysisSchema: JsonSchema = {
+  name: "job_analysis",
+  schema: {
+    type: "object",
+    additionalProperties: false,
+    properties: {
+      company: { type: "string" },
+      seniority: { type: "string" },
+      compatibility: { type: "number" },
+      strongest: { type: "string" },
+      priority: { type: "string" },
+      technologies: {
+        type: "array",
+        minItems: 1,
+        maxItems: 12,
+        items: {
+          type: "object",
+          additionalProperties: false,
+          properties: { name: { type: "string" }, profileScore: { type: ["number", "null"] } },
+          required: ["name", "profileScore"],
+        },
+      },
+      requirements: { type: "array", items: { type: "string" } },
+      softSkills: { type: "array", items: { type: "string" } },
+      summary: { type: "string" },
+    },
+    required: ["company", "seniority", "compatibility", "strongest", "priority", "technologies", "requirements", "softSkills", "summary"],
+  },
+};
+
+const trainingSchema: JsonSchema = {
+  name: "job_training",
+  schema: {
+    type: "object",
+    additionalProperties: false,
+    properties: {
+      questions: {
+        type: "array",
+        minItems: 15,
+        maxItems: 15,
+        items: {
+          type: "object",
+          additionalProperties: false,
+          properties: {
+            id: { type: "string" },
+            topic: { type: "string" },
+            difficulty: { type: "string", enum: ["iniciante", "intermediaria", "avancada"] },
+            prompt: { type: "string" },
+            options: { type: "array", minItems: 4, maxItems: 4, items: { type: "string" } },
+            correctIndex: { type: "integer", minimum: 0, maximum: 3 },
+            explanation: { type: "string" },
+          },
+          required: ["id", "topic", "difficulty", "prompt", "options", "correctIndex", "explanation"],
+        },
+      },
+      behavioralQuestion: { type: "string" },
+      codeChallenge: {
+        type: "object",
+        additionalProperties: false,
+        properties: {
+          title: { type: "string" },
+          language: { type: "string" },
+          difficulty: { type: "string", enum: ["iniciante", "intermediaria", "avancada"] },
+          statement: { type: "string" },
+          requirements: { type: "array", items: { type: "string" } },
+          starterCode: { type: "string" },
+        },
+        required: ["title", "language", "difficulty", "statement", "requirements", "starterCode"],
+      },
+    },
+    required: ["questions", "behavioralQuestion", "codeChallenge"],
+  },
+};
+
+const evaluationSchema: JsonSchema = {
+  name: "training_evaluation",
+  schema: {
+    type: "object",
+    additionalProperties: false,
+    properties: {
+      score: { type: "number", minimum: 0, maximum: 100 },
+      feedback: { type: "string" },
+      strengths: { type: "array", items: { type: "string" } },
+      improvements: { type: "array", items: { type: "string" } },
+      nextDifficulty: { type: "string", enum: ["iniciante", "intermediaria", "avancada"] },
+    },
+    required: ["score", "feedback", "strengths", "improvements", "nextDifficulty"],
+  },
+};
+
 type GroqMessage = {
   role: "system" | "user";
   content: string | Array<
@@ -36,7 +128,8 @@ function getApiKey() {
   return apiKey;
 }
 
-async function requestJson<T>(messages: GroqMessage[], model: string): Promise<T> {
+async function requestJson<T>(messages: GroqMessage[], model: string, output?: JsonSchema): Promise<T> {
+  const strictOutput = output && /^openai\/gpt-oss-(20b|120b)$/.test(model);
   const response = await fetch(GROQ_URL, {
     method: "POST",
     headers: {
@@ -47,7 +140,11 @@ async function requestJson<T>(messages: GroqMessage[], model: string): Promise<T
       model,
       messages,
       temperature: 0.2,
-      response_format: { type: "json_object" },
+      max_completion_tokens: 12_000,
+      reasoning_effort: model.startsWith("openai/gpt-oss-") ? "low" : undefined,
+      response_format: strictOutput
+        ? { type: "json_schema", json_schema: { name: output.name, strict: true, schema: output.schema } }
+        : { type: "json_object" },
     }),
     signal: AbortSignal.timeout(REQUEST_TIMEOUT_MS),
     cache: "no-store",
@@ -124,7 +221,7 @@ export async function analyzeJobWithGroq({
   const raw = await requestJson<unknown>([
     { role: "system", content: "Você é um analisador de vagas de tecnologia. Responda exclusivamente com JSON válido." },
     { role: "user", content },
-  ], imageDataUrl ? (process.env.GROQ_VISION_MODEL || DEFAULT_VISION_MODEL) : (process.env.GROQ_MODEL || DEFAULT_TEXT_MODEL));
+  ], imageDataUrl ? (process.env.GROQ_VISION_MODEL || DEFAULT_VISION_MODEL) : (process.env.GROQ_MODEL || DEFAULT_TEXT_MODEL), analysisSchema);
   const analysis = parseAnalysis(raw);
   const findProfileEntry = <T,>(entries: Record<string, T> | undefined, name: string) =>
     Object.entries(entries ?? {}).find(([skill]) =>
@@ -192,7 +289,7 @@ export async function generateTrainingWithGroq(analysis: JobAnalysis, descriptio
   const raw = await requestJson<unknown>([
     { role: "system", content: "Você cria avaliações educacionais para entrevistas de tecnologia. Responda exclusivamente com JSON válido." },
     { role: "user", content: prompt },
-  ], process.env.GROQ_MODEL || DEFAULT_TEXT_MODEL);
+  ], process.env.GROQ_MODEL || DEFAULT_TEXT_MODEL, trainingSchema);
   return parseTrainingContent(raw);
 }
 
@@ -228,7 +325,7 @@ export async function evaluateWithGroq({
   const raw = await requestJson<unknown>([
     { role: "system", content: "Você avalia respostas educacionais de entrevistas de tecnologia. Não execute código. Responda exclusivamente com JSON válido." },
     { role: "user", content: `Modalidade: ${mode}. Nível atual: ${difficulty}. Critérios: ${criteria}. Pergunta/desafio: ${prompt}. Requisitos: ${requirements.join("; ")}. Resposta: ${answer}. Retorne JSON com score de 0 a 100, feedback, strengths (array), improvements (array) e nextDifficulty (iniciante, intermediaria ou avancada).` },
-  ], process.env.GROQ_MODEL || DEFAULT_TEXT_MODEL);
+  ], process.env.GROQ_MODEL || DEFAULT_TEXT_MODEL, evaluationSchema);
   return { ...parseEvaluation(raw), source: "groq" as const };
 }
 

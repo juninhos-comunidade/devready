@@ -10,6 +10,9 @@ import {
   groqIsConfigured,
 } from "@/lib/groq-job-training";
 import { demoModeEnabled } from "@/lib/demo-mode";
+import { isDemoAccountEmail } from "@/lib/demo-mode";
+import { auth } from "@/lib/auth";
+import { headers } from "next/headers";
 
 export const runtime = "nodejs";
 export const maxDuration = 60;
@@ -28,6 +31,12 @@ type EvaluateRequest = {
   requirements?: string[];
   difficulty: TrainingDifficulty;
 };
+
+async function isDemoAccount() {
+  if (demoModeEnabled) return true;
+  const session = await auth.api.getSession({ headers: await headers() }).catch(() => null);
+  return isDemoAccountEmail(session?.user.email);
+}
 
 export async function GET() {
   return Response.json({ configured: groqIsConfigured() });
@@ -50,7 +59,7 @@ export async function POST(request: Request) {
         console.error("Falha ao gerar treino com Groq.", error);
       }
     }
-    if (!demoModeEnabled) {
+    if (!(await isDemoAccount())) {
       return Response.json({
         error: groqIsConfigured()
           ? "O serviço de geração está temporariamente indisponível. Tente novamente em instantes."
@@ -60,7 +69,7 @@ export async function POST(request: Request) {
     return Response.json({
       content: buildLocalTraining(body.analysis),
       aiAvailable: false,
-      notice: "Conteúdo demonstrativo gerado localmente.",
+      notice: "Treino demonstrativo disponível em modo de contingência.",
     });
   }
 
@@ -85,7 +94,7 @@ export async function POST(request: Request) {
         console.error("Falha ao avaliar com Groq.", error);
       }
     }
-    if (!demoModeEnabled) {
+    if (!(await isDemoAccount())) {
       return Response.json({
         error: groqIsConfigured()
           ? "O serviço de avaliação está temporariamente indisponível. Tente novamente em instantes."
@@ -95,7 +104,7 @@ export async function POST(request: Request) {
     return Response.json({
       evaluation: evaluateAnswerLocally(body.mode, answer, body.difficulty),
       aiAvailable: false,
-      notice: "Avaliação demonstrativa gerada localmente.",
+      notice: "Avaliação demonstrativa disponível em modo de contingência.",
     });
   }
 
