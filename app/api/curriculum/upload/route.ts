@@ -48,7 +48,7 @@ export async function POST(request: Request) {
     console.error(`Falha ao extrair dados do currículo ${curriculum.id}.`, error);
     await prisma.curriculum.update({
       where: { id: curriculum.id },
-      data: { status: "FAILED" },
+      data: { status: "FAILED", bruteData: null },
     });
     return NextResponse.json(
       { error: "O currículo foi salvo, mas não foi possível extrair os dados agora. Tente novamente em instantes." },

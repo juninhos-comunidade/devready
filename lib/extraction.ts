@@ -5,6 +5,14 @@ const EXTRACT_TOOL_NAME = "extract_curriculum_data";
 const DEFAULT_GROQ_MODEL = "llama-3.3-70b-versatile";
 const MIN_EXTRACTED_TEXT_LENGTH = 50;
 
+const KNOWN_SKILLS = [
+  "JavaScript", "TypeScript", "React", "Next.js", "Angular", "Vue.js",
+  "Node.js", "Java", "C#", ".NET", "Python", "Go", "PHP", "Kotlin",
+  "Swift", "SQL", "PostgreSQL", "MySQL", "MongoDB", "Redis", "Docker",
+  "Kubernetes", "AWS", "Azure", "GCP", "Git", "GitHub", "REST", "GraphQL",
+  "HTML", "CSS", "Tailwind", "Figma", "Playwright", "Cypress", "Jest",
+] as const;
+
 const SYSTEM_PROMPT =
   "Você é um extrator de dados neutro e literal. Sua única função é ler o texto de um currículo e " +
   "transcrever, para a ferramenta disponível, as informações já presentes nesse texto. Você não avalia " +
@@ -45,6 +53,23 @@ export interface ExtractedData {
   experiences: CurriculumExperience[];
   formacao: CurriculumFormacao[];
   certificacoes: CurriculumCertificacao[];
+}
+
+export function extractCurriculumDataLocally(text: string): ExtractedData {
+  const normalizedText = text.toLocaleLowerCase("pt-BR");
+  const skills = KNOWN_SKILLS.filter((skill) => {
+    const escapedSkill = skill
+      .toLocaleLowerCase("pt-BR")
+      .replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+    return new RegExp(`(^|[^a-z0-9])${escapedSkill}($|[^a-z0-9])`, "i").test(normalizedText);
+  });
+
+  return {
+    skills: [...new Set(skills)],
+    experiences: [],
+    formacao: [],
+    certificacoes: [],
+  };
 }
 
 const extractCurriculumTool: Groq.Chat.ChatCompletionTool = {
@@ -188,7 +213,10 @@ export async function extractCurriculumData(pdfBase64: string): Promise<Extracte
     );
   }
 
-  const client = new Groq({ apiKey: process.env.GROQ_API_KEY });
+  const groqApiKey = process.env.GROQ_API_KEY?.trim();
+  if (!groqApiKey) return extractCurriculumDataLocally(text);
+
+  const client = new Groq({ apiKey: groqApiKey });
   const model = process.env.GROQ_MODEL ?? DEFAULT_GROQ_MODEL;
 
   const response = await client.chat.completions.create({
